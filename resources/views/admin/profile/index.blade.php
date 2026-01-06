@@ -1830,10 +1830,15 @@
 
                     // Para Pre-Inscritos, mantener el botón de convertir
                     // Para Pre-Inscritos, agregar el botón de conversión
+                    // En la sección de acciones de la tabla de marketing, alrededor de la línea 2120
                     if (inscripcion.estado === 'Pre-Inscrito') {
                         accionesHtml += `
         <button class="btn btn-sm btn-success btn-convertir-inscrito" 
                 data-inscripcion-id="${inscripcion.id}"
+                data-oferta-id="${inscripcion.oferta_academica.id}"  // ¡AGREGAR ESTA LÍNEA!
+                data-estudiante-nombre="${estudiante?.nombres || 'N/A'} ${estudiante?.apellido_paterno || ''}"
+                data-estudiante-carnet="${estudiante?.carnet || 'N/A'}"
+                data-programa-nombre="${programa?.nombre || 'N/A'}"
                 data-bs-toggle="tooltip"
                 title="Convertir a Inscrito">
             <i class="ri-user-add-line"></i>
@@ -2011,16 +2016,17 @@
 
             // Modal para convertir pre-inscrito a inscrito
             // Evento para abrir el modal de conversión
+            // En la sección del modal para convertir Pre-Inscrito, alrededor de la línea 2240
             $(document).on('click', '.btn-convertir-inscrito', function() {
                 const inscripcionId = $(this).data('inscripcion-id');
-                const ofertaId = $(this).data('oferta-id');
+                const ofertaId = $(this).data('oferta-id'); // Obtener el oferta-id
                 const estudianteNombre = $(this).data('estudiante-nombre');
                 const estudianteCarnet = $(this).data('estudiante-carnet');
                 const programaNombre = $(this).data('programa-nombre');
 
                 // Guardar datos en el modal
                 $('#convertirModal').data('inscripcion-id', inscripcionId);
-                $('#convertirModal').data('oferta-id', ofertaId);
+                $('#convertirModal').data('oferta-id', ofertaId); // Guardar oferta-id
 
                 // Mostrar información básica
                 $('#convertirEstudianteNombre').text(estudianteNombre);
@@ -2031,7 +2037,7 @@
                 $('#confirmarConversionBtn').prop('disabled', false)
                     .html('<i class="ri-check-double-line me-1"></i> Confirmar Conversión');
 
-                // Cargar planes de pago
+                // Cargar planes de pago usando el oferta-id
                 cargarPlanesPagoOferta(ofertaId);
 
                 // Mostrar modal
@@ -2084,7 +2090,7 @@
                 ${concepto.n_cuotas === 1 ? 
                     totalConcepto.toLocaleString('es-BO') : 
                     `${montoBase.toLocaleString('es-BO')} Bs (primeras ${concepto.n_cuotas - 1} cuotas)<br>
-                                            <small class="text-info">Última cuota: ${(montoBase + diferencia).toLocaleString('es-BO')} Bs</small>`
+                                                                <small class="text-info">Última cuota: ${(montoBase + diferencia).toLocaleString('es-BO')} Bs</small>`
                 }
             </td>
         </tr>
@@ -2165,18 +2171,24 @@
                         }
                     },
                     error: function(xhr) {
-                        console.error('Error:', xhr);
+                        console.error('Error detallado:', xhr);
+                        let errorMsg = 'Error al cargar los planes de pago. ';
+
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMsg += xhr.responseJSON.message;
+                        } else if (xhr.status === 404) {
+                            errorMsg += 'Oferta académica no encontrada (ID: ' + ofertaId + ')';
+                        } else {
+                            errorMsg += 'Error de conexión.';
+                        }
+
                         $('#planesPagoContainer').html(`
                 <div class="alert alert-danger">
                     <i class="ri-error-warning-line me-2"></i> 
-                    Error al cargar los planes de pago.
-                    <div class="mt-2">
-                        <small>${xhr.responseJSON?.message || 'Error de conexión'}</small>
-                    </div>
+                    ${errorMsg}
                 </div>
             `);
 
-                        // Deshabilitar botón de confirmación
                         $('#confirmarConversionBtn').prop('disabled', true)
                             .html('<i class="ri-forbid-line me-1"></i> Error al cargar planes');
                     }
