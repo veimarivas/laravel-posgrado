@@ -3,23 +3,27 @@
         @php
             $fase = $oferta->fase;
             $faseColor = $fase->color ?? '#cccccc';
-            $bgColor = hexToRgb($faseColor, 0.08);
+            $bgColor = \App\Helpers\ViewHelper::hexToRgb($faseColor, 0.08);
+            // Calcular el número de fila
+            $rowNumber = ($ofertas->currentPage() - 1) * $ofertas->perPage() + $loop->iteration;
         @endphp
 
         <tr style="background-color: {{ $bgColor }}; transition: all 0.3s ease;">
+            <!-- COLUMNA N° -->
             <td class="text-center fw-semibold" style="background-color: rgba(0,0,0,0.02);">
-                {{ ($ofertas->currentPage() - 1) * $ofertas->perPage() + $loop->iteration }}
+                {{ $rowNumber }}
             </td>
 
+            <!-- COLUMNA CÓDIGO -->
             <td class="text-center">
                 <span class="badge bg-dark bg-gradient" style="font-size: 0.85em; letter-spacing: 0.5px;">
                     {{ $oferta->codigo }}
                 </span>
             </td>
 
+            <!-- COLUMNA PROGRAMA -->
             <td>
                 <div class="d-flex align-items-center">
-
                     <div>
                         <div class="fw-semibold" style="color: #495057; font-size: 0.95rem;">
                             {{ $oferta->programa->nombre ?? 'Sin programa' }}
@@ -33,12 +37,14 @@
                 </div>
             </td>
 
+            <!-- COLUMNA N° MÓDULOS -->
             <td class="text-center">
                 <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">
                     {{ $oferta->n_modulos ?? 0 }}
                 </span>
             </td>
 
+            <!-- COLUMNA CONVENIO -->
             <td>
                 <div class="d-flex align-items-center">
                     @if ($oferta->posgrado->convenio->imagen ?? false)
@@ -64,6 +70,7 @@
                 </div>
             </td>
 
+            <!-- COLUMNA MODALIDAD -->
             <td class="text-center">
                 <span
                     class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-1">
@@ -71,6 +78,7 @@
                 </span>
             </td>
 
+            <!-- COLUMNA FECHAS -->
             <td>
                 <div class="text-center">
                     <div class="mt-1">
@@ -85,10 +93,10 @@
                     <small class="text-muted" style="font-size: 0.8rem;">
                         {{ \Carbon\Carbon::parse($oferta->fecha_fin_programa)->format('d/m/Y') }}
                     </small>
-
                 </div>
             </td>
 
+            <!-- COLUMNA INSCRITOS -->
             <td class="text-center">
                 <div class="d-flex flex-column gap-1">
                     <div>
@@ -110,6 +118,7 @@
                 </div>
             </td>
 
+            <!-- COLUMNA FASE -->
             <td class="text-center">
                 <div class="d-flex flex-column align-items-center gap-1">
                     <span class="badge text-white px-3 py-1"
@@ -122,6 +131,7 @@
                 </div>
             </td>
 
+            <!-- COLUMNA ACCIONES -->
             <td class="py-2">
                 @include('admin.ofertas.partials.acciones-celda', ['oferta' => $oferta])
             </td>

@@ -35,7 +35,7 @@ class OfertasAcademicasController extends Controller
         $query = OfertasAcademica::with([
             'posgrado.area',
             'posgrado.tipo',
-            'posgrado.convenio', // Asegurar que cargamos convenio
+            'posgrado.convenio',
             'sucursal.sede',
             'modalidad',
             'programa',
@@ -62,14 +62,15 @@ class OfertasAcademicasController extends Controller
             $query->where('modalidade_id', $request->modalidade_id);
         }
 
-        // Obtener las ofertas paginadas
         $ofertas = $query->orderBy('created_at', 'desc')->paginate(20);
 
-        // Si la solicitud es AJAX, devolver solo el HTML de la tabla y la paginación
+        // **MODIFICACIÓN IMPORTANTE**: Siempre devolver JSON para solicitudes AJAX
         if ($request->ajax()) {
             return response()->json([
+                'success' => true,
                 'html' => view('admin.ofertas.partials.table-body', compact('ofertas'))->render(),
-                'pagination' => $ofertas->links('pagination::bootstrap-5')->toHtml()
+                'pagination' => $ofertas->links('pagination::bootstrap-5')->toHtml(),
+                'total' => $ofertas->total()
             ]);
         }
 
@@ -77,6 +78,7 @@ class OfertasAcademicasController extends Controller
         $trabajadoresCargos = TrabajadoresCargo::with(['trabajador.persona', 'cargo'])
             ->where('estado', 'Vigente')
             ->get();
+
         $planesPagosTodos = PlanesPago::all();
         $conceptos = Concepto::all();
         $departamentos = Departamento::all();
@@ -89,14 +91,16 @@ class OfertasAcademicasController extends Controller
         $convenios = Convenio::all();
         $fases = Fase::all();
         $modalidades = Modalidade::all();
+        $sucursales = Sucursale::with('sede')->get();
+        $sedes = Sede::all();
 
         return view('admin.ofertas.listar', [
             'ofertas' => $ofertas,
-            'sucursales' => Sucursale::with('sede')->get(),
-            'sedes' => Sede::all(),
-            'modalidades' => $modalidades, // Ya está
+            'sucursales' => $sucursales,
+            'sedes' => $sedes,
+            'modalidades' => $modalidades,
             'planesPagos' => PlanesPago::all(),
-            'conceptos' => Concepto::all(),
+            'conceptos' => $conceptos,
             'trabajadoresAcademicos' => $trabajadoresCargos,
             'trabajadoresMarketing' => $trabajadoresCargos,
             'planesPagosTodos' => $planesPagosTodos,
@@ -105,8 +109,8 @@ class OfertasAcademicasController extends Controller
             'grados' => $grados,
             'universidades' => $universidades,
             'profesiones' => $profesiones,
-            'convenios' => $convenios, // Nuevo
-            'fases' => $fases, // Nuevo
+            'convenios' => $convenios,
+            'fases' => $fases,
         ]);
     }
 

@@ -1,15 +1,3 @@
-<?php
-function hexToRgb($hex, $alpha = 0.08)
-{
-    // Cambiado a 0.08 para más sutil
-    $hex = ltrim($hex, '#');
-    if (strlen($hex) == 3) {
-        $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
-    }
-    $rgb = sscanf($hex, '%02x%02x%02x');
-    return "rgba({$rgb[0]}, {$rgb[1]}, {$rgb[2]}, {$alpha})";
-}
-?>
 @extends('admin.dashboard')
 @section('admin')
     <nav class="page-breadcrumb">
@@ -1125,36 +1113,113 @@ function hexToRgb($hex, $alpha = 0.08)
         $(document).ready(function() {
             refreshFeather();
 
-            // === FILTROS ===
+            // Función para depurar el HTML recibido
+            function debugTableHTML(html) {
+                console.log('HTML recibido:', html);
+
+                // Crear un elemento temporal para analizar la estructura
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+
+                // Contar filas y columnas
+                const rows = tempDiv.querySelectorAll('tr');
+                console.log(`Número de filas: ${rows.length}`);
+
+                rows.forEach((row, index) => {
+                    const cols = row.querySelectorAll('td, th');
+                    console.log(`Fila ${index + 1}: ${cols.length} columnas`);
+
+                    cols.forEach((col, colIndex) => {
+                        console.log(`  Col ${colIndex + 1}: ${col.innerHTML.substring(0, 50)}...`);
+                    });
+                });
+            }
+
+            // Modifica la función loadResults para incluir depuración
             function loadResults() {
-                const sucursale_id = $('#filtroSucursal').val() || '';
-                const convenio_id = $('#filtroConvenio').val() || '';
-                const fase_id = $('#filtroFase').val() || '';
-                const modalidade_id = $('#filtroModalidad').val() || '';
+                const params = {
+                    sucursale_id: $('#filtroSucursal').val() || '',
+                    convenio_id: $('#filtroConvenio').val() || '',
+                    fase_id: $('#filtroFase').val() || '',
+                    modalidade_id: $('#filtroModalidad').val() || '',
+                    _token: '{{ csrf_token() }}'
+                };
 
                 $.ajax({
                     url: '{{ route('admin.ofertas.listar') }}',
-                    data: {
-                        sucursale_id,
-                        convenio_id,
-                        fase_id,
-                        modalidade_id
+                    type: 'GET',
+                    data: params,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
+                    // En la función success del AJAX, reemplazar toda la tabla
                     success: function(res) {
-                        $('#results-container table tbody').replaceWith(res.html);
-                        $('#pagination-container').html(res.pagination);
-                        refreshFeather();
+                        if (res.success) {
+                            // Crear una nueva tabla completa con el HTML recibido
+                            const newTable = `
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered align-middle" style="min-width: 1100px;">
+                    <thead class="table-light">
+                        <tr class="text-center">
+                            <th width="20">N°</th>
+                            <th width="60">Código</th>
+                            <th width="120">Programa</th>
+                            <th width="80">N° Módulos</th>
+                            <th width="50">Convenio</th>
+                            <th width="80">Modalidad</th>
+                            <th width="80">Inicio - Fin</th>
+                            <th width="70">Inscritos</th>
+                            <th width="50">Fase</th>
+                            <th width="200">Acciones</th>
+                        </tr>
+                    </thead>
+                    ${res.html}
+                </table>
+            </div>
+        `;
+
+                            // Reemplazar solo la tabla
+                            $('#results-container .table-responsive').replaceWith(newTable);
+                            $('#pagination-container').html(res.pagination);
+                            refreshFeather();
+                        }
                     },
                     error: function(xhr) {
-                        console.error('Error status:', xhr.status);
-                        console.error('Response:', xhr.responseText);
-                        alert('Error al aplicar el filtro. Mira la consola para más detalles.');
+                        console.error('Error:', xhr);
                     }
                 });
             }
 
-            // Eventos para los nuevos filtros
-            $('#filtroSucursal, #filtroConvenio, #filtroFase, #filtroModalidad').on('change', loadResults);
+            // Agrega este estilo CSS para el indicador de carga
+            $(document).ready(function() {
+                // Agregar estilos para el loading
+                $('head').append(`
+        <style>
+            .loading {
+                opacity: 0.7;
+                pointer-events: none;
+                position: relative;
+            }
+            .loading::after {
+                content: 'Cargando...';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: white;
+                padding: 10px 20px;
+                border-radius: 5px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                z-index: 1000;
+            }
+        </style>
+    `);
+            });
+
+            // Event listeners for filters
+            $('#filtroSucursal, #filtroConvenio, #filtroFase, #filtroModalidad').on('change', function() {
+                loadResults();
+            });
 
             $('#clearFilters').on('click', function() {
                 $('#filtroSucursal').val('');
@@ -1164,23 +1229,53 @@ function hexToRgb($hex, $alpha = 0.08)
                 loadResults();
             });
 
+            // Handle pagination clicks
             $(document).on('click', '#pagination-container .pagination a', function(e) {
                 e.preventDefault();
                 const url = $(this).attr('href');
+
+                // Extract query parameters
+                const urlObj = new URL(url);
+                const page = urlObj.searchParams.get('page');
+
+                // Get current filter values
                 const sucursale_id = $('#filtroSucursal').val() || '';
                 const convenio_id = $('#filtroConvenio').val() || '';
                 const fase_id = $('#filtroFase').val() || '';
                 const modalidade_id = $('#filtroModalidad').val() || '';
 
-                $.get(url, {
-                    sucursale_id,
-                    convenio_id,
-                    fase_id,
-                    modalidade_id
-                }, function(res) {
-                    $('#results-container table tbody').replaceWith(res.html);
-                    $('#pagination-container').html(res.pagination);
-                    refreshFeather();
+                $.ajax({
+                    url: url,
+                    data: {
+                        sucursale_id: sucursale_id,
+                        convenio_id: convenio_id,
+                        fase_id: fase_id,
+                        modalidade_id: modalidade_id,
+                        page: page
+                    },
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    success: function(res) {
+                        if (typeof res === 'object' && res.html) {
+                            $('#results-container table tbody').html(res.html);
+                            $('#pagination-container').html(res.pagination);
+                        } else {
+                            $('#results-container').html($(res).find('#results-container')
+                                .html());
+                            $('#pagination-container').html($(res).find('#pagination-container')
+                                .html());
+                        }
+                        refreshFeather();
+                    },
+                    error: function(xhr) {
+                        console.error('Error:', xhr);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Error al cargar la página'
+                        });
+                    }
                 });
             });
 
@@ -1394,23 +1489,23 @@ function hexToRgb($hex, $alpha = 0.08)
                             </div>
                             <div class="card-body conceptos-container" id="conceptos_edit_${planId}">
                                 ${data.conceptos.map((pc, idx) => `
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <div class="row mb-2 concepto-item">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <div class="col-md-5">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <select name="planes[${planId}][${idx}][concepto_id]" class="form-control" required>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ${CONCEPTOS.map(c => `<option value="${c.id}" ${c.id == pc.concepto_id ? 'selected' : ''}>${c.nombre}</option>`).join('')}
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </select>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <div class="col-md-2">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <input type="number" name="planes[${planId}][${idx}][n_cuotas]" class="form-control" value="${pc.n_cuotas}" min="1" required>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <div class="col-md-3">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <input type="number" step="0.01" name="planes[${planId}][${idx}][pago_bs]" class="form-control" value="${pc.pago_bs}" min="0" required>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <div class="col-md-2 d-flex align-items-end">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <button type="button" class="btn btn-sm btn-outline-danger remove-concepto">🗑️</button>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                `).join('')}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <div class="row mb-2 concepto-item">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <div class="col-md-5">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <select name="planes[${planId}][${idx}][concepto_id]" class="form-control" required>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ${CONCEPTOS.map(c => `<option value="${c.id}" ${c.id == pc.concepto_id ? 'selected' : ''}>${c.nombre}</option>`).join('')}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </select>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <div class="col-md-2">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <input type="number" name="planes[${planId}][${idx}][n_cuotas]" class="form-control" value="${pc.n_cuotas}" min="1" required>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <div class="col-md-3">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <input type="number" step="0.01" name="planes[${planId}][${idx}][pago_bs]" class="form-control" value="${pc.pago_bs}" min="0" required>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <div class="col-md-2 d-flex align-items-end">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <button type="button" class="btn btn-sm btn-outline-danger remove-concepto">🗑️</button>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            `).join('')}
                             </div>
                         </div>`;
                     });
@@ -2840,7 +2935,7 @@ function hexToRgb($hex, $alpha = 0.08)
                     const nCuotas = $(this).find('.n-cuotas-editar').val();
                     const pagoBs = $(this).find('.monto-cuota-editar').val();
                     const planConceptoId = $(this).data(
-                    'plan-concepto-id'); // ID del plan_concepto o 'new'
+                        'plan-concepto-id'); // ID del plan_concepto o 'new'
 
                     if (conceptoId && nCuotas && pagoBs) {
                         conceptos.push({
