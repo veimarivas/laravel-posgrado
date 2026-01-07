@@ -180,6 +180,8 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
         // Nueva ruta para generar formulario PDF
         Route::get('/admin/profile/marketing/inscripcion/{id}/formulario-pdf', 'generarFormularioPdf')
             ->name('admin.profile.marketing.inscripcion.formulario-pdf');
+
+        Route::post('/admin/profile/change-password', 'changePassword')->name('admin.profile.change-password');
     });
 
     //AREAS

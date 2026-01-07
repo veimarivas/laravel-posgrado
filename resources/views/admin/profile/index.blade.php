@@ -318,6 +318,24 @@
                 font-size: 0.75rem;
             }
         }
+
+        /* Estilo para el botón de mostrar/ocultar contraseña */
+        .toggle-password {
+            border-left: 0;
+        }
+
+        .toggle-password:hover {
+            background-color: #e9ecef;
+        }
+
+        /* Estilo para la barra de fortaleza de contraseña */
+        .progress {
+            border-radius: 3px;
+        }
+
+        .progress-bar {
+            transition: width 0.3s ease;
+        }
     </style>
 
     <div class="container-fluid">
@@ -541,6 +559,13 @@
                                         </a>
                                     </li>
                                 @endif
+                                <li class="nav-item">
+                                    <a class="nav-link" data-bs-toggle="tab" href="#password" role="tab">
+                                        <i class="ri-lock-password-line me-1"></i>
+                                        <span class="d-none d-md-inline">Cambiar Contraseña</span>
+                                        <span class="d-md-none">Contraseña</span>
+                                    </a>
+                                </li>
                             </ul>
                         </div>
 
@@ -1298,6 +1323,127 @@
                                     </div>
                                 </div>
                             @endif
+
+                            <!-- Tab Cambiar Contraseña -->
+                            <div class="tab-pane" id="password" role="tabpanel">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <div class="card border">
+                                            <div class="card-header bg-light">
+                                                <h5 class="card-title mb-0">
+                                                    <i class="ri-lock-password-line me-2"></i> Cambiar Contraseña
+                                                </h5>
+                                            </div>
+                                            <div class="card-body">
+                                                <form id="changePasswordForm">
+                                                    @csrf
+                                                    <div class="mb-3">
+                                                        <label for="current_password" class="form-label">Contraseña
+                                                            Actual</label>
+                                                        <div class="input-group">
+                                                            <span class="input-group-text">
+                                                                <i class="ri-lock-password-line"></i>
+                                                            </span>
+                                                            <input type="password" class="form-control"
+                                                                id="current_password" name="current_password" required>
+                                                            <button class="btn btn-outline-secondary toggle-password"
+                                                                type="button">
+                                                                <i class="ri-eye-line"></i>
+                                                            </button>
+                                                        </div>
+                                                        <div class="form-text">Ingresa tu contraseña actual para autorizar
+                                                            el cambio.</div>
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label for="new_password" class="form-label">Nueva
+                                                            Contraseña</label>
+                                                        <div class="input-group">
+                                                            <span class="input-group-text">
+                                                                <i class="ri-key-line"></i>
+                                                            </span>
+                                                            <input type="password" class="form-control" id="new_password"
+                                                                name="new_password" required minlength="8">
+                                                            <button class="btn btn-outline-secondary toggle-password"
+                                                                type="button">
+                                                                <i class="ri-eye-line"></i>
+                                                            </button>
+                                                        </div>
+                                                        <div class="form-text">
+                                                            <ul class="mb-0 ps-3">
+                                                                <li>Mínimo 8 caracteres</li>
+                                                                <li>Debe contener al menos una letra</li>
+                                                                <li>Debe contener al menos un número</li>
+                                                            </ul>
+                                                        </div>
+                                                        <div class="progress mt-2" style="height: 5px;">
+                                                            <div id="passwordStrengthBar" class="progress-bar"
+                                                                role="progressbar" style="width: 0%"></div>
+                                                        </div>
+                                                        <small id="passwordStrengthText" class="form-text"></small>
+                                                    </div>
+
+                                                    <div class="mb-4">
+                                                        <label for="new_password_confirmation"
+                                                            class="form-label">Confirmar Nueva Contraseña</label>
+                                                        <div class="input-group">
+                                                            <span class="input-group-text">
+                                                                <i class="ri-key-fill"></i>
+                                                            </span>
+                                                            <input type="password" class="form-control"
+                                                                id="new_password_confirmation"
+                                                                name="new_password_confirmation" required>
+                                                            <button class="btn btn-outline-secondary toggle-password"
+                                                                type="button">
+                                                                <i class="ri-eye-line"></i>
+                                                            </button>
+                                                        </div>
+                                                        <div id="passwordMatch" class="form-text"></div>
+                                                    </div>
+
+                                                    <div class="d-flex justify-content-end">
+                                                        <button type="submit" class="btn btn-primary"
+                                                            id="changePasswordBtn">
+                                                            <i class="ri-refresh-line me-1"></i> Actualizar Contraseña
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="card border-0 bg-light">
+                                            <div class="card-body">
+                                                <h6 class="card-title">
+                                                    <i class="ri-information-line me-2"></i> Recomendaciones de Seguridad
+                                                </h6>
+                                                <ul class="list-unstyled mb-0">
+                                                    <li class="mb-2">
+                                                        <i class="ri-checkbox-circle-line text-success me-2"></i>
+                                                        <small>Usa al menos 8 caracteres</small>
+                                                    </li>
+                                                    <li class="mb-2">
+                                                        <i class="ri-checkbox-circle-line text-success me-2"></i>
+                                                        <small>Combina letras y números</small>
+                                                    </li>
+                                                    <li class="mb-2">
+                                                        <i class="ri-checkbox-circle-line text-success me-2"></i>
+                                                        <small>Evita contraseñas comunes</small>
+                                                    </li>
+                                                    <li class="mb-2">
+                                                        <i class="ri-checkbox-circle-line text-success me-2"></i>
+                                                        <small>No uses información personal</small>
+                                                    </li>
+                                                    <li>
+                                                        <i class="ri-checkbox-circle-line text-success me-2"></i>
+                                                        <small>Cambia tu contraseña periódicamente</small>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2090,7 +2236,7 @@
                 ${concepto.n_cuotas === 1 ? 
                     totalConcepto.toLocaleString('es-BO') : 
                     `${montoBase.toLocaleString('es-BO')} Bs (primeras ${concepto.n_cuotas - 1} cuotas)<br>
-                                                                <small class="text-info">Última cuota: ${(montoBase + diferencia).toLocaleString('es-BO')} Bs</small>`
+                                                                                <small class="text-info">Última cuota: ${(montoBase + diferencia).toLocaleString('es-BO')} Bs</small>`
                 }
             </td>
         </tr>
@@ -2748,6 +2894,163 @@
             $('#uploadFotoModal').on('hidden.bs.modal', function() {
                 $('#uploadFotoForm')[0].reset();
                 $('#imagePreview').hide();
+            });
+
+            // ==============================
+            // CAMBIO DE CONTRASEÑA
+            // ==============================
+
+            // Mostrar/ocultar contraseña
+            $(document).on('click', '.toggle-password', function() {
+                const input = $(this).closest('.input-group').find('input');
+                const icon = $(this).find('i');
+
+                if (input.attr('type') === 'password') {
+                    input.attr('type', 'text');
+                    icon.removeClass('ri-eye-line').addClass('ri-eye-off-line');
+                } else {
+                    input.attr('type', 'password');
+                    icon.removeClass('ri-eye-off-line').addClass('ri-eye-line');
+                }
+            });
+
+            // Validar fortaleza de contraseña
+            $('#new_password').on('keyup', function() {
+                const password = $(this).val();
+                const strengthBar = $('#passwordStrengthBar');
+                const strengthText = $('#passwordStrengthText');
+
+                // Inicializar puntuación
+                let score = 0;
+
+                // Longitud mínima
+                if (password.length >= 8) score += 20;
+                if (password.length >= 12) score += 10;
+
+                // Contiene números
+                if (/\d/.test(password)) score += 20;
+
+                // Contiene letras
+                if (/[a-zA-Z]/.test(password)) score += 20;
+
+                // Contiene mayúsculas y minúsculas
+                if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score += 20;
+
+                // Contiene caracteres especiales
+                if (/[^a-zA-Z0-9]/.test(password)) score += 10;
+
+                // Actualizar barra y texto
+                strengthBar.css('width', score + '%');
+
+                if (score < 40) {
+                    strengthBar.removeClass('bg-warning bg-success').addClass('bg-danger');
+                    strengthText.text('Débil').removeClass('text-warning text-success').addClass(
+                        'text-danger');
+                } else if (score < 70) {
+                    strengthBar.removeClass('bg-danger bg-success').addClass('bg-warning');
+                    strengthText.text('Media').removeClass('text-danger text-success').addClass(
+                        'text-warning');
+                } else {
+                    strengthBar.removeClass('bg-danger bg-warning').addClass('bg-success');
+                    strengthText.text('Fuerte').removeClass('text-danger text-warning').addClass(
+                        'text-success');
+                }
+
+                // Validar que tenga letras y números
+                const hasLetter = /[a-zA-Z]/.test(password);
+                const hasNumber = /\d/.test(password);
+
+                if (password.length > 0) {
+                    if (!hasLetter || !hasNumber) {
+                        strengthText.text('Debe contener letras y números');
+                    }
+                }
+            });
+
+            // Validar coincidencia de contraseñas
+            $('#new_password_confirmation').on('keyup', function() {
+                const password = $('#new_password').val();
+                const confirmPassword = $(this).val();
+                const matchText = $('#passwordMatch');
+
+                if (confirmPassword.length === 0) {
+                    matchText.text('Confirma tu nueva contraseña').removeClass('text-success text-danger');
+                    return;
+                }
+
+                if (password === confirmPassword) {
+                    matchText.text('Las contraseñas coinciden').removeClass('text-danger').addClass(
+                        'text-success');
+                } else {
+                    matchText.text('Las contraseñas no coinciden').removeClass('text-success').addClass(
+                        'text-danger');
+                }
+            });
+
+            // Enviar formulario de cambio de contraseña
+            $('#changePasswordForm').on('submit', function(e) {
+                e.preventDefault();
+
+                const btn = $('#changePasswordBtn');
+                const originalText = btn.html();
+
+                // Validar contraseña
+                const newPassword = $('#new_password').val();
+                const hasLetter = /[a-zA-Z]/.test(newPassword);
+                const hasNumber = /\d/.test(newPassword);
+
+                if (newPassword.length < 8) {
+                    showToast('error', 'La contraseña debe tener al menos 8 caracteres');
+                    return;
+                }
+
+                if (!hasLetter || !hasNumber) {
+                    showToast('error', 'La contraseña debe contener letras y números');
+                    return;
+                }
+
+                if ($('#new_password').val() !== $('#new_password_confirmation').val()) {
+                    showToast('error', 'Las contraseñas no coinciden');
+                    return;
+                }
+
+                // Deshabilitar botón y mostrar loading
+                btn.prop('disabled', true).html(`
+        <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+        Actualizando...
+    `);
+
+                $.ajax({
+                    url: '{{ route('admin.profile.change-password') }}',
+                    method: 'POST',
+                    data: $(this).serialize(),
+                    success: function(response) {
+                        if (response.success) {
+                            showToast('success', response.message);
+                            $('#changePasswordForm')[0].reset();
+                            $('#passwordStrengthBar').css('width', '0%');
+                            $('#passwordStrengthText').text('');
+                            $('#passwordMatch').text('');
+                        }
+                    },
+                    error: function(xhr) {
+                        if (xhr.status === 422) {
+                            const errors = xhr.responseJSON.errors;
+                            let errorMessages = '';
+
+                            $.each(errors, function(key, value) {
+                                errorMessages += value[0] + '<br>';
+                            });
+
+                            showToast('error', errorMessages);
+                        } else {
+                            showToast('error', 'Error al actualizar la contraseña');
+                        }
+                    },
+                    complete: function() {
+                        btn.prop('disabled', false).html(originalText);
+                    }
+                });
             });
         });
     </script>

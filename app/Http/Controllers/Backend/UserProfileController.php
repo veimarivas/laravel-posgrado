@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class UserProfileController extends Controller
 {
@@ -1299,5 +1300,48 @@ class UserProfileController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function changePassword(Request $request)
+    {
+        $user = Auth::user();
+
+        $validator = Validator::make($request->all(), [
+            'current_password' => [
+                'required',
+                function ($attribute, $value, $fail) use ($user) {
+                    if (!Hash::check($value, $user->password)) {
+                        $fail('La contraseña actual es incorrecta.');
+                    }
+                }
+            ],
+            'new_password' => [
+                'required',
+                'string',
+                'min:8',
+                'confirmed',
+                'regex:/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$/'
+            ],
+            'new_password_confirmation' => 'required|same:new_password',
+        ], [
+            'new_password.regex' => 'La contraseña debe tener al menos 8 caracteres y contener letras y números.',
+            'new_password.confirmed' => 'La confirmación de la contraseña no coincide.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        // Actualizar la contraseña
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        // Cerrar sesión en otros dispositivos si se desea (opcional)
+        // Auth::logoutOtherDevices($request->new_password);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Contraseña actualizada correctamente.'
+        ]);
     }
 }
