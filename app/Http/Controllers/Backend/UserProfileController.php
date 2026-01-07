@@ -13,6 +13,7 @@ use App\Models\Cargo;
 use App\Models\Sucursale;
 use App\Models\TrabajadoresCargo;
 use App\Models\Inscripcione;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -1343,5 +1344,92 @@ class UserProfileController extends Controller
             'success' => true,
             'message' => 'Contraseña actualizada correctamente.'
         ]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        try {
+            \Log::info('=== INICIANDO RESET PASSWORD ===');
+            \Log::info('Datos recibidos:', $request->all());
+            \Log::info('Headers:', $request->headers->all());
+
+            $validator = Validator::make($request->all(), [
+                'user_id' => 'required|exists:users,id',
+            ]);
+
+            if ($validator->fails()) {
+                \Log::error('Errores de validación:', $validator->errors()->toArray());
+                return response()->json([
+                    'success' => false,
+                    'msg' => 'Error de validación',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $user = User::with('persona')->find($request->user_id);
+
+            if (!$user) {
+                \Log::error('Usuario no encontrado', ['user_id' => $request->user_id]);
+                return response()->json([
+                    'success' => false,
+                    'msg' => 'Usuario no encontrado'
+                ], 404);
+            }
+
+            \Log::info('Usuario encontrado:', ['user_id' => $user->id, 'email' => $user->email]);
+
+            // Verificar que el usuario tenga persona asociada
+            if (!$user->persona) {
+                \Log::error('El usuario no tiene persona asociada', ['user_id' => $user->id]);
+                return response()->json([
+                    'success' => false,
+                    'msg' => 'El usuario no tiene persona asociada'
+                ], 422);
+            }
+
+            // Verificar que la persona tenga carnet
+            if (!$user->persona->carnet) {
+                \Log::error('La persona no tiene carnet', ['persona_id' => $user->persona->id]);
+                return response()->json([
+                    'success' => false,
+                    'msg' => 'La persona no tiene carnet registrado'
+                ], 422);
+            }
+
+            // Generar la nueva contraseña: carnet + U
+            $carnet = $user->persona->carnet;
+            $newPassword = $carnet . 'U';
+
+            \Log::info('Generando nueva contraseña', ['carnet' => $carnet, 'password' => $newPassword]);
+
+            // Actualizar la contraseña
+            $user->password = Hash::make($newPassword);
+            $user->save();
+
+            \Log::info("Contraseña reiniciada exitosamente para usuario ID: {$user->id}");
+
+            return response()->json([
+                'success' => true,
+                'msg' => 'Contraseña reiniciada exitosamente',
+                'nueva_contrasena' => $newPassword,
+                'usuario' => [
+                    'id' => $user->id,
+                    'email' => $user->email,
+                    'persona' => [
+                        'carnet' => $carnet,
+                        'nombre_completo' => $user->persona ?
+                            trim("{$user->persona->apellido_paterno} {$user->persona->apellido_materno}, {$user->persona->nombres}") :
+                            'Sin nombre'
+                    ]
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error al reiniciar contraseña: ' . $e->getMessage());
+            \Log::error('Trace: ' . $e->getTraceAsString());
+            return response()->json([
+                'success' => false,
+                'msg' => 'Error interno del servidor: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

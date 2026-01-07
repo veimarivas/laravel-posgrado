@@ -182,6 +182,7 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
             ->name('admin.profile.marketing.inscripcion.formulario-pdf');
 
         Route::post('/admin/profile/change-password', 'changePassword')->name('admin.profile.change-password');
+        Route::post('/admin/users/reset-password', 'resetPassword')->name('admin.users.reset-password');
     });
 
     //AREAS
@@ -484,7 +485,6 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
         Route::get('/admin/users/listar', 'listar')->name('admin.users.listar');
         Route::post('/admin/users/verificar-email', 'verificarEmail')->name('admin.users.verificar-email');
         Route::post('/admin/users/actualizar', 'actualizar')->name('admin.users.actualizar');
-        Route::post('/admin/users/reset-password', 'resetPassword')->name('admin.users.reset-password');
         Route::post('/admin/users/obtener-data', 'obtenerUserData')->name('admin.users.obtener-data');
     });
 });

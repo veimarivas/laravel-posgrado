@@ -471,10 +471,22 @@
                                         </td>
                                         <td class="text-center">
                                             @if ($t->persona->usuario)
-                                                <button type="button" class="btn btn-success btn-sm mb-1 w-100" disabled>
-                                                    <i class="bi bi-check-circle"></i> Tiene Usuario
-                                                </button>
+                                                <div class="d-grid gap-1">
+                                                    <button type="button" class="btn btn-success btn-sm mb-1" disabled>
+                                                        <i class="bi bi-check-circle"></i> Tiene Usuario
+                                                    </button>
+                                                    @if (Auth::guard('web')->user()->can('usuarios.reiniciar.password'))
+                                                        <button type="button"
+                                                            class="btn btn-warning btn-sm reiniciar-password-btn"
+                                                            data-user-id="{{ $t->persona->usuario->id }}"
+                                                            data-carnet="{{ $t->persona->carnet }}"
+                                                            data-nombre="{{ $t->persona->apellido_paterno }} {{ $t->persona->apellido_materno }}, {{ $t->persona->nombres }}">
+                                                            <i class="bi bi-key"></i> Reiniciar Contraseña
+                                                        </button>
+                                                    @endif
+                                                </div>
                                             @else
+                                                <!-- Botón crear usuario (mantener igual) -->
                                                 @if (Auth::guard('web')->user()->can('usuarios.registrar'))
                                                     <button type="button"
                                                         class="btn btn-primary btn-sm mb-1 w-100 crear-usuario-btn"
@@ -1922,6 +1934,123 @@
                 rol: $('#role_usuario').length,
                 boton: $('#btn-crear-usuario').length
             });
+
+            // Agrega esto después de las funciones existentes, antes del cierre del $(document).ready
+
+            // === REINICIAR CONTRASEÑA ===
+            $(document).on('click', '.reiniciar-password-btn', function() {
+                const userId = $(this).data('user-id');
+                const carnet = $(this).data('carnet');
+                const nombre = $(this).data('nombre');
+
+                Swal.fire({
+                    title: 'Reiniciar Contraseña',
+                    html: `
+            <div class="text-start">
+                <p>¿Está seguro de reiniciar la contraseña del usuario:</p>
+                <p><strong>${nombre}</strong></p>
+                <p>Carnet: <strong>${carnet}</strong></p>
+                <div class="alert alert-warning mt-2">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>La nueva contraseña será:</strong> <code>${carnet}U</code>
+                </div>
+                <p class="text-muted small">Ejemplo: Si el carnet es 1234567, la contraseña será: 1234567U</p>
+            </div>
+        `,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: '<i class="bi bi-key"></i> Sí, reiniciar',
+                    cancelButtonText: 'Cancelar',
+                    showLoaderOnConfirm: true,
+                    preConfirm: () => {
+                        return $.ajax({
+                            url: "{{ route('admin.users.reset-password') }}",
+                            type: "POST",
+                            data: {
+                                _token: "{{ csrf_token() }}",
+                                user_id: userId
+                            }
+                        }).then(function(response) {
+                            if (!response.success) {
+                                throw new Error(response.msg ||
+                                    'Error al reiniciar la contraseña');
+                            }
+                            return response;
+                        }).catch(function(error) {
+                            Swal.showValidationMessage(
+                                `Error: ${error.responseJSON?.msg || error.statusText || 'Error de conexión'}`
+                            );
+                        });
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const nuevaContrasena = result.value.nueva_contrasena || (carnet + 'U');
+
+                        Swal.fire({
+                            title: '¡Contraseña Reiniciada!',
+                            html: `
+                    <div class="text-start">
+                        <p><strong>✅ Contraseña reiniciada exitosamente</strong></p>
+                        <p>Usuario: <strong>${nombre}</strong></p>
+                        <p>Email: <strong>${result.value.usuario?.email || 'No disponible'}</strong></p>
+                        <div class="alert alert-info mt-3">
+                            <h6><i class="bi bi-key-fill"></i> Nueva Contraseña:</h6>
+                            <div class="input-group mt-2">
+                                <input type="text" class="form-control" id="nueva-pass-input" 
+                                       value="${nuevaContrasena}" readonly>
+                                <button class="btn btn-outline-secondary" type="button" 
+                                        onclick="copiarAlPortapapeles('${nuevaContrasena}')">
+                                    <i class="bi bi-clipboard"></i> Copiar
+                                </button>
+                            </div>
+                        </div>
+                        <p class="text-danger small mt-2">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <strong>Importante:</strong> Comunica esta contraseña al usuario. 
+                            Se recomienda cambiarla en el próximo inicio de sesión.
+                        </p>
+                    </div>
+                `,
+                            icon: 'success',
+                            showCancelButton: true,
+                            confirmButtonText: 'Cerrar',
+                            cancelButtonText: 'Copiar y cerrar',
+                            reverseButtons: true,
+                            showDenyButton: true,
+                            denyButtonText: 'Enviar por correo',
+                        }).then((result2) => {
+                            if (result2.isDenied) {
+                                // Aquí podrías implementar el envío por correo si lo necesitas
+                                Swal.fire(
+                                    'Función en desarrollo',
+                                    'El envío por correo estará disponible próximamente.',
+                                    'info'
+                                );
+                            } else if (result2.dismiss === Swal.DismissReason.cancel) {
+                                // Copiar al portapapeles
+                                copiarAlPortapapeles(nuevaContrasena);
+                                Swal.fire(
+                                    'Copiado',
+                                    'Contraseña copiada al portapapeles',
+                                    'success'
+                                );
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Función auxiliar para copiar al portapapeles
+            function copiarAlPortapapeles(texto) {
+                const input = document.createElement('input');
+                input.value = texto;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+            }
         });
     </script>
 @endpush
