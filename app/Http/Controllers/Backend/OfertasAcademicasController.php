@@ -169,6 +169,7 @@ class OfertasAcademicasController extends Controller
 
         // Agrupar por plan de pago
         $planesAgrupados = [];
+        $now = now()->format('Y-m-d');
 
         foreach ($oferta->plan_concepto as $pc) {
             $planId = $pc->planes_pago_id;
@@ -181,14 +182,34 @@ class OfertasAcademicasController extends Controller
                 ];
             }
 
+            // Verificar si es promoción y si está vigente
+            $esPromocionVigente = false;
+            $precioRegular = null;
+            $descuento = null;
+
+            if ($pc->es_promocion && $pc->fecha_inicio_promocion && $pc->fecha_fin_promocion) {
+                $inicio = $pc->fecha_inicio_promocion;
+                $fin = $pc->fecha_fin_promocion;
+                $esPromocionVigente = ($now >= $inicio && $now <= $fin);
+                $precioRegular = $pc->precio_regular;
+                $descuento = $pc->descuento_porcentaje;
+            }
+
             // Calcular el monto por cuota (pago_bs / n_cuotas)
             $montoPorCuota = $pc->n_cuotas > 0 ? $pc->pago_bs / $pc->n_cuotas : $pc->pago_bs;
 
             $planesAgrupados[$planId]['conceptos'][] = [
                 'concepto_nombre' => $pc->concepto->nombre ?? 'Sin concepto',
                 'n_cuotas' => $pc->n_cuotas,
-                'monto_por_cuota' => number_format($montoPorCuota, 2), // Monto de cada cuota
-                'total_concepto' => number_format($pc->pago_bs, 2)     // Monto total del concepto
+                'monto_por_cuota' => number_format($montoPorCuota, 2),
+                'total_concepto' => number_format($pc->pago_bs, 2),
+                'es_promocion' => $pc->es_promocion,
+                'promocion_vigente' => $esPromocionVigente,
+                'fecha_inicio_promocion' => $pc->fecha_inicio_promocion,
+                'fecha_fin_promocion' => $pc->fecha_fin_promocion,
+                'precio_regular' => $precioRegular ? number_format($precioRegular, 2) : null,
+                'descuento_porcentaje' => $descuento,
+                'descuento_bs' => $precioRegular ? number_format($precioRegular - $pc->pago_bs, 2) : null
             ];
         }
 
@@ -198,6 +219,7 @@ class OfertasAcademicasController extends Controller
             'total_planes' => count($planesAgrupados)
         ]);
     }
+
 
     public function ofertaConAsesor($id, $asesorId)
     {
