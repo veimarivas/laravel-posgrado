@@ -575,6 +575,7 @@
 
 
 
+
         /* Estilos para el podio simplificado */
         .podium-container {
             position: relative;
@@ -613,7 +614,7 @@
             box-shadow: 0 10px 25px rgba(255, 215, 0, 0.4) !important;
         }
 
-        /* Medallas en la parte inferior de la foto */
+        /* Medallas fuera de la tarjeta */
         .medal-badge {
             animation: float 3s ease-in-out infinite;
         }
@@ -637,11 +638,11 @@
 
             0%,
             100% {
-                transform: translateX(-50%) translateY(0);
+                transform: translateY(0);
             }
 
             50% {
-                transform: translateX(-50%) translateY(-5px);
+                transform: translateY(-5px);
             }
         }
 
@@ -677,16 +678,16 @@
         /* Responsive */
         @media (max-width: 991px) {
             .ranking-card {
-                height: 240px !important;
+                height: 220px !important;
             }
 
             .podium-first .ranking-card {
-                height: 270px !important;
+                height: 250px !important;
                 transform: translateY(-15px) !important;
             }
 
             .podium-third .ranking-card {
-                height: 220px !important;
+                height: 200px !important;
             }
 
             .podium-hover:hover {
@@ -698,13 +699,13 @@
             }
 
             .ranking-card img {
-                width: 80px !important;
-                height: 80px !important;
+                width: 70px !important;
+                height: 70px !important;
             }
 
             .podium-first .ranking-card img {
-                width: 100px !important;
-                height: 100px !important;
+                width: 80px !important;
+                height: 80px !important;
             }
 
             .medal-badge div {
@@ -742,13 +743,13 @@
             }
 
             .ranking-card img {
-                width: 70px !important;
-                height: 70px !important;
+                width: 60px !important;
+                height: 60px !important;
             }
 
             .podium-first .ranking-card img {
-                width: 90px !important;
-                height: 90px !important;
+                width: 70px !important;
+                height: 70px !important;
             }
         }
     </style>
@@ -836,46 +837,50 @@
                                     <div class="podium-card">
                                         <a href="{{ route('admin.vendedor.inscripciones', ['personaId' => $rankingGeneralTop3[1]->id ?? 0]) }}"
                                             class="ranking-card d-block text-decoration-none text-dark podium-hover rounded-4 overflow-hidden"
-                                            style="background: linear-gradient(135deg, #f5f5f5, #e0e0e0); border: 2px solid #C0C0C0; box-shadow: 0 6px 15px rgba(192, 192, 192, 0.3); transition: all 0.4s ease; height: 280px;">
-                                            <div class="card-body text-center py-4 px-3">
-                                                <div class="position-relative d-inline-block mb-3">
-                                                    @if (isset($rankingGeneralTop3[1]) &&
-                                                            $rankingGeneralTop3[1]->fotografia &&
-                                                            file_exists(public_path($rankingGeneralTop3[1]->fotografia)))
-                                                        <img src="{{ asset($rankingGeneralTop3[1]->fotografia) }}"
-                                                            alt="{{ $rankingGeneralTop3[1]->nombre_completo ?? '' }}"
-                                                            class="rounded-circle border shadow"
-                                                            style="width: 100px; height: 100px; object-fit: cover; border: 3px solid #C0C0C0 !important;">
-                                                    @elseif (isset($rankingGeneralTop3[1]))
-                                                        <img src="{{ $rankingGeneralTop3[1]->avatar ?? asset('backend/assets/images/hombre.png') }}"
-                                                            alt="{{ $rankingGeneralTop3[1]->nombre_completo ?? '' }}"
-                                                            class="rounded-circle border shadow"
-                                                            style="width: 100px; height: 100px; object-fit: cover; border: 3px solid #C0C0C0 !important;">
-                                                    @endif
-                                                    <!-- Medalla en la parte inferior de la foto -->
-                                                    <div class="medal-badge position-absolute start-50 translate-middle"
-                                                        style="bottom: -25px; z-index: 2;">
-                                                        <div class="bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm"
-                                                            style="width: 50px; height: 50px; border: 2px solid #C0C0C0;">
-                                                            <span class="h4 mb-0">🥈</span>
-                                                        </div>
+                                            style="background: linear-gradient(135deg, #f5f5f5, #e0e0e0); border: 2px solid #C0C0C0; box-shadow: 0 6px 15px rgba(192, 192, 192, 0.3); transition: all 0.4s ease; height: 240px;">
+                                            <div
+                                                class="card-body text-center py-3 px-3 d-flex flex-column justify-content-between h-100">
+                                                <div>
+                                                    <div class="position-relative d-inline-block mb-2">
+                                                        @if (isset($rankingGeneralTop3[1]) &&
+                                                                $rankingGeneralTop3[1]->fotografia &&
+                                                                file_exists(public_path($rankingGeneralTop3[1]->fotografia)))
+                                                            <img src="{{ asset($rankingGeneralTop3[1]->fotografia) }}"
+                                                                alt="{{ $rankingGeneralTop3[1]->nombre_completo ?? '' }}"
+                                                                class="rounded-circle border shadow"
+                                                                style="width: 90px; height: 90px; object-fit: cover; border: 3px solid #C0C0C0 !important;">
+                                                        @elseif (isset($rankingGeneralTop3[1]))
+                                                            <img src="{{ $rankingGeneralTop3[1]->avatar ?? asset('backend/assets/images/hombre.png') }}"
+                                                                alt="{{ $rankingGeneralTop3[1]->nombre_completo ?? '' }}"
+                                                                class="rounded-circle border shadow"
+                                                                style="width: 90px; height: 90px; object-fit: cover; border: 3px solid #C0C0C0 !important;">
+                                                        @endif
                                                     </div>
+                                                    @if (isset($rankingGeneralTop3[1]))
+                                                        <h6 class="mb-1 fw-bold">
+                                                            {{ $rankingGeneralTop3[1]->nombre_completo ?? '' }}</h6>
+                                                    @endif
                                                 </div>
-                                                @if (isset($rankingGeneralTop3[1]))
-                                                    <h6 class="mb-1 fw-bold mt-4">
-                                                        {{ $rankingGeneralTop3[1]->nombre_completo ?? '' }}</h6>
-                                                    <div class="position-relative mt-3">
+                                                <div>
+                                                    <div class="position-relative mt-2">
                                                         <div
                                                             class="position-place-label bg-silver text-white rounded-pill py-1 px-3 d-inline-block">
                                                             <strong>2° LUGAR</strong>
                                                         </div>
                                                     </div>
-                                                    <p class="text-muted small mb-2 mt-2">
+                                                    <p class="text-muted small mb-0 mt-2">
                                                         {{ $rankingGeneralTop3[1]->total_inscripciones ?? 0 }}
                                                         inscripciones</p>
-                                                @endif
+                                                </div>
                                             </div>
                                         </a>
+                                    </div>
+                                    <!-- Medalla fuera de la tarjeta, debajo de la foto -->
+                                    <div class="medal-badge position-relative text-center mt-2">
+                                        <div class="bg-white rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm"
+                                            style="width: 50px; height: 50px; border: 2px solid #C0C0C0;">
+                                            <span class="h4 mb-0">🥈</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -886,41 +891,45 @@
                                     <div class="podium-card">
                                         <a href="{{ route('admin.vendedor.inscripciones', ['personaId' => $rankingGeneralTop3[0]->id]) }}"
                                             class="ranking-card d-block text-decoration-none text-dark podium-hover rounded-4 overflow-hidden"
-                                            style="background: linear-gradient(135deg, #fff9c4, #ffecb3); border: 2px solid #FFD700; box-shadow: 0 10px 25px rgba(255, 215, 0, 0.4); transform: translateY(-20px); transition: all 0.4s ease; height: 320px;">
-                                            <div class="card-body text-center py-4 px-3">
-                                                <div class="position-relative d-inline-block mb-3">
-                                                    @if ($rankingGeneralTop3[0]->fotografia && file_exists(public_path($rankingGeneralTop3[0]->fotografia)))
-                                                        <img src="{{ asset($rankingGeneralTop3[0]->fotografia) }}"
-                                                            alt="{{ $rankingGeneralTop3[0]->nombre_completo }}"
-                                                            class="rounded-circle border shadow-lg"
-                                                            style="width: 120px; height: 120px; object-fit: cover; border: 4px solid #FFD700 !important;">
-                                                    @else
-                                                        <img src="{{ $rankingGeneralTop3[0]->avatar }}"
-                                                            alt="{{ $rankingGeneralTop3[0]->nombre_completo }}"
-                                                            class="rounded-circle border shadow-lg"
-                                                            style="width: 120px; height: 120px; object-fit: cover; border: 4px solid #FFD700 !important;">
-                                                    @endif
-                                                    <!-- Medalla en la parte inferior de la foto -->
-                                                    <div class="medal-badge position-absolute start-50 translate-middle"
-                                                        style="bottom: -30px; z-index: 2;">
-                                                        <div class="bg-white rounded-circle d-flex align-items-center justify-content-center shadow-lg"
-                                                            style="width: 60px; height: 60px; border: 3px solid #FFD700;">
-                                                            <span class="h3 mb-0">🥇</span>
+                                            style="background: linear-gradient(135deg, #fff9c4, #ffecb3); border: 2px solid #FFD700; box-shadow: 0 10px 25px rgba(255, 215, 0, 0.4); transform: translateY(-20px); transition: all 0.4s ease; height: 270px;">
+                                            <div
+                                                class="card-body text-center py-3 px-3 d-flex flex-column justify-content-between h-100">
+                                                <div>
+                                                    <div class="position-relative d-inline-block mb-2">
+                                                        @if ($rankingGeneralTop3[0]->fotografia && file_exists(public_path($rankingGeneralTop3[0]->fotografia)))
+                                                            <img src="{{ asset($rankingGeneralTop3[0]->fotografia) }}"
+                                                                alt="{{ $rankingGeneralTop3[0]->nombre_completo }}"
+                                                                class="rounded-circle border shadow-lg"
+                                                                style="width: 100px; height: 100px; object-fit: cover; border: 4px solid #FFD700 !important;">
+                                                        @else
+                                                            <img src="{{ $rankingGeneralTop3[0]->avatar }}"
+                                                                alt="{{ $rankingGeneralTop3[0]->nombre_completo }}"
+                                                                class="rounded-circle border shadow-lg"
+                                                                style="width: 100px; height: 100px; object-fit: cover; border: 4px solid #FFD700 !important;">
+                                                        @endif
+                                                    </div>
+                                                    <h5 class="mb-1 fw-bold">{{ $rankingGeneralTop3[0]->nombre_completo }}
+                                                    </h5>
+                                                </div>
+                                                <div>
+                                                    <div class="position-relative mt-2">
+                                                        <div
+                                                            class="position-place-label bg-gold text-white rounded-pill py-2 px-4 d-inline-block">
+                                                            <strong>1° LUGAR</strong>
                                                         </div>
                                                     </div>
+                                                    <p class="text-muted mb-0 mt-2">
+                                                        {{ $rankingGeneralTop3[0]->total_inscripciones }} inscripciones</p>
                                                 </div>
-                                                <h5 class="mb-1 fw-bold mt-5">{{ $rankingGeneralTop3[0]->nombre_completo }}
-                                                </h5>
-                                                <div class="position-relative mt-3">
-                                                    <div
-                                                        class="position-place-label bg-gold text-white rounded-pill py-2 px-4 d-inline-block">
-                                                        <strong>1° LUGAR</strong>
-                                                    </div>
-                                                </div>
-                                                <p class="text-muted mb-2 mt-2">
-                                                    {{ $rankingGeneralTop3[0]->total_inscripciones }} inscripciones</p>
                                             </div>
                                         </a>
+                                    </div>
+                                    <!-- Medalla fuera de la tarjeta, debajo de la foto -->
+                                    <div class="medal-badge position-relative text-center mt-2">
+                                        <div class="bg-white rounded-circle d-inline-flex align-items-center justify-content-center shadow-lg"
+                                            style="width: 60px; height: 60px; border: 3px solid #FFD700;">
+                                            <span class="h3 mb-0">🥇</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -931,46 +940,50 @@
                                     <div class="podium-card">
                                         <a href="{{ route('admin.vendedor.inscripciones', ['personaId' => $rankingGeneralTop3[2]->id ?? 0]) }}"
                                             class="ranking-card d-block text-decoration-none text-dark podium-hover rounded-4 overflow-hidden"
-                                            style="background: linear-gradient(135deg, #ffe0b2, #d7ccc8); border: 2px solid #CD7F32; box-shadow: 0 6px 15px rgba(205, 127, 50, 0.3); transition: all 0.4s ease; height: 260px;">
-                                            <div class="card-body text-center py-4 px-3">
-                                                <div class="position-relative d-inline-block mb-3">
-                                                    @if (isset($rankingGeneralTop3[2]) &&
-                                                            $rankingGeneralTop3[2]->fotografia &&
-                                                            file_exists(public_path($rankingGeneralTop3[2]->fotografia)))
-                                                        <img src="{{ asset($rankingGeneralTop3[2]->fotografia) }}"
-                                                            alt="{{ $rankingGeneralTop3[2]->nombre_completo ?? '' }}"
-                                                            class="rounded-circle border shadow"
-                                                            style="width: 100px; height: 100px; object-fit: cover; border: 3px solid #CD7F32 !important;">
-                                                    @elseif (isset($rankingGeneralTop3[2]))
-                                                        <img src="{{ $rankingGeneralTop3[2]->avatar ?? asset('backend/assets/images/hombre.png') }}"
-                                                            alt="{{ $rankingGeneralTop3[2]->nombre_completo ?? '' }}"
-                                                            class="rounded-circle border shadow"
-                                                            style="width: 100px; height: 100px; object-fit: cover; border: 3px solid #CD7F32 !important;">
-                                                    @endif
-                                                    <!-- Medalla en la parte inferior de la foto -->
-                                                    <div class="medal-badge position-absolute start-50 translate-middle"
-                                                        style="bottom: -25px; z-index: 2;">
-                                                        <div class="bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm"
-                                                            style="width: 50px; height: 50px; border: 2px solid #CD7F32;">
-                                                            <span class="h4 mb-0">🥉</span>
-                                                        </div>
+                                            style="background: linear-gradient(135deg, #ffe0b2, #d7ccc8); border: 2px solid #CD7F32; box-shadow: 0 6px 15px rgba(205, 127, 50, 0.3); transition: all 0.4s ease; height: 220px;">
+                                            <div
+                                                class="card-body text-center py-3 px-3 d-flex flex-column justify-content-between h-100">
+                                                <div>
+                                                    <div class="position-relative d-inline-block mb-2">
+                                                        @if (isset($rankingGeneralTop3[2]) &&
+                                                                $rankingGeneralTop3[2]->fotografia &&
+                                                                file_exists(public_path($rankingGeneralTop3[2]->fotografia)))
+                                                            <img src="{{ asset($rankingGeneralTop3[2]->fotografia) }}"
+                                                                alt="{{ $rankingGeneralTop3[2]->nombre_completo ?? '' }}"
+                                                                class="rounded-circle border shadow"
+                                                                style="width: 90px; height: 90px; object-fit: cover; border: 3px solid #CD7F32 !important;">
+                                                        @elseif (isset($rankingGeneralTop3[2]))
+                                                            <img src="{{ $rankingGeneralTop3[2]->avatar ?? asset('backend/assets/images/hombre.png') }}"
+                                                                alt="{{ $rankingGeneralTop3[2]->nombre_completo ?? '' }}"
+                                                                class="rounded-circle border shadow"
+                                                                style="width: 90px; height: 90px; object-fit: cover; border: 3px solid #CD7F32 !important;">
+                                                        @endif
                                                     </div>
+                                                    @if (isset($rankingGeneralTop3[2]))
+                                                        <h6 class="mb-1 fw-bold">
+                                                            {{ $rankingGeneralTop3[2]->nombre_completo ?? '' }}</h6>
+                                                    @endif
                                                 </div>
-                                                @if (isset($rankingGeneralTop3[2]))
-                                                    <h6 class="mb-1 fw-bold mt-4">
-                                                        {{ $rankingGeneralTop3[2]->nombre_completo ?? '' }}</h6>
-                                                    <div class="position-relative mt-3">
+                                                <div>
+                                                    <div class="position-relative mt-2">
                                                         <div
                                                             class="position-place-label bg-bronze text-white rounded-pill py-1 px-3 d-inline-block">
                                                             <strong>3° LUGAR</strong>
                                                         </div>
                                                     </div>
-                                                    <p class="text-muted small mb-2 mt-2">
+                                                    <p class="text-muted small mb-0 mt-2">
                                                         {{ $rankingGeneralTop3[2]->total_inscripciones ?? 0 }}
                                                         inscripciones</p>
-                                                @endif
+                                                </div>
                                             </div>
                                         </a>
+                                    </div>
+                                    <!-- Medalla fuera de la tarjeta, debajo de la foto -->
+                                    <div class="medal-badge position-relative text-center mt-2">
+                                        <div class="bg-white rounded-circle d-inline-flex align-items-center justify-content-center shadow-sm"
+                                            style="width: 50px; height: 50px; border: 2px solid #CD7F32;">
+                                            <span class="h4 mb-0">🥉</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1379,17 +1392,15 @@
                     'linear-gradient(135deg, #f5f5f5, #e0e0e0)',
                     'linear-gradient(135deg, #ffe0b2, #d7ccc8)'
                 ];
-                const cardHeights = ['320px', '280px', '260px'];
-                const imageSizes = ['120px', '100px', '100px'];
+                const cardHeights = ['270px', '240px', '220px'];
+                const imageSizes = ['100px', '90px', '90px'];
                 const borderWidths = ['4px', '3px', '3px'];
                 const medalSizes = ['h3', 'h4', 'h4'];
                 const positionLabels = ['1° LUGAR', '2° LUGAR', '3° LUGAR'];
                 const bgColors = ['bg-gold', 'bg-silver', 'bg-bronze'];
                 const headingSizes = ['h5', 'h6', 'h6'];
                 const podiumClasses = ['podium-first', 'podium-second', 'podium-third'];
-                const medalPosition = ['-30px', '-25px', '-25px'];
                 const transformY = ['-20px', '0', '0'];
-                const marginTop = ['mt-5', 'mt-4', 'mt-4'];
 
                 // Orden para el podio: 2°, 1°, 3°
                 const podioOrder = [1, 0, 2];
@@ -1407,28 +1418,32 @@
             <a href="/admin/vendedor/inscripciones/${persona.id}" 
                class="ranking-card d-block text-decoration-none text-dark podium-hover rounded-4 overflow-hidden"
                style="background: ${gradients[index]}; border: 2px solid ${borders[index]}; box-shadow: ${index === 0 ? '0 10px 25px rgba(255, 215, 0, 0.4)' : index === 1 ? '0 6px 15px rgba(192, 192, 192, 0.3)' : '0 6px 15px rgba(205, 127, 50, 0.3)'}; transform: translateY(${transformY[index]}); transition: all 0.4s ease; height: ${cardHeights[index]};">
-                <div class="card-body text-center py-4 px-3">
-                    <div class="position-relative d-inline-block mb-3">
-                        <img src="${persona.fotografia ? ('{{ asset('') }}' + persona.fotografia) : persona.avatar}"
-                             alt="${persona.nombre_completo}"
-                             class="rounded-circle border ${index === 0 ? 'shadow-lg' : 'shadow'}"
-                             style="width: ${imageSizes[index]}; height: ${imageSizes[index]}; object-fit: cover; border: ${borderWidths[index]} solid ${borders[index]} !important;">
-                        <!-- Medalla en la parte inferior de la foto -->
-                        <div class="medal-badge position-absolute start-50 translate-middle" style="bottom: ${medalPosition[index]}; z-index: 2;">
-                            <div class="bg-white rounded-circle d-flex align-items-center justify-content-center ${index === 0 ? 'shadow-lg' : 'shadow-sm'}" style="width: ${index === 0 ? '60px' : '50px'}; height: ${index === 0 ? '60px' : '50px'}; border: ${index === 0 ? '3px' : '2px'} solid ${borders[index]};">
-                                <span class="${medalSizes[index]} mb-0">${medalEmojis[index]}</span>
+                <div class="card-body text-center py-3 px-3 d-flex flex-column justify-content-between h-100">
+                    <div>
+                        <div class="position-relative d-inline-block mb-2">
+                            <img src="${persona.fotografia ? ('{{ asset('') }}' + persona.fotografia) : persona.avatar}"
+                                 alt="${persona.nombre_completo}"
+                                 class="rounded-circle border ${index === 0 ? 'shadow-lg' : 'shadow'}"
+                                 style="width: ${imageSizes[index]}; height: ${imageSizes[index]}; object-fit: cover; border: ${borderWidths[index]} solid ${borders[index]} !important;">
+                        </div>
+                        <${headingSizes[index]} class="mb-1 fw-bold">${persona.nombre_completo}</${headingSizes[index]}>
+                    </div>
+                    <div>
+                        <div class="position-relative mt-2">
+                            <div class="position-place-label ${bgColors[index]} text-white rounded-pill ${index === 0 ? 'py-2 px-4' : 'py-1 px-3'} d-inline-block">
+                                <strong>${positionLabels[index]}</strong>
                             </div>
                         </div>
+                        <p class="text-muted ${index === 0 ? '' : 'small'} mb-0 mt-2">${persona.total_inscripciones} inscripciones</p>
                     </div>
-                    <${headingSizes[index]} class="mb-1 fw-bold ${marginTop[index]}">${persona.nombre_completo}</${headingSizes[index]}>
-                    <div class="position-relative mt-3">
-                        <div class="position-place-label ${bgColors[index]} text-white rounded-pill ${index === 0 ? 'py-2 px-4' : 'py-1 px-3'} d-inline-block">
-                            <strong>${positionLabels[index]}</strong>
-                        </div>
-                    </div>
-                    <p class="text-muted ${index === 0 ? '' : 'small'} mb-2 mt-2">${persona.total_inscripciones} inscripciones</p>
                 </div>
             </a>
+        </div>
+        <!-- Medalla fuera de la tarjeta, debajo de la foto -->
+        <div class="medal-badge position-relative text-center mt-2">
+            <div class="bg-white rounded-circle d-inline-flex align-items-center justify-content-center ${index === 0 ? 'shadow-lg' : 'shadow-sm'}" style="width: ${index === 0 ? '60px' : '50px'}; height: ${index === 0 ? '60px' : '50px'}; border: ${index === 0 ? '3px' : '2px'} solid ${borders[index]};">
+                <span class="${medalSizes[index]} mb-0">${medalEmojis[index]}</span>
+            </div>
         </div>
     </div>
 </div>

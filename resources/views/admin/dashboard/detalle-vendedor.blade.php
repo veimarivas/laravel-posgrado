@@ -2,7 +2,6 @@
 @section('title', 'Detalle de Inscripciones – ' . $persona->nombre_completo)
 @section('admin')
     <style>
-        /* Variables de diseño */
         :root {
             --primary-color: #4f46e5;
             --primary-light: #818cf8;
@@ -23,205 +22,166 @@
             --gray-900: #0f172a;
         }
 
-        /* Layout */
-        .container-fluid {
-            max-width: 1400px;
-        }
-
-        /* Encabezado */
-        .page-header {
-            margin-bottom: 2rem;
-        }
-
-        .page-header h1 {
-            font-weight: 800;
-            font-size: 1.875rem;
-            color: var(--gray-900);
-            margin-bottom: 0.5rem;
-        }
-
-        .breadcrumb {
-            background: transparent;
-            padding: 0;
-            font-size: 0.875rem;
-            color: var(--gray-500);
-        }
-
-        /* Tarjeta principal del asesor */
-        .asesor-hero {
-            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);
+        /* Tarjeta mejorada del asesor */
+        .asesor-hero-updated {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border-radius: 20px;
             color: white;
             padding: 2.5rem;
             margin-bottom: 2rem;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 20px 40px rgba(79, 70, 229, 0.15);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .asesor-hero::before {
+        .asesor-hero-updated::before {
             content: '';
             position: absolute;
-            top: 0;
-            right: 0;
-            width: 300px;
-            height: 300px;
+            top: -50%;
+            right: -30%;
+            width: 400px;
+            height: 400px;
             background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 70%);
             border-radius: 50%;
-            transform: translate(100px, -100px);
         }
 
-        .asesor-avatar {
-            width: 120px;
-            height: 120px;
-            border-radius: 20px;
+        .asesor-avatar-updated {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
             border: 4px solid rgba(255, 255, 255, 0.3);
             object-fit: cover;
             background: white;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
         }
 
-        .asesor-info {
-            flex: 1;
+        .asesor-avatar-updated:hover {
+            transform: scale(1.05);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
         }
 
-        .asesor-info h2 {
-            font-weight: 700;
-            font-size: 1.75rem;
-            margin-bottom: 0.25rem;
+        /* Filtros en una sola fila */
+        .filter-section-updated {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--gray-100);
         }
 
-        .asesor-meta {
-            display: flex;
-            gap: 1.5rem;
-            font-size: 0.875rem;
-            opacity: 0.9;
-        }
-
-        .meta-item {
+        .filter-section-updated h5 {
+            font-weight: 600;
+            color: var(--gray-800);
+            margin-bottom: 1.25rem;
+            font-size: 1.1rem;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
         }
 
-        .meta-item i {
-            font-size: 1rem;
+        .filter-section-updated h5 i {
+            margin-right: 0.5rem;
         }
 
-        /* Tarjeta de estadísticas */
-        .stats-grid {
+        .filter-form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-group label {
+            font-weight: 500;
+            color: var(--gray-700);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .filter-actions-updated {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        /* Estadísticas mejoradas */
+        .stats-grid-updated {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 1.5rem;
             margin-bottom: 2rem;
         }
 
-        .stat-card {
+        .stat-card-updated {
             background: white;
             border-radius: 16px;
             padding: 1.5rem;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             border: 1px solid var(--gray-100);
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
         }
 
-        .stat-card:hover {
+        .stat-card-updated:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
         }
 
-        .stat-card.primary {
-            border-top: 4px solid var(--primary-color);
-        }
-
-        .stat-card.success {
-            border-top: 4px solid var(--success-color);
-        }
-
-        .stat-card.warning {
-            border-top: 4px solid var(--warning-color);
-        }
-
-        .stat-content {
+        .stat-icon-updated {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
             display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.75rem;
+            flex-shrink: 0;
         }
 
-        .stat-numbers {
+        .stat-icon-updated.primary {
+            background: rgba(79, 70, 229, 0.1);
+            color: var(--primary-color);
+        }
+
+        .stat-icon-updated.warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning-color);
+        }
+
+        .stat-icon-updated.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+        }
+
+        .stat-info-updated {
             flex: 1;
         }
 
-        .stat-value {
-            font-size: 2.5rem;
-            font-weight: 800;
+        .stat-value-updated {
+            font-size: 2rem;
+            font-weight: 700;
             line-height: 1;
             margin-bottom: 0.25rem;
+            color: var(--gray-900);
         }
 
-        .stat-label {
+        .stat-label-updated {
             font-size: 0.875rem;
             color: var(--gray-500);
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
 
-        .stat-icon {
-            width: 56px;
-            height: 56px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-        }
-
-        .stat-icon.primary {
-            background: rgba(79, 70, 229, 0.1);
-            color: var(--primary-color);
-        }
-
-        .stat-icon.success {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success-color);
-        }
-
-        .stat-icon.warning {
-            background: rgba(245, 158, 11, 0.1);
-            color: var(--warning-color);
-        }
-
-        /* Filtros avanzados */
-        .filter-section {
-            background: white;
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-            border: 1px solid var(--gray-100);
-        }
-
-        .filter-section h5 {
-            font-weight: 600;
-            color: var(--gray-800);
-            margin-bottom: 1.25rem;
-            font-size: 1.1rem;
-        }
-
-        .filter-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .filter-actions {
-            display: flex;
-            gap: 1rem;
-            align-items: flex-end;
-        }
-
-        /* Tarjetas de gráficos */
-        .chart-card {
+        /* Gráficos mejorados */
+        .chart-card-updated {
             background: white;
             border-radius: 16px;
             padding: 1.5rem;
@@ -230,26 +190,32 @@
             height: 100%;
         }
 
-        .chart-card .card-header {
+        .chart-card-updated .card-header {
             border-bottom: 1px solid var(--gray-100);
             padding-bottom: 1rem;
             margin-bottom: 1rem;
         }
 
-        .chart-card h5 {
+        .chart-card-updated h5 {
             font-weight: 600;
             color: var(--gray-800);
             font-size: 1.1rem;
             margin: 0;
+            display: flex;
+            align-items: center;
         }
 
-        .chart-container {
+        .chart-card-updated h5 i {
+            margin-right: 0.5rem;
+        }
+
+        .chart-container-updated {
             height: 340px;
             position: relative;
         }
 
-        /* Tabla de inscripciones */
-        .table-section {
+        /* Tabla mejorada */
+        .table-section-updated {
             background: white;
             border-radius: 16px;
             overflow: hidden;
@@ -258,21 +224,28 @@
             margin-top: 2rem;
         }
 
-        .table-header {
-            padding: 1.5rem 1.5rem 0;
+        .table-header-updated {
+            padding: 1.5rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 1px solid var(--gray-100);
         }
 
-        .table-header h5 {
+        .table-header-updated h5 {
             font-weight: 600;
             color: var(--gray-800);
             font-size: 1.1rem;
             margin: 0;
+            display: flex;
+            align-items: center;
         }
 
-        .table-badge {
+        .table-header-updated h5 i {
+            margin-right: 0.5rem;
+        }
+
+        .table-badge-updated {
             background: var(--primary-color);
             color: white;
             padding: 0.375rem 0.875rem;
@@ -281,83 +254,70 @@
             font-weight: 500;
         }
 
-        .table-responsive {
-            padding: 0 1.5rem 1.5rem;
+        .table-responsive-updated {
+            padding: 1.5rem;
         }
 
-        /* Estado de carga */
-        .loading-state {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 3rem;
-            color: var(--gray-400);
+        .table-updated {
+            margin-bottom: 0;
         }
 
-        .loading-spinner {
-            width: 48px;
-            height: 48px;
-            border: 3px solid var(--gray-200);
-            border-top-color: var(--primary-color);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 1rem;
+        .table-updated thead th {
+            font-weight: 600;
+            color: var(--gray-700);
+            border-bottom: 2px solid var(--gray-200);
+            padding: 0.75rem 1rem;
         }
 
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+        .table-updated tbody td {
+            padding: 1rem;
+            vertical-align: middle;
+            border-top: 1px solid var(--gray-100);
+        }
+
+        .table-updated tbody tr:hover {
+            background-color: var(--gray-50);
         }
 
         /* Responsive */
         @media (max-width: 768px) {
-            .asesor-hero {
-                padding: 1.5rem;
-                text-align: center;
-            }
-
-            .asesor-meta {
-                flex-direction: column;
-                gap: 0.5rem;
-                align-items: center;
-            }
-
-            .stat-value {
-                font-size: 2rem;
-            }
-
-            .stat-card {
-                padding: 1.25rem;
-            }
-
-            .chart-container {
-                height: 300px;
-            }
-
-            .filter-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .filter-actions {
+            .filter-form-row {
                 flex-direction: column;
                 align-items: stretch;
+            }
+
+            .filter-group {
+                min-width: 100%;
+            }
+
+            .filter-actions-updated {
+                justify-content: flex-end;
+            }
+
+            .stat-card-updated {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+
+            .stat-info-updated {
+                width: 100%;
+            }
+
+            .chart-container-updated {
+                height: 300px;
             }
         }
 
         @media (max-width: 576px) {
-            .asesor-avatar {
-                width: 80px;
-                height: 80px;
-            }
-
-            .asesor-info h2 {
-                font-size: 1.25rem;
-            }
-
-            .stat-value {
+            .stat-value-updated {
                 font-size: 1.75rem;
+            }
+
+            .table-header-updated {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
             }
         }
     </style>
@@ -385,86 +345,91 @@
         </div>
     </div>
 
-    <!-- Tarjeta principal del asesor -->
-    <div class="asesor-hero">
-        <div class="d-flex flex-column flex-md-row align-items-center gap-3">
-            <img src="{{ strpos(strtolower($persona->sexo ?? ''), 'hombre') !== false
-                ? asset('backend/assets/images/hombre.png')
-                : asset('backend/assets/images/mujer.png') }}"
-                alt="{{ $persona->nombre_completo }}" class="asesor-avatar">
-            <div class="asesor-info text-center text-md-start">
+    <!-- Tarjeta del asesor (se mantiene igual) -->
+    <div class="asesor-hero-updated">
+        <div class="d-flex flex-column flex-md-row align-items-center gap-4">
+            <div class="position-relative">
+                @if ($persona->fotografia && file_exists(public_path($persona->fotografia)))
+                    <img src="{{ asset($persona->fotografia) }}" alt="{{ $persona->nombre_completo }}"
+                        class="asesor-avatar-updated">
+                @else
+                    <img src="{{ strpos(strtolower($persona->sexo ?? ''), 'hombre') !== false
+                        ? asset('backend/assets/images/hombre.png')
+                        : asset('backend/assets/images/mujer.png') }}"
+                        alt="{{ $persona->nombre_completo }}" class="asesor-avatar-updated">
+                @endif
+            </div>
+
+            <div class="asesor-info-updated text-center text-md-start flex-grow-1">
                 <h2>{{ $persona->nombre_completo }}</h2>
-                <div class="asesor-meta">
-                    <div class="meta-item">
-                        <i class="ri-mail-line"></i>
-                        <span>{{ $persona->correo ?? 'Sin correo' }}</span>
-                    </div>
-                    <div class="meta-item">
-                        <i class="ri-phone-line"></i>
-                        <span>{{ $persona->celular ?? 'Sin celular' }}</span>
-                    </div>
 
+                <div class="asesor-meta-updated">
+                    @if ($persona->correo)
+                        <div class="meta-item-updated">
+                            <i class="ri-mail-line"></i>
+                            <span>{{ $persona->correo }}</span>
+                        </div>
+                    @endif
+
+                    @if ($persona->celular)
+                        <div class="meta-item-updated">
+                            <i class="ri-phone-line"></i>
+                            <span>{{ $persona->celular }}</span>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Estadísticas principales -->
-    <div class="stats-grid">
-        <div class="stat-card primary">
-            <div class="stat-content">
-                <div class="stat-numbers">
-                    <div class="stat-value" id="totalInscritos">0</div>
-                    <div class="stat-label">Inscritos Confirmados</div>
-                </div>
-                <div class="stat-icon primary">
-                    <i class="ri-checkbox-circle-fill"></i>
-                </div>
+    <!-- Estadísticas principales mejoradas -->
+    <div class="stats-grid-updated">
+        <div class="stat-card-updated">
+            <div class="stat-icon-updated primary">
+                <i class="ri-checkbox-circle-fill"></i>
+            </div>
+            <div class="stat-info-updated">
+                <div class="stat-value-updated" id="totalInscritos">0</div>
+                <div class="stat-label-updated">Inscritos Confirmados</div>
             </div>
         </div>
-        <div class="stat-card warning">
-            <div class="stat-content">
-                <div class="stat-numbers">
-                    <div class="stat-value" id="totalPreInscritos">0</div>
-                    <div class="stat-label">Pre-Inscritos</div>
-                </div>
-                <div class="stat-icon warning">
-                    <i class="ri-time-line"></i>
-                </div>
+        <div class="stat-card-updated">
+            <div class="stat-icon-updated warning">
+                <i class="ri-time-line"></i>
+            </div>
+            <div class="stat-info-updated">
+                <div class="stat-value-updated" id="totalPreInscritos">0</div>
+                <div class="stat-label-updated">Pre-Inscritos</div>
             </div>
         </div>
-        <div class="stat-card success">
-            <div class="stat-content">
-                <div class="stat-numbers">
-                    <div class="stat-value" id="totalGeneral">0</div>
-                    <div class="stat-label">Total Gestión</div>
-                </div>
-                <div class="stat-icon success">
-                    <i class="ri-bar-chart-fill"></i>
-                </div>
+        <div class="stat-card-updated">
+            <div class="stat-icon-updated success">
+                <i class="ri-bar-chart-fill"></i>
+            </div>
+            <div class="stat-info-updated">
+                <div class="stat-value-updated" id="totalGeneral">0</div>
+                <div class="stat-label-updated">Total Gestión</div>
             </div>
         </div>
-        <div class="stat-card">
-            <div class="stat-content">
-                <div class="stat-numbers">
-                    <div class="stat-value" id="conversionRate">0%</div>
-                    <div class="stat-label">Tasa de Conversión</div>
-                </div>
-                <div class="stat-icon primary">
-                    <i class="ri-percent-line"></i>
-                </div>
+        <div class="stat-card-updated">
+            <div class="stat-icon-updated primary">
+                <i class="ri-percent-line"></i>
+            </div>
+            <div class="stat-info-updated">
+                <div class="stat-value-updated" id="conversionRate">0%</div>
+                <div class="stat-label-updated">Tasa de Conversión</div>
             </div>
         </div>
     </div>
 
-    <!-- Filtros avanzados -->
-    <div class="filter-section">
-        <h5><i class="ri-filter-3-line me-2"></i> Filtros Avanzados</h5>
+    <!-- Filtros en una sola fila -->
+    <div class="filter-section-updated">
+        <h5><i class="ri-filter-3-line"></i> Filtros Avanzados</h5>
         <form id="filterForm">
             @csrf
-            <div class="filter-grid">
-                <div>
-                    <label class="form-label fw-medium">Gestión</label>
+            <div class="filter-form-row">
+                <div class="filter-group">
+                    <label class="form-label">Gestión</label>
                     <select name="gestion" class="form-select">
                         <option value="">Todas las gestiones</option>
                         @for ($g = 2020; $g <= date('Y'); $g++)
@@ -472,8 +437,8 @@
                         @endfor
                     </select>
                 </div>
-                <div>
-                    <label class="form-label fw-medium">Mes</label>
+                <div class="filter-group">
+                    <label class="form-label">Mes</label>
                     <select name="mes" class="form-select">
                         <option value="todos">Todos los meses</option>
                         @for ($m = 1; $m <= 12; $m++)
@@ -482,7 +447,7 @@
                         @endfor
                     </select>
                 </div>
-                <div class="filter-actions">
+                <div class="filter-actions-updated">
                     <button type="button" class="btn btn-primary" id="applyFilters">
                         <i class="ri-filter-line me-1"></i> Aplicar Filtros
                     </button>
@@ -494,42 +459,44 @@
         </form>
     </div>
 
-    <!-- Gráficos -->
+    <!-- Gráficos mejorados -->
     <div class="row g-3">
         <div class="col-lg-7">
-            <div class="chart-card">
+            <div class="chart-card-updated">
                 <div class="card-header">
-                    <h5>Inscripciones por Mes</h5>
+                    <h5><i class="ri-line-chart-line"></i> Inscripciones por Mes</h5>
                 </div>
-                <div class="chart-container">
+                <div class="chart-container-updated">
                     <canvas id="graficoMensual"></canvas>
                 </div>
             </div>
         </div>
         <div class="col-lg-5">
-            <div class="chart-card">
+            <div class="chart-card-updated">
                 <div class="card-header">
-                    <h5>Distribución por Tipo de Posgrado</h5>
+                    <h5><i class="ri-pie-chart-line"></i> Distribución por Tipo de Posgrado</h5>
                 </div>
-                <div class="chart-container">
+                <div class="chart-container-updated">
                     <canvas id="graficoPorTipo"></canvas>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Tabla de inscripciones -->
-    <div class="table-section mt-3">
-        <div class="table-header">
-            <h5><i class="ri-table-line me-2"></i> Registro de Ventas</h5>
+    <!-- Tabla mejorada -->
+    <div class="table-section-updated">
+        <div class="table-header-updated">
+            <h5><i class="ri-table-line"></i> Registro de Ventas</h5>
             <div class="d-flex align-items-center gap-2">
-                <span class="table-badge" id="badgeTotal">0 registros</span>
+                <span class="table-badge-updated" id="badgeTotal">0 registros</span>
             </div>
         </div>
-        <div class="table-responsive">
+        <div class="table-responsive-updated">
             <div id="tablaContainer">
                 <div class="text-center py-5">
-                    <div class="loading-spinner"></div>
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
                     <p class="mt-3 text-muted">Cargando datos...</p>
                 </div>
             </div>
@@ -548,15 +515,15 @@
             let chartTipo = null;
 
             function loadData(filters = {}) {
-                // Mostrar estado de carga
                 document.getElementById('tablaContainer').innerHTML = `
                     <div class="text-center py-5">
-                        <div class="loading-spinner"></div>
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
                         <p class="mt-3 text-muted">Cargando datos...</p>
                     </div>
                 `;
 
-                // Usar axios como en la versión original
                 axios.get(urlData, {
                         params: filters
                     })
@@ -575,7 +542,7 @@
                         const tasa = Math.round((inscritos / total) * 100);
                         document.getElementById('conversionRate').textContent = `${tasa}%`;
 
-                        // Tabla - Mantener la estructura HTML que devuelve el controlador
+                        // Tabla
                         if (data.tablaHtml) {
                             document.getElementById('tablaContainer').innerHTML = data.tablaHtml;
                         } else {
@@ -583,7 +550,7 @@
                                 '<div class="text-center py-5 text-muted">No hay datos para mostrar</div>';
                         }
 
-                        // Gráficos - Usando la estructura original que funciona
+                        // Gráficos
                         renderGraficoMensual(data.graficoMeses || {});
                         renderGraficoPorTipo(data.graficoPorTipo || {});
                     })
@@ -597,14 +564,11 @@
                     });
             }
 
-            // Función ORIGINAL para el gráfico mensual
             function renderGraficoMensual(mesesData) {
                 const ctx = document.getElementById('graficoMensual').getContext('2d');
                 if (chartMensual) chartMensual.destroy();
 
-                // Verificar si hay datos
                 if (!mesesData || Object.keys(mesesData).length === 0) {
-                    // Mostrar mensaje de no datos
                     if (ctx.canvas.parentNode.querySelector('.no-data-message')) {
                         ctx.canvas.parentNode.querySelector('.no-data-message').style.display = 'block';
                     } else {
@@ -617,14 +581,12 @@
                     return;
                 }
 
-                // Ocultar mensaje de no datos si existe
                 const noDataMsg = ctx.canvas.parentNode.querySelector('.no-data-message');
                 if (noDataMsg) {
                     noDataMsg.style.display = 'none';
                 }
                 ctx.canvas.style.display = 'block';
 
-                // Extraer datos - MANTENER ESTRUCTURA ORIGINAL
                 const labels = Object.values(mesesData).map(d => d.label);
                 const inscritos = Object.values(mesesData).map(d => d.inscritos || 0);
                 const preInscritos = Object.values(mesesData).map(d => d.pre_inscritos || 0);
@@ -686,14 +648,11 @@
                 });
             }
 
-            // Función ORIGINAL para el gráfico por tipo
             function renderGraficoPorTipo(tipoData) {
                 const ctx = document.getElementById('graficoPorTipo').getContext('2d');
                 if (chartTipo) chartTipo.destroy();
 
-                // Verificar si hay datos
                 if (!tipoData || Object.values(tipoData).every(v => v === 0)) {
-                    // Mostrar mensaje de no datos
                     if (ctx.canvas.parentNode.querySelector('.no-data-message')) {
                         ctx.canvas.parentNode.querySelector('.no-data-message').style.display = 'block';
                     } else {
@@ -706,7 +665,6 @@
                     return;
                 }
 
-                // Ocultar mensaje de no datos si existe
                 const noDataMsg = ctx.canvas.parentNode.querySelector('.no-data-message');
                 if (noDataMsg) {
                     noDataMsg.style.display = 'none';
@@ -762,27 +720,20 @@
             document.getElementById('applyFilters').addEventListener('click', function() {
                 const form = document.getElementById('filterForm');
                 const formData = new FormData(form);
-
-                // Convertir FormData a objeto
                 const filters = {};
                 formData.forEach((value, key) => {
                     filters[key] = value;
                 });
 
-                // Si mes es "todos", no enviar el filtro de mes
-                if (filters.mes === 'todos') {
-                    delete filters.mes;
-                }
-
+                if (filters.mes === 'todos') delete filters.mes;
                 loadData(filters);
             });
 
             document.getElementById('resetFilters').addEventListener('click', function() {
                 document.getElementById('filterForm').reset();
-                loadData(); // Cargar sin filtros
+                loadData();
             });
 
-            // Cargar datos iniciales
             loadData();
         });
     </script>
