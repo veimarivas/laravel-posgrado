@@ -27,9 +27,6 @@ class AdminController extends Controller
         $user = Auth::user();
 
 
-        /*$trabajadorCargo = $user->persona->trabajador->trabajadores_cargos()
-            ->where('estado', 'Vigente')
-            ->first();*/
         $mes = $request->input('mes', Carbon::now()->month);
         $gestion = $request->input('gestion', Carbon::now()->year);
         $sucursalId = $request->input('sucursal');
@@ -94,14 +91,15 @@ class AdminController extends Controller
         $tipoSelectString = implode(', ', $tipoSelects);
 
         $query = Inscripcione::selectRaw("
-        personas.id,
-        personas.nombres,
-        personas.apellido_paterno,
-        personas.apellido_materno,
-        personas.sexo,
-        COUNT(inscripciones.id) as total_inscripciones,
-        {$tipoSelectString}
-    ")
+            personas.id,
+            personas.nombres,
+            personas.apellido_paterno,
+            personas.apellido_materno,
+            personas.sexo,
+            personas.fotografia, 
+            COUNT(inscripciones.id) as total_inscripciones,
+            {$tipoSelectString}
+        ")
             ->join('trabajadores_cargos', 'inscripciones.trabajadores_cargo_id', '=', 'trabajadores_cargos.id')
             ->join('trabajadores', 'trabajadores_cargos.trabajadore_id', '=', 'trabajadores.id')
             ->join('personas', 'trabajadores.persona_id', '=', 'personas.id')
@@ -110,7 +108,7 @@ class AdminController extends Controller
             ->whereYear('inscripciones.fecha_registro', $gestion)
             ->whereMonth('inscripciones.fecha_registro', $mes)
             ->where('inscripciones.estado', 'Inscrito')
-            ->groupBy('personas.id', 'personas.nombres', 'personas.apellido_paterno', 'personas.apellido_materno', 'personas.sexo');
+            ->groupBy('personas.id', 'personas.nombres', 'personas.apellido_paterno', 'personas.apellido_materno', 'personas.sexo', 'personas.fotografia');
 
         // ✅ Corrección: filtrar por sucursal de la oferta, no del vendedor
         if ($sucursalId) {
@@ -128,11 +126,17 @@ class AdminController extends Controller
                 $persona->apellido_paterno = $item->apellido_paterno;
                 $persona->apellido_materno = $item->apellido_materno;
                 $persona->sexo = $item->sexo;
+                $persona->fotografia = $item->fotografia;
                 $persona->total_inscripciones = $item->total_inscripciones;
                 $persona->nombre_completo = trim("{$item->nombres} {$item->apellido_paterno} {$item->apellido_materno}");
-                $persona->avatar = strpos(strtolower($item->sexo), 'hombre') !== false
-                    ? asset('backend/assets/images/hombre.png')
-                    : asset('backend/assets/images/mujer.png');
+
+                if ($item->fotografia && file_exists(public_path($item->fotografia))) {
+                    $persona->avatar = asset($item->fotografia);
+                } else {
+                    $persona->avatar = strpos(strtolower($item->sexo), 'hombre') !== false
+                        ? asset('backend/assets/images/hombre.png')
+                        : asset('backend/assets/images/mujer.png');
+                }
                 $persona->desglose = [];
                 foreach ($tipos as $tipoId => $tipoNombre) {
                     $alias = 'tipo_' . $tipoId;
@@ -162,16 +166,17 @@ class AdminController extends Controller
         $tipoSelectString = implode(', ', $tipoSelects);
 
         $query = Inscripcione::selectRaw("
-        sucursales_oa.id as sucursal_id,
-        sucursales_oa.nombre as sucursal_nombre,
-        personas.id,
-        personas.nombres,
-        personas.apellido_paterno,
-        personas.apellido_materno,
-        personas.sexo,
-        COUNT(inscripciones.id) as total_inscripciones,
-        {$tipoSelectString}
-    ")
+            sucursales_oa.id as sucursal_id,
+            sucursales_oa.nombre as sucursal_nombre,
+            personas.id,
+            personas.nombres,
+            personas.apellido_paterno,
+            personas.apellido_materno,
+            personas.sexo,
+            personas.fotografia,
+            COUNT(inscripciones.id) as total_inscripciones,
+            {$tipoSelectString}
+        ")
             ->join('ofertas_academicas', 'inscripciones.ofertas_academica_id', '=', 'ofertas_academicas.id')
             ->join('sucursales as sucursales_oa', 'ofertas_academicas.sucursale_id', '=', 'sucursales_oa.id') // ✅ Sucursal de la oferta
             ->join('trabajadores_cargos', 'inscripciones.trabajadores_cargo_id', '=', 'trabajadores_cargos.id')
@@ -188,7 +193,8 @@ class AdminController extends Controller
                 'personas.nombres',
                 'personas.apellido_paterno',
                 'personas.apellido_materno',
-                'personas.sexo'
+                'personas.sexo',
+                'personas.fotografia'
             );
 
         if ($sucursalId) {
@@ -208,11 +214,18 @@ class AdminController extends Controller
                 $persona->apellido_paterno = $item->apellido_paterno;
                 $persona->apellido_materno = $item->apellido_materno;
                 $persona->sexo = $item->sexo;
+                $persona->fotografia = $item->fotografia;
+
+                if ($item->fotografia && file_exists(public_path($item->fotografia))) {
+                    $persona->avatar = asset($item->fotografia);
+                } else {
+                    $persona->avatar = strpos(strtolower($item->sexo), 'Hombre') !== false || strpos(strtolower($item->sexo), 'hombre') !== false
+                        ? asset('backend/assets/images/hombre.png')
+                        : asset('backend/assets/images/mujer.png');
+                }
                 $persona->total_inscripciones = $item->total_inscripciones;
                 $persona->nombre_completo = trim("{$item->nombres} {$item->apellido_paterno} {$item->apellido_materno}");
-                $persona->avatar = strpos(strtolower($item->sexo), 'Hombre') !== false || strpos(strtolower($item->sexo), 'hombre') !== false
-                    ? asset('backend/assets/images/hombre.png')
-                    : asset('backend/assets/images/mujer.png');
+
 
                 $persona->desglose = [];
                 foreach ($tipos as $tipoId => $tipoNombre) {

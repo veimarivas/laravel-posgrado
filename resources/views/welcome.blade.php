@@ -1353,7 +1353,7 @@
                     });
                 });
 
-                // === TEAM CAROUSEL FUNCTIONALITY ===
+                // === TEAM CAROUSEL FUNCTIONALITY - VERSIÓN CORREGIDA ===
                 const teamCarousel = document.getElementById('teamCarousel');
                 const teamWrapper = document.getElementById('teamCarouselWrapper');
                 const teamPrevBtn = document.getElementById('teamPrev');
@@ -1365,46 +1365,119 @@
                     let teamStartX = 0;
                     let teamCurrentTranslate = 0;
                     let teamPrevTranslate = 0;
+                    let animationId = null;
                     const teamCards = teamCarousel.querySelectorAll('.team-member');
-                    const teamCardWidth = Math.floor(teamWrapper.offsetWidth / 3);
-                    let teamMaxIndex = Math.max(0, teamCards.length - 3);
 
-                    // Recalculate max index and card width on resize
-                    window.addEventListener('resize', () => {
-                        teamCardWidth = Math.floor(teamWrapper.offsetWidth / 3);
-                        teamMaxIndex = Math.max(0, teamCards.length - 3);
-                        updateTeamCarousel();
-                    });
-
-                    function updateTeamCarousel() {
-                        teamCurrentTranslate = -teamCurrentIndex * teamCardWidth;
-                        gsap.to(teamCarousel, {
-                            x: teamCurrentTranslate,
-                            duration: 0.5,
-                            ease: "power2.out"
+                    // Función para calcular el ancho total del carrusel
+                    function calculateTotalCarouselWidth() {
+                        let totalWidth = 0;
+                        teamCards.forEach(card => {
+                            const style = window.getComputedStyle(card);
+                            const marginRight = parseFloat(style.marginRight) || 0;
+                            const marginLeft = parseFloat(style.marginLeft) || 0;
+                            totalWidth += card.offsetWidth + marginRight + marginLeft;
                         });
+                        return totalWidth;
+                    }
 
-                        // Deshabilitar botones en los límites
-                        teamPrevBtn.disabled = teamCurrentIndex <= 0;
-                        teamNextBtn.disabled = teamCurrentIndex >= teamMaxIndex;
+                    // Función para calcular el ancho de cada tarjeta (incluyendo márgenes)
+                    function calculateCardWidth() {
+                        if (teamCards.length === 0) return 0;
+                        const card = teamCards[0];
+                        const style = window.getComputedStyle(card);
+                        const marginRight = parseFloat(style.marginRight) || 0;
+                        const marginLeft = parseFloat(style.marginLeft) || 0;
+                        return card.offsetWidth + marginRight + marginLeft;
+                    }
 
-                        // Update navigation button appearance
+                    // Calcular dimensiones iniciales
+                    let cardWidth = calculateCardWidth();
+                    let wrapperWidth = teamWrapper.offsetWidth;
+                    let totalCarouselWidth = calculateTotalCarouselWidth();
+
+                    // Calcular cuántas tarjetas caben en el viewport
+                    function calculateVisibleCards() {
+                        return Math.floor(wrapperWidth / cardWidth);
+                    }
+
+                    let visibleCards = Math.min(teamCards.length, calculateVisibleCards());
+
+                    // Calcular el índice máximo (corregido para evitar espacios vacíos)
+                    function calculateMaxIndex() {
+                        if (teamCards.length <= visibleCards) return 0;
+
+                        const totalCards = teamCards.length;
+                        // Si el total de tarjetas es múltiplo exacto del número visible, ajustamos
+                        if (totalCards % visibleCards === 0) {
+                            return totalCards - visibleCards;
+                        }
+                        // Si no, calculamos el último índice que muestre todas las tarjetas sin espacio vacío
+                        return totalCards - visibleCards;
+                    }
+
+                    let teamMaxIndex = calculateMaxIndex();
+
+                    // Función para actualizar el carrusel
+                    function updateTeamCarousel(animate = true) {
+                        // Calcular el desplazamiento máximo permitido
+                        const maxTranslate = Math.max(0, totalCarouselWidth - wrapperWidth);
+
+                        // Asegurar que el índice esté dentro de los límites
+                        teamCurrentIndex = Math.max(0, Math.min(teamCurrentIndex, teamMaxIndex));
+
+                        // Calcular el desplazamiento - Ajuste para el último grupo
+                        let translateX;
+
+                        if (teamCurrentIndex >= teamMaxIndex) {
+                            // Último grupo: desplazar hasta el final sin espacio vacío
+                            translateX = -maxTranslate;
+                        } else {
+                            // Grupos intermedios: desplazar por múltiplos del ancho visible
+                            translateX = -teamCurrentIndex * cardWidth;
+                        }
+
+                        // Limitar el desplazamiento
+                        teamCurrentTranslate = Math.max(-maxTranslate, Math.min(0, translateX));
+
+                        // Aplicar animación
+                        if (animate) {
+                            gsap.to(teamCarousel, {
+                                x: teamCurrentTranslate,
+                                duration: 0.5,
+                                ease: "power2.out"
+                            });
+                        } else {
+                            gsap.set(teamCarousel, {
+                                x: teamCurrentTranslate
+                            });
+                        }
+
+                        // Actualizar estado de los botones
+                        const isAtStart = teamCurrentIndex <= 0;
+                        const isAtEnd = teamCurrentIndex >= teamMaxIndex;
+
+                        teamPrevBtn.disabled = isAtStart;
+                        teamNextBtn.disabled = isAtEnd;
+
+                        // Actualizar apariencia de los botones
                         gsap.to(teamPrevBtn, {
-                            opacity: teamCurrentIndex <= 0 ? 0.3 : 1,
+                            opacity: isAtStart ? 0.3 : 1,
                             duration: 0.3
                         });
+
                         gsap.to(teamNextBtn, {
-                            opacity: teamCurrentIndex >= teamMaxIndex ? 0.3 : 1,
+                            opacity: isAtEnd ? 0.3 : 1,
                             duration: 0.3
                         });
                     }
 
+                    // Navegación con botones
                     teamPrevBtn.addEventListener('click', () => {
                         if (teamCurrentIndex > 0) {
                             teamCurrentIndex--;
                             updateTeamCarousel();
 
-                            // Animate the card that comes into view
+                            // Animar la tarjeta que entra en vista
                             const cardIndex = teamCurrentIndex;
                             if (teamCards[cardIndex]) {
                                 gsap.fromTo(teamCards[cardIndex], {
@@ -1425,9 +1498,9 @@
                             teamCurrentIndex++;
                             updateTeamCarousel();
 
-                            // Animate the card that comes into view
-                            const cardIndex = teamCurrentIndex + Math.floor(teamWrapper.offsetWidth /
-                                teamCardWidth) - 1;
+                            // Animar la tarjeta que entra en vista
+                            const cardIndex = Math.min(teamCurrentIndex + visibleCards - 1, teamCards
+                                .length - 1);
                             if (teamCards[cardIndex]) {
                                 gsap.fromTo(teamCards[cardIndex], {
                                     opacity: 0.7,
@@ -1442,64 +1515,118 @@
                         }
                     });
 
-                    // Drag functionality
-                    teamWrapper.addEventListener('mousedown', (e) => {
+                    // Función para manejar el arrastre
+                    function handleDragStart(e) {
                         teamIsDragging = true;
-                        teamStartX = e.clientX;
+                        teamStartX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
                         teamPrevTranslate = teamCurrentTranslate;
+
+                        // Cancelar cualquier animación en curso
+                        if (animationId) {
+                            cancelAnimationFrame(animationId);
+                        }
+
                         teamCarousel.style.transition = 'none';
-                    });
+                        teamCarousel.style.cursor = 'grabbing';
+                    }
 
-                    teamWrapper.addEventListener('mousemove', (e) => {
+                    function handleDragMove(e) {
                         if (!teamIsDragging) return;
-                        const currentX = e.clientX;
+
+                        const currentX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
                         const diff = currentX - teamStartX;
-                        const newTranslate = teamPrevTranslate + diff;
+                        let newTranslate = teamPrevTranslate + diff;
 
-                        // Limitar el desplazamiento
-                        const minTranslate = -teamMaxIndex * teamCardWidth;
-                        const maxTranslate = 0;
-                        teamCurrentTranslate = Math.max(minTranslate, Math.min(maxTranslate, newTranslate));
+                        // Calcular límites
+                        const maxTranslate = Math.max(0, totalCarouselWidth - wrapperWidth);
+                        newTranslate = Math.max(-maxTranslate, Math.min(0, newTranslate));
 
-                        teamCarousel.style.transform = `translateX(${teamCurrentTranslate}px)`;
-                    });
+                        // Aplicar transformación sin animación
+                        teamCarousel.style.transform = `translateX(${newTranslate}px)`;
+                        teamCurrentTranslate = newTranslate;
+                    }
 
-                    teamWrapper.addEventListener('mouseup', (e) => {
+                    function handleDragEnd(e) {
                         if (!teamIsDragging) return;
+
                         teamIsDragging = false;
                         teamCarousel.style.transition = 'transform 0.5s ease';
+                        teamCarousel.style.cursor = 'grab';
 
-                        const movedBy = e.clientX - teamStartX;
-                        if (movedBy < -100 && teamCurrentIndex < teamMaxIndex) {
-                            teamCurrentIndex++;
-                        } else if (movedBy > 100 && teamCurrentIndex > 0) {
-                            teamCurrentIndex--;
+                        const endX = e.type.includes('mouse') ? e.clientX : e.changedTouches[0].clientX;
+                        const movedBy = endX - teamStartX;
+
+                        // Determinar si debemos cambiar de slide basado en el arrastre
+                        if (Math.abs(movedBy) > 50) {
+                            // Calcular cuántas tarjetas desplazar basado en la velocidad
+                            const dragDistance = Math.abs(movedBy);
+                            const cardsToMove = Math.ceil(dragDistance / cardWidth);
+
+                            if (movedBy < 0) {
+                                // Arrastre hacia la izquierda (siguiente)
+                                teamCurrentIndex = Math.min(teamMaxIndex, teamCurrentIndex + cardsToMove);
+                            } else {
+                                // Arrastre hacia la derecha (anterior)
+                                teamCurrentIndex = Math.max(0, teamCurrentIndex - cardsToMove);
+                            }
                         }
 
-                        // Prevenir desplazamiento más allá de los límites
-                        if (teamCurrentIndex < 0) teamCurrentIndex = 0;
-                        if (teamCurrentIndex > teamMaxIndex) teamCurrentIndex = teamMaxIndex;
-
+                        // Actualizar la posición
                         updateTeamCarousel();
-                    });
+                    }
 
-                    teamWrapper.addEventListener('mouseleave', () => {
-                        if (teamIsDragging) {
-                            teamIsDragging = false;
-                            teamCarousel.style.transition = 'transform 0.5s ease';
-                            updateTeamCarousel();
-                        }
-                    });
+                    // Eventos de mouse
+                    teamWrapper.addEventListener('mousedown', handleDragStart);
+                    document.addEventListener('mousemove', handleDragMove);
+                    document.addEventListener('mouseup', handleDragEnd);
 
-                    // Disable text selection while dragging
+                    // Eventos táctiles
+                    teamWrapper.addEventListener('touchstart', handleDragStart, {
+                        passive: true
+                    });
+                    document.addEventListener('touchmove', handleDragMove, {
+                        passive: true
+                    });
+                    document.addEventListener('touchend', handleDragEnd);
+
+                    // Prevenir selección de texto durante el arrastre
                     teamCarousel.addEventListener('selectstart', (e) => {
                         if (teamIsDragging) e.preventDefault();
                     });
 
-                    updateTeamCarousel();
+                    // Redimensionamiento
+                    function handleResize() {
+                        // Actualizar dimensiones
+                        wrapperWidth = teamWrapper.offsetWidth;
+                        cardWidth = calculateCardWidth();
+                        totalCarouselWidth = calculateTotalCarouselWidth();
+                        visibleCards = Math.min(teamCards.length, calculateVisibleCards());
+                        teamMaxIndex = calculateMaxIndex();
+
+                        // Ajustar el índice actual si es necesario
+                        teamCurrentIndex = Math.min(teamCurrentIndex, teamMaxIndex);
+
+                        // Actualizar posición
+                        updateTeamCarousel(false);
+                    }
+
+                    // Usar debounce para mejor performance en resize
+                    let resizeTimeout;
+                    window.addEventListener('resize', () => {
+                        clearTimeout(resizeTimeout);
+                        resizeTimeout = setTimeout(handleResize, 250);
+                    });
+
+                    // Inicializar
+                    handleResize();
+
+                    // Asegurar que los botones estén en el estado correcto al cargar
+                    setTimeout(() => {
+                        updateTeamCarousel(false);
+                    }, 100);
                 }
 
-                // === SEDE CAROUSEL FUNCTIONALITY ===
+                // === SEDE CAROUSEL FUNCTIONALITY - VERSIÓN CORREGIDA ===
                 const sedeCarousel = document.getElementById('sedeCarousel');
                 const sedeWrapper = document.getElementById('sedeCarouselWrapper');
                 const sedePrevBtn = document.getElementById('sedePrev');
@@ -1511,45 +1638,117 @@
                     let sedeStartX = 0;
                     let sedeCurrentTranslate = 0;
                     let sedePrevTranslate = 0;
+                    let sedeAnimationId = null;
                     const sedeCardsElements = sedeCarousel.querySelectorAll('.sede-card');
-                    const sedeCardWidth = Math.floor(sedeWrapper.offsetWidth / 3);
-                    let sedeMaxIndex = Math.max(0, sedeCardsElements.length - 3);
 
-                    // Recalculate max index on resize
-                    window.addEventListener('resize', () => {
-                        sedeMaxIndex = Math.max(0, sedeCardsElements.length - 3);
-                        updateSedeCarousel();
-                    });
-
-                    function updateSedeCarousel() {
-                        sedeCurrentTranslate = -sedeCurrentIndex * sedeCardWidth;
-                        gsap.to(sedeCarousel, {
-                            x: sedeCurrentTranslate,
-                            duration: 0.5,
-                            ease: "power2.out"
+                    // Función para calcular el ancho total del carrusel de sedes
+                    function calculateSedeTotalWidth() {
+                        let totalWidth = 0;
+                        sedeCardsElements.forEach(card => {
+                            const style = window.getComputedStyle(card);
+                            const marginRight = parseFloat(style.marginRight) || 0;
+                            const marginLeft = parseFloat(style.marginLeft) || 0;
+                            totalWidth += card.offsetWidth + marginRight + marginLeft;
                         });
+                        return totalWidth;
+                    }
 
-                        // Deshabilitar botones en los límites
-                        sedePrevBtn.disabled = sedeCurrentIndex <= 0;
-                        sedeNextBtn.disabled = sedeCurrentIndex >= sedeMaxIndex;
+                    // Función para calcular el ancho de cada tarjeta de sede
+                    function calculateSedeCardWidth() {
+                        if (sedeCardsElements.length === 0) return 0;
+                        const card = sedeCardsElements[0];
+                        const style = window.getComputedStyle(card);
+                        const marginRight = parseFloat(style.marginRight) || 0;
+                        const marginLeft = parseFloat(style.marginLeft) || 0;
+                        return card.offsetWidth + marginRight + marginLeft;
+                    }
 
-                        // Update navigation button appearance
+                    // Calcular dimensiones iniciales
+                    let sedeCardWidth = calculateSedeCardWidth();
+                    let sedeWrapperWidth = sedeWrapper.offsetWidth;
+                    let sedeTotalWidth = calculateSedeTotalWidth();
+
+                    // Calcular cuántas tarjetas caben en el viewport
+                    function calculateSedeVisibleCards() {
+                        return Math.floor(sedeWrapperWidth / sedeCardWidth);
+                    }
+
+                    let sedeVisibleCards = Math.min(sedeCardsElements.length, calculateSedeVisibleCards());
+
+                    // Calcular el índice máximo
+                    function calculateSedeMaxIndex() {
+                        if (sedeCardsElements.length <= sedeVisibleCards) return 0;
+
+                        const totalCards = sedeCardsElements.length;
+                        if (totalCards % sedeVisibleCards === 0) {
+                            return totalCards - sedeVisibleCards;
+                        }
+                        return totalCards - sedeVisibleCards;
+                    }
+
+                    let sedeMaxIndex = calculateSedeMaxIndex();
+
+                    // Función para actualizar el carrusel de sedes
+                    function updateSedeCarousel(animate = true) {
+                        // Calcular el desplazamiento máximo permitido
+                        const maxTranslate = Math.max(0, sedeTotalWidth - sedeWrapperWidth);
+
+                        // Asegurar que el índice esté dentro de los límites
+                        sedeCurrentIndex = Math.max(0, Math.min(sedeCurrentIndex, sedeMaxIndex));
+
+                        // Calcular el desplazamiento
+                        let translateX;
+
+                        if (sedeCurrentIndex >= sedeMaxIndex) {
+                            // Último grupo: desplazar hasta el final sin espacio vacío
+                            translateX = -maxTranslate;
+                        } else {
+                            // Grupos intermedios: desplazar por múltiplos del ancho visible
+                            translateX = -sedeCurrentIndex * sedeCardWidth;
+                        }
+
+                        // Limitar el desplazamiento
+                        sedeCurrentTranslate = Math.max(-maxTranslate, Math.min(0, translateX));
+
+                        // Aplicar animación
+                        if (animate) {
+                            gsap.to(sedeCarousel, {
+                                x: sedeCurrentTranslate,
+                                duration: 0.5,
+                                ease: "power2.out"
+                            });
+                        } else {
+                            gsap.set(sedeCarousel, {
+                                x: sedeCurrentTranslate
+                            });
+                        }
+
+                        // Actualizar estado de los botones
+                        const isAtStart = sedeCurrentIndex <= 0;
+                        const isAtEnd = sedeCurrentIndex >= sedeMaxIndex;
+
+                        sedePrevBtn.disabled = isAtStart;
+                        sedeNextBtn.disabled = isAtEnd;
+
+                        // Actualizar apariencia de los botones
                         gsap.to(sedePrevBtn, {
-                            opacity: sedeCurrentIndex <= 0 ? 0.3 : 1,
+                            opacity: isAtStart ? 0.3 : 1,
                             duration: 0.3
                         });
+
                         gsap.to(sedeNextBtn, {
-                            opacity: sedeCurrentIndex >= sedeMaxIndex ? 0.3 : 1,
+                            opacity: isAtEnd ? 0.3 : 1,
                             duration: 0.3
                         });
                     }
 
+                    // Navegación con botones
                     sedePrevBtn.addEventListener('click', () => {
                         if (sedeCurrentIndex > 0) {
                             sedeCurrentIndex--;
                             updateSedeCarousel();
 
-                            // Animate the card that comes into view
+                            // Animar la tarjeta que entra en vista
                             const cardIndex = sedeCurrentIndex;
                             if (sedeCardsElements[cardIndex]) {
                                 gsap.fromTo(sedeCardsElements[cardIndex], {
@@ -1570,9 +1769,9 @@
                             sedeCurrentIndex++;
                             updateSedeCarousel();
 
-                            // Animate the card that comes into view
-                            const cardIndex = sedeCurrentIndex + Math.floor(sedeWrapper.offsetWidth /
-                                sedeCardWidth) - 1;
+                            // Animar la tarjeta que entra en vista
+                            const cardIndex = Math.min(sedeCurrentIndex + sedeVisibleCards - 1,
+                                sedeCardsElements.length - 1);
                             if (sedeCardsElements[cardIndex]) {
                                 gsap.fromTo(sedeCardsElements[cardIndex], {
                                     opacity: 0.7,
@@ -1587,61 +1786,112 @@
                         }
                     });
 
-                    // Drag functionality
-                    sedeWrapper.addEventListener('mousedown', (e) => {
+                    // Función para manejar el arrastre
+                    function handleSedeDragStart(e) {
                         sedeIsDragging = true;
-                        sedeStartX = e.clientX;
+                        sedeStartX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
                         sedePrevTranslate = sedeCurrentTranslate;
+
+                        // Cancelar cualquier animación en curso
+                        if (sedeAnimationId) {
+                            cancelAnimationFrame(sedeAnimationId);
+                        }
+
                         sedeCarousel.style.transition = 'none';
-                    });
+                        sedeCarousel.style.cursor = 'grabbing';
+                    }
 
-                    sedeWrapper.addEventListener('mousemove', (e) => {
+                    function handleSedeDragMove(e) {
                         if (!sedeIsDragging) return;
-                        const currentX = e.clientX;
+
+                        const currentX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
                         const diff = currentX - sedeStartX;
-                        const newTranslate = sedePrevTranslate + diff;
+                        let newTranslate = sedePrevTranslate + diff;
 
-                        // Limitar el desplazamiento
-                        const minTranslate = -sedeMaxIndex * sedeCardWidth;
-                        const maxTranslate = 0;
-                        sedeCurrentTranslate = Math.max(minTranslate, Math.min(maxTranslate, newTranslate));
+                        // Calcular límites
+                        const maxTranslate = Math.max(0, sedeTotalWidth - sedeWrapperWidth);
+                        newTranslate = Math.max(-maxTranslate, Math.min(0, newTranslate));
 
-                        sedeCarousel.style.transform = `translateX(${sedeCurrentTranslate}px)`;
-                    });
+                        // Aplicar transformación sin animación
+                        sedeCarousel.style.transform = `translateX(${newTranslate}px)`;
+                        sedeCurrentTranslate = newTranslate;
+                    }
 
-                    sedeWrapper.addEventListener('mouseup', (e) => {
+                    function handleSedeDragEnd(e) {
                         if (!sedeIsDragging) return;
+
                         sedeIsDragging = false;
                         sedeCarousel.style.transition = 'transform 0.5s ease';
+                        sedeCarousel.style.cursor = 'grab';
 
-                        const movedBy = e.clientX - sedeStartX;
-                        if (movedBy < -100 && sedeCurrentIndex < sedeMaxIndex) {
-                            sedeCurrentIndex++;
-                        } else if (movedBy > 100 && sedeCurrentIndex > 0) {
-                            sedeCurrentIndex--;
+                        const endX = e.type.includes('mouse') ? e.clientX : e.changedTouches[0].clientX;
+                        const movedBy = endX - sedeStartX;
+
+                        // Determinar si debemos cambiar de slide
+                        if (Math.abs(movedBy) > 50) {
+                            const dragDistance = Math.abs(movedBy);
+                            const cardsToMove = Math.ceil(dragDistance / sedeCardWidth);
+
+                            if (movedBy < 0) {
+                                sedeCurrentIndex = Math.min(sedeMaxIndex, sedeCurrentIndex + cardsToMove);
+                            } else {
+                                sedeCurrentIndex = Math.max(0, sedeCurrentIndex - cardsToMove);
+                            }
                         }
 
-                        // Prevenir desplazamiento más allá de los límites
-                        if (sedeCurrentIndex < 0) sedeCurrentIndex = 0;
-                        if (sedeCurrentIndex > sedeMaxIndex) sedeCurrentIndex = sedeMaxIndex;
-
+                        // Actualizar la posición
                         updateSedeCarousel();
-                    });
+                    }
 
-                    sedeWrapper.addEventListener('mouseleave', () => {
-                        if (sedeIsDragging) {
-                            sedeIsDragging = false;
-                            sedeCarousel.style.transition = 'transform 0.5s ease';
-                            updateSedeCarousel();
-                        }
-                    });
+                    // Eventos de mouse
+                    sedeWrapper.addEventListener('mousedown', handleSedeDragStart);
+                    document.addEventListener('mousemove', handleSedeDragMove);
+                    document.addEventListener('mouseup', handleSedeDragEnd);
 
-                    // Disable text selection while dragging
+                    // Eventos táctiles
+                    sedeWrapper.addEventListener('touchstart', handleSedeDragStart, {
+                        passive: true
+                    });
+                    document.addEventListener('touchmove', handleSedeDragMove, {
+                        passive: true
+                    });
+                    document.addEventListener('touchend', handleSedeDragEnd);
+
+                    // Prevenir selección de texto durante el arrastre
                     sedeCarousel.addEventListener('selectstart', (e) => {
                         if (sedeIsDragging) e.preventDefault();
                     });
 
-                    updateSedeCarousel();
+                    // Redimensionamiento
+                    function handleSedeResize() {
+                        // Actualizar dimensiones
+                        sedeWrapperWidth = sedeWrapper.offsetWidth;
+                        sedeCardWidth = calculateSedeCardWidth();
+                        sedeTotalWidth = calculateSedeTotalWidth();
+                        sedeVisibleCards = Math.min(sedeCardsElements.length, calculateSedeVisibleCards());
+                        sedeMaxIndex = calculateSedeMaxIndex();
+
+                        // Ajustar el índice actual si es necesario
+                        sedeCurrentIndex = Math.min(sedeCurrentIndex, sedeMaxIndex);
+
+                        // Actualizar posición
+                        updateSedeCarousel(false);
+                    }
+
+                    // Usar debounce para mejor performance en resize
+                    let sedeResizeTimeout;
+                    window.addEventListener('resize', () => {
+                        clearTimeout(sedeResizeTimeout);
+                        sedeResizeTimeout = setTimeout(handleSedeResize, 250);
+                    });
+
+                    // Inicializar
+                    handleSedeResize();
+
+                    // Asegurar que los botones estén en el estado correcto al cargar
+                    setTimeout(() => {
+                        updateSedeCarousel(false);
+                    }, 100);
                 }
 
                 // Add subtle floating animation to elements
