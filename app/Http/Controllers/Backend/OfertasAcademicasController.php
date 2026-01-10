@@ -311,8 +311,6 @@ class OfertasAcademicasController extends Controller
         ));
     }
 
-    // En OfertasAcademicasController.php - agregar este método
-    // En OfertasAcademicasController.php - actualiza el método dashboardOferta
     public function dashboardOferta($id)
     {
         $oferta = OfertasAcademica::with([
@@ -322,11 +320,18 @@ class OfertasAcademicasController extends Controller
             'posgrado.convenio',
             'modalidad',
             'fase',
-            'inscripciones.estudiante.persona.ciudad',
-            'inscripciones.cuotas',
-            'inscripciones.matriculaciones.modulo',
-            'inscripciones.planesPago'
+            'inscripciones.estudiante.persona.ciudad.departamento', // Agregar departamento
+            'inscripciones.cuotas' => function ($query) {
+                $query->orderBy('n_cuota', 'asc');
+            },
+            'inscripciones.cuotas.pagos_cuotas.pago',
+            'inscripciones.planesPago',
+            'inscripciones.trabajador_cargo.trabajador.persona',
+            'plan_concepto.plan_pago',
+            'plan_concepto.concepto',
+            'inscripciones.matriculaciones.modulo'
         ])->findOrFail($id);
+
 
         // 1. Estadísticas de inscritos
         $totalInscritos = $oferta->inscripciones->where('estado', 'Inscrito')->count();
@@ -335,13 +340,16 @@ class OfertasAcademicasController extends Controller
         // Gráfico de inscripciones por mes
         $inscripcionesPorMes = $this->getInscripcionesPorMes($oferta);
 
-        // 2. Ingresos por conceptos
-        $ingresosPorConcepto = $this->getIngresosPorConcepto($oferta);
+        // 2. Datos financieros detallados por participante (ordenados alfabéticamente)
+        $participantesFinanzas = $this->getDatosFinancierosParticipantes($oferta);
 
-        // 3. Tabla académica con notas
+        // 3. Ingresos por plan de pago para gráficos
+        $ingresosPorPlanPago = $this->getIngresosPorPlanPago($oferta);
+
+        // 4. Tabla académica con notas
         $tablaAcademica = $this->getTablaAcademica($oferta);
 
-        // 4. Datos adicionales para estadísticas
+        // 5. Datos adicionales para estadísticas
         $totalRecaudado = $oferta->inscripciones->sum(function ($inscripcion) {
             return $inscripcion->cuotas->sum(function ($cuota) {
                 return $cuota->pago_total_bs - $cuota->pago_pendiente_bs;
@@ -352,15 +360,97 @@ class OfertasAcademicasController extends Controller
             return $inscripcion->cuotas->sum('pago_pendiente_bs');
         });
 
-        // 5. Nuevas estadísticas
-        // Por sexo
+        // 6. Pre-inscritos con asesor (para pestaña resumen)
+        $preInscritosConAsesor = $this->getPreInscritosConAsesor($oferta);
+
+        // 7. Estadísticas demográficas por DEPARTAMENTO
+        $estadisticasDemograficas = $this->getEstadisticasDemograficas($oferta);
+
+        // 8. Resumen por concepto
+        $resumenPorConcepto = $this->getResumenPorConcepto($oferta);
+
+        // Mantener variables individuales para compatibilidad
+        $hombres = $estadisticasDemograficas['hombres'];
+        $mujeres = $estadisticasDemograficas['mujeres'];
+        $promedioEdad = $estadisticasDemograficas['promedioEdad'];
+        $topCiudades = $estadisticasDemograficas['topDepartamentos']; // Cambiado de topCiudades a topDepartamentos
+
+        return view('admin.ofertas.dashboard', compact(
+            'oferta',
+            'totalInscritos',
+            'totalPreInscritos',
+            'inscripcionesPorMes',
+            'participantesFinanzas',
+            'ingresosPorPlanPago',
+            'tablaAcademica',
+            'totalRecaudado',
+            'totalDeuda',
+            'resumenPorConcepto',
+            'preInscritosConAsesor',
+            'estadisticasDemograficas',
+            // Variables individuales para compatibilidad
+            'hombres',
+            'mujeres',
+            'promedioEdad',
+            'topCiudades'
+        ));
+    }
+
+    // Nuevo método: Obtener pre-inscritos con asesor
+    private function getPreInscritosConAsesor(OfertasAcademica $oferta)
+    {
+        return $oferta->inscripciones()
+            ->where('estado', 'Pre-Inscrito')
+            ->with([
+                'estudiante.persona',
+                'trabajador_cargo.trabajador.persona'  // Asegurar relación completa
+            ])
+            ->get()
+            ->map(function ($inscripcion) {
+                $asesorPersonaId = null;
+
+                if (
+                    $inscripcion->trabajador_cargo &&
+                    $inscripcion->trabajador_cargo->trabajador &&
+                    $inscripcion->trabajador_cargo->trabajador->persona
+                ) {
+
+                    $asesorPersonaId = $inscripcion->trabajador_cargo->trabajador->persona->id;
+                }
+
+                return [
+                    'estudiante_id' => $inscripcion->estudiante->id,
+                    'estudiante' => trim(
+                        optional($inscripcion->estudiante->persona)->apellido_paterno . ' ' .
+                            optional($inscripcion->estudiante->persona)->apellido_materno . ' ' .
+                            optional($inscripcion->estudiante->persona)->nombres
+                    ),
+                    'carnet' => optional($inscripcion->estudiante->persona)->carnet,
+                    'asesor_persona_id' => $asesorPersonaId,  // Cambiado a persona_id
+                    'asesor' => $inscripcion->trabajador_cargo && $inscripcion->trabajador_cargo->trabajador &&
+                        $inscripcion->trabajador_cargo->trabajador->persona ?
+                        trim(
+                            $inscripcion->trabajador_cargo->trabajador->persona->apellido_paterno . ' ' .
+                                $inscripcion->trabajador_cargo->trabajador->persona->apellido_materno . ' ' .
+                                $inscripcion->trabajador_cargo->trabajador->persona->nombres
+                        ) : 'Sin asesor',
+                    'fecha_registro' => $inscripcion->fecha_registro,
+                ];
+            })
+            ->sortBy('estudiante')
+            ->values()
+            ->toArray();
+    }
+
+    // Nuevo método: Estadísticas demográficas por departamento
+    private function getEstadisticasDemograficas(OfertasAcademica $oferta)
+    {
         $inscripcionesActivas = $oferta->inscripciones->where('estado', 'Inscrito');
+
         $hombres = 0;
         $mujeres = 0;
-
-        // Promedio de edad y ciudades
         $edades = [];
-        $ciudades = [];
+        $departamentos = [];
 
         foreach ($inscripcionesActivas as $inscripcion) {
             $persona = $inscripcion->estudiante->persona;
@@ -372,40 +462,279 @@ class OfertasAcademicasController extends Controller
                 $mujeres++;
             }
 
-            // Calcular edad si tiene fecha de nacimiento
+            // Edades
             if ($persona->fecha_nacimiento) {
                 $edad = now()->diffInYears($persona->fecha_nacimiento);
                 $edades[] = $edad;
             }
 
-            // Conteo por ciudad
-            $ciudadNombre = $persona->ciudad->nombre ?? 'Sin ciudad';
-            if (!isset($ciudades[$ciudadNombre])) {
-                $ciudades[$ciudadNombre] = 0;
+            // Departamentos (agrupado por departamento de la ciudad)
+            if ($persona->ciudad && $persona->ciudad->departamento) {
+                $departamentoNombre = $persona->ciudad->departamento->nombre ?? 'Sin departamento';
+                if (!isset($departamentos[$departamentoNombre])) {
+                    $departamentos[$departamentoNombre] = 0;
+                }
+                $departamentos[$departamentoNombre]++;
             }
-            $ciudades[$ciudadNombre]++;
         }
 
         $promedioEdad = count($edades) > 0 ? array_sum($edades) / count($edades) : 0;
+        arsort($departamentos);
+        $topDepartamentos = array_slice($departamentos, 0, 5, true);
 
-        // Ordenar ciudades por cantidad descendente y tomar las top 5
-        arsort($ciudades);
-        $topCiudades = array_slice($ciudades, 0, 5, true);
+        return [
+            'hombres' => $hombres,
+            'mujeres' => $mujeres,
+            'promedioEdad' => $promedioEdad,
+            'topDepartamentos' => $topDepartamentos,
+            'totalEstudiantes' => $hombres + $mujeres,
+        ];
+    }
 
-        return view('admin.ofertas.dashboard', compact(
-            'oferta',
-            'totalInscritos',
-            'totalPreInscritos',
-            'inscripcionesPorMes',
-            'ingresosPorConcepto',
-            'tablaAcademica',
-            'totalRecaudado',
-            'totalDeuda',
-            'hombres',
-            'mujeres',
-            'promedioEdad',
-            'topCiudades'
-        ));
+    // En OfertasAcademicasController.php - método getIngresosPorPlanPago
+    private function getIngresosPorPlanPago(OfertasAcademica $oferta)
+    {
+        $ingresosPorPlan = [];
+
+        foreach ($oferta->plan_concepto as $planConcepto) {
+            $planPago = $planConcepto->plan_pago;
+            $totalRecaudadoPlan = 0;
+
+            // Sumar pagos de inscripciones con este plan
+            foreach ($oferta->inscripciones->where('estado', 'Inscrito') as $inscripcion) {
+                if ($inscripcion->planes_pago_id == $planPago->id) {
+                    $totalRecaudadoPlan += $inscripcion->cuotas->sum(function ($cuota) {
+                        return $cuota->pago_total_bs - $cuota->pago_pendiente_bs;
+                    });
+                }
+            }
+
+            $ingresosPorPlan[] = [
+                'plan' => $planPago->nombre,
+                'total_plan' => $planConcepto->pago_bs,
+                'recaudado' => $totalRecaudadoPlan,
+                'porcentaje' => $planConcepto->pago_bs > 0 ?
+                    ($totalRecaudadoPlan / $planConcepto->pago_bs) * 100 : 0
+            ];
+        }
+
+        return $ingresosPorPlan;
+    }
+
+    // CORREGIDO: Método para obtener datos financieros de participantes
+    private function getDatosFinancierosParticipantes(OfertasAcademica $oferta)
+    {
+        $participantes = [];
+
+        // Obtener inscripciones ordenadas alfabéticamente
+        $inscripcionesOrdenadas = $oferta->inscripciones()
+            ->where('estado', 'Inscrito')
+            ->with([
+                'estudiante.persona' => function ($query) {
+                    $query->orderBy('apellido_paterno')
+                        ->orderBy('apellido_materno')
+                        ->orderBy('nombres');
+                },
+                'planesPago',
+                'cuotas',
+                'trabajador_cargo.trabajador.persona'
+            ])
+            ->get()
+            ->sortBy(function ($inscripcion) {
+                $persona = $inscripcion->estudiante->persona;
+                return $persona->apellido_paterno . ' ' .
+                    $persona->apellido_materno . ' ' .
+                    $persona->nombres;
+            });
+
+        foreach ($inscripcionesOrdenadas  as $inscripcion) {
+            $estudiante = $inscripcion->estudiante->persona;
+            $planPago = $inscripcion->planesPago;
+
+            // Obtener el vendedor con su persona_id
+            $vendedor = null;
+            $vendedorPersonaId = null;
+
+            if (
+                $inscripcion->trabajador_cargo &&
+                $inscripcion->trabajador_cargo->trabajador &&
+                $inscripcion->trabajador_cargo->trabajador->persona
+            ) {
+
+                $personaVendedor = $inscripcion->trabajador_cargo->trabajador->persona;
+                $vendedor = trim(
+                    $personaVendedor->nombres . ' ' .
+                        $personaVendedor->apellido_paterno
+                );
+                $vendedorPersonaId = $personaVendedor->id;  // Este es el persona_id correcto
+            }
+
+            // Inicializar arrays para los conceptos
+            $conceptos = [
+                'Matrícula' => [
+                    'total' => 0,
+                    'pagado' => 0,
+                    'pendiente' => 0,
+                    'n_cuotas' => 0,
+                    'monto_por_cuota' => 0,
+                    'cuotas' => []
+                ],
+                'Colegiatura' => [
+                    'total' => 0,
+                    'pagado' => 0,
+                    'pendiente' => 0,
+                    'n_cuotas' => 0,
+                    'monto_por_cuota' => 0,
+                    'cuotas' => []
+                ],
+                'Certificación' => [
+                    'total' => 0,
+                    'pagado' => 0,
+                    'pendiente' => 0,
+                    'n_cuotas' => 0,
+                    'monto_por_cuota' => 0,
+                    'cuotas' => []
+                ],
+            ];
+
+            // PRIMERO: Obtener las cuotas ordenadas (igual que en estudiantes.detalle)
+            $cuotasOrdenadas = $inscripcion->cuotas->sortBy('n_cuota');
+
+            // Variables para rastrear la asignación
+            $cuotasAsignadas = 0;
+            $totalCuotas = $cuotasOrdenadas->count();
+
+            foreach ($cuotasOrdenadas as $cuota) {
+                $cuotasAsignadas++;
+                $nombreLower = mb_strtolower($cuota->nombre, 'UTF-8');
+                $conceptoAsignado = null;
+
+                // LÓGICA SIMPLIFICADA Y CONSISTENTE CON ESTUDIANTES.DETALLE
+                // 1. Verificar si es matrícula
+                if (str_contains($nombreLower, 'matricula') || str_contains($nombreLower, 'matrícula')) {
+                    $conceptoAsignado = 'Matrícula';
+                }
+                // 2. Verificar si es certificación
+                else if (str_contains($nombreLower, 'certificación') || str_contains($nombreLower, 'certificacion')) {
+                    $conceptoAsignado = 'Certificación';
+                }
+                // 3. Si no es ni matrícula ni certificación, entonces es Colegiatura
+                else {
+                    $conceptoAsignado = 'Colegiatura';
+                }
+
+                // Si por alguna razón no se asignó, usar lógica de posición
+                if (!$conceptoAsignado) {
+                    if ($cuotasAsignadas == 1) {
+                        $conceptoAsignado = 'Matrícula'; // Primera cuota
+                    } else if ($cuotasAsignadas == $totalCuotas) {
+                        $conceptoAsignado = 'Certificación'; // Última cuota
+                    } else {
+                        $conceptoAsignado = 'Colegiatura'; // Cuotas intermedias
+                    }
+                }
+
+                // Calcular valores de la cuota
+                $pagadoCuota = (float) ($cuota->pago_total_bs - $cuota->pago_pendiente_bs);
+                $pendienteCuota = (float) $cuota->pago_pendiente_bs;
+                $totalCuota = (float) $cuota->pago_total_bs;
+
+                // Almacenar la cuota en el concepto correspondiente
+                $conceptos[$conceptoAsignado]['cuotas'][] = [
+                    'id' => $cuota->id,
+                    'nombre' => $cuota->nombre,
+                    'n_cuota' => $cuota->n_cuota,
+                    'total' => $totalCuota,
+                    'pagado' => $pagadoCuota,
+                    'pendiente' => $pendienteCuota
+                ];
+
+                // Actualizar totales del concepto
+                $conceptos[$conceptoAsignado]['total'] += $totalCuota;
+                $conceptos[$conceptoAsignado]['pagado'] += $pagadoCuota;
+                $conceptos[$conceptoAsignado]['pendiente'] += $pendienteCuota;
+                $conceptos[$conceptoAsignado]['n_cuotas'] = count($conceptos[$conceptoAsignado]['cuotas']);
+            }
+
+            // Calcular montos por cuota para cada concepto
+            foreach ($conceptos as $conceptoNombre => &$conceptoData) {
+                if ($conceptoData['n_cuotas'] > 0) {
+                    $conceptoData['monto_por_cuota'] = $conceptoData['total'] / $conceptoData['n_cuotas'];
+                }
+            }
+
+            // Calcular totales generales
+            $totalPagado = $conceptos['Matrícula']['pagado'] + $conceptos['Colegiatura']['pagado'] + $conceptos['Certificación']['pagado'];
+            $totalDeuda = $conceptos['Matrícula']['pendiente'] + $conceptos['Colegiatura']['pendiente'] + $conceptos['Certificación']['pendiente'];
+            $totalPlan = $conceptos['Matrícula']['total'] + $conceptos['Colegiatura']['total'] + $conceptos['Certificación']['total'];
+
+            $participantes[] = [
+                'estudiante_id' => $inscripcion->estudiante->id,
+                'estudiante' => trim($estudiante->nombres . ' ' .
+                    $estudiante->apellido_paterno . ' ' .
+                    $estudiante->apellido_materno),
+                'carnet' => $estudiante->carnet,
+                'plan_pago' => $planPago->nombre,
+                'total_plan' => $totalPlan,
+                'conceptos' => $conceptos,
+                'total_pagado' => $totalPagado,
+                'total_deuda' => $totalDeuda,
+                'saldo' => $totalDeuda,
+                'porcentaje_pagado' => $totalPlan > 0 ? ($totalPagado / $totalPlan) * 100 : 0,
+                'vendedor' => $vendedor,
+                'vendedor_persona_id' => $vendedorPersonaId,  // Cambiado a persona_id
+            ];
+        }
+
+        return $participantes;
+    }
+
+    // NUEVO MÉTODO: Obtener ingresos por plan de pago para gráficos
+    // Método para obtener resumen por concepto
+    private function getResumenPorConcepto(OfertasAcademica $oferta)
+    {
+        $conceptos = [
+            'Matrícula' => [
+                'total' => 0,
+                'pagado' => 0,
+                'pendiente' => 0,
+                'porcentaje' => 0
+            ],
+            'Colegiatura' => [
+                'total' => 0,
+                'pagado' => 0,
+                'pendiente' => 0,
+                'porcentaje' => 0
+            ],
+            'Certificación' => [
+                'total' => 0,
+                'pagado' => 0,
+                'pendiente' => 0,
+                'porcentaje' => 0
+            ]
+        ];
+
+        // Usar los participantes financieros que ya tenemos
+        $participantes = $this->getDatosFinancierosParticipantes($oferta);
+
+        foreach ($participantes as $participante) {
+            foreach ($participante['conceptos'] as $conceptoNombre => $conceptoData) {
+                if (isset($conceptos[$conceptoNombre])) {
+                    $conceptos[$conceptoNombre]['total'] += $conceptoData['total'];
+                    $conceptos[$conceptoNombre]['pagado'] += $conceptoData['pagado'];
+                    $conceptos[$conceptoNombre]['pendiente'] += $conceptoData['pendiente'];
+                }
+            }
+        }
+
+        // Calcular porcentajes
+        foreach ($conceptos as $conceptoNombre => &$conceptoData) {
+            if ($conceptoData['total'] > 0) {
+                $conceptoData['porcentaje'] = ($conceptoData['pagado'] / $conceptoData['total']) * 100;
+            }
+        }
+
+        return $conceptos;
     }
 
     // En OfertasAcademicasController.php - agregar este método
@@ -517,23 +846,17 @@ class OfertasAcademicasController extends Controller
         return $resultados;
     }
 
-    // Método auxiliar para tabla académica
+    // Método auxiliar para tabla académica (opcional)
     private function getTablaAcademica(OfertasAcademica $oferta)
     {
-        // Cargar todas las inscripciones con sus relaciones necesarias
-        $inscripciones = $oferta->inscripciones()
-            ->where('estado', 'Inscrito')
-            ->with([
-                'estudiante.persona',
-                'matriculaciones' => function ($query) {
-                    $query->with('modulo');
-                }
-            ])
-            ->get();
+        // Si no necesitas la tabla académica, retorna un array vacío
+        if (!isset($oferta->inscripciones) || $oferta->inscripciones->isEmpty()) {
+            return [];
+        }
 
         $tabla = [];
 
-        foreach ($inscripciones as $inscripcion) {
+        foreach ($oferta->inscripciones->where('estado', 'Inscrito') as $inscripcion) {
             $fila = [
                 'estudiante_id' => $inscripcion->estudiante->id,
                 'estudiante' => trim($inscripcion->estudiante->persona->nombres . ' ' .
