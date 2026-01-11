@@ -24,6 +24,13 @@ use App\Models\Universidade;
 use Illuminate\Http\Request;
 use Intervention\Image\Facades\Image;
 use Illuminate\Support\Facades\File;
+use App\Models\Cuota;
+use App\Models\PagosCuota;
+use App\Models\Detalle;
+use App\Models\Inscripcione;
+use App\Models\Pago;
+use App\Models\PlanesConcepto;
+use Illuminate\Support\Facades\DB;
 
 class OfertasAcademicasController extends Controller
 {
@@ -1671,5 +1678,218 @@ class OfertasAcademicasController extends Controller
         $modulo->save();
 
         return response()->json(['success' => true]);
+    }
+
+
+
+
+
+    // Métodos que debes agregar:
+
+    public function eliminarInscripcion($ofertaId, $inscripcionId)
+    {
+
+        try {
+            DB::beginTransaction();
+
+            // Buscar la inscripción
+            $inscripcion = Inscripcione::where('id', $inscripcionId)
+                ->where('ofertas_academica_id', $ofertaId)
+                ->firstOrFail();
+
+            // 1. Eliminar matriculaciones (notas)
+            $inscripcion->matriculaciones()->delete();
+
+            // 2. Eliminar cuotas y sus relaciones
+            foreach ($inscripcion->cuotas as $cuota) {
+                // Eliminar pagos_cuotas
+                foreach ($cuota->pagos_cuotas as $pagoCuota) {
+                    // Si hay un pago asociado, eliminar detalles primero
+                    if ($pagoCuota->pago) {
+                        $pagoCuota->pago->detalles()->delete();
+                    }
+                    $pagoCuota->delete();
+                }
+
+                // Eliminar la cuota
+                $cuota->delete();
+            }
+
+            // 3. Eliminar pagos relacionados (si existen)
+            $pagos = Pago::whereHas('pagos_cuotas.cuota.inscripcion', function ($query) use ($inscripcionId) {
+                $query->where('inscripcione_id', $inscripcionId);
+            })->get();
+
+            foreach ($pagos as $pago) {
+                $pago->detalles()->delete();
+                $pago->delete();
+            }
+
+            // 4. Eliminar la inscripción
+            $inscripcion->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'msg' => 'Inscripción eliminada completamente. El estudiante puede ser inscrito en otro programa.'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'msg' => 'Error al eliminar la inscripción: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function ofertasDisponiblesTransferencia(Request $request)
+    {
+        $query = OfertasAcademica::with(['programa', 'sucursal.sede', 'modalidad'])
+            ->where('fase_id', 3) // Solo ofertas en fase 3 (inscripciones abiertas)
+            ->where('id', '!=', $request->current_oferta_id) // Excluir la oferta actual
+            ->where('fecha_inicio_programa', '>', now()); // Que no hayan empezado
+
+        if ($request->filled('sucursal_id')) {
+            $query->where('sucursale_id', $request->sucursal_id);
+        }
+
+        $ofertas = $query->orderBy('fecha_inicio_programa', 'asc')->get();
+
+        return response()->json([
+            'success' => true,
+            'ofertas' => $ofertas
+        ]);
+    }
+
+    public function planesTransferencia($ofertaId)
+    {
+        $oferta = OfertasAcademica::with([
+            'plan_concepto.plan_pago',
+            'plan_concepto.concepto'
+        ])->findOrFail($ofertaId);
+
+        // Agrupar por plan de pago
+        $planes = [];
+        foreach ($oferta->plan_concepto as $pc) {
+            $planId = $pc->planes_pago_id;
+            if (!isset($planes[$planId])) {
+                $planes[$planId] = [
+                    'id' => $pc->plan_pago->id,
+                    'nombre' => $pc->plan_pago->nombre,
+                    'conceptos' => []
+                ];
+            }
+
+            $planes[$planId]['conceptos'][] = [
+                'concepto_id' => $pc->concepto_id,
+                'concepto_nombre' => $pc->concepto->nombre,
+                'n_cuotas' => $pc->n_cuotas,
+                'pago_bs' => $pc->pago_bs,
+                'precio_regular' => $pc->precio_regular,
+                'es_promocion' => $pc->es_promocion
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'planes' => array_values($planes)
+        ]);
+    }
+
+    public function transferirInscripcion(Request $request, $ofertaId, $inscripcionId)
+    {
+        $request->validate([
+            'nueva_oferta_id' => 'required|exists:ofertas_academicas,id',
+            'nuevo_plan_pago_id' => 'required|exists:planes_pagos,id',
+            'observacion' => 'nullable|string|max:500'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // 1. Buscar la inscripción actual
+            $inscripcionActual = Inscripcione::with([
+                'estudiante',
+                'cuotas',
+                'matriculaciones'
+            ])->findOrFail($inscripcionId);
+
+            // 2. Verificar que no esté transferido ya
+            if ($inscripcionActual->estado === 'Transferido') {
+                return response()->json([
+                    'success' => false,
+                    'msg' => 'Esta inscripción ya ha sido transferida anteriormente.'
+                ], 422);
+            }
+
+            // 3. Crear nueva inscripción en la oferta destino
+            $nuevaInscripcion = Inscripcione::create([
+                'ofertas_academica_id' => $request->nueva_oferta_id,
+                'estudiante_id' => $inscripcionActual->estudiante_id,
+                'trabajadores_cargo_id' => $inscripcionActual->trabajadores_cargo_id,
+                'planes_pago_id' => $request->nuevo_plan_pago_id,
+                'estado' => 'Inscrito',
+                'fecha_registro' => now(),
+                'observacion' => 'Transferido desde oferta ' . $ofertaId . '. ' . ($request->observacion ?? '')
+            ]);
+
+            // 4. Obtener conceptos del nuevo plan
+            $nuevaOferta = OfertasAcademica::findOrFail($request->nueva_oferta_id);
+            $planConceptos = PlanesConcepto::where('ofertas_academica_id', $nuevaOferta->id)
+                ->where('planes_pago_id', $request->nuevo_plan_pago_id)
+                ->with('concepto')
+                ->get();
+
+            // 5. Generar nuevas cuotas
+            $cuotaNumero = 1;
+            foreach ($planConceptos as $planConcepto) {
+                for ($i = 1; $i <= $planConcepto->n_cuotas; $i++) {
+                    Cuota::create([
+                        'nombre' => $planConcepto->concepto->nombre . ' - Cuota ' . $i,
+                        'n_cuota' => $cuotaNumero,
+                        'pago_total_bs' => $planConcepto->pago_bs / $planConcepto->n_cuotas,
+                        'pago_pendiente_bs' => $planConcepto->pago_bs / $planConcepto->n_cuotas,
+                        'descuento_bs' => 0,
+                        'fecha_pago' => null,
+                        'pago_terminado' => false,
+                        'inscripcione_id' => $nuevaInscripcion->id,
+                    ]);
+                    $cuotaNumero++;
+                }
+            }
+
+            // 6. Matricular en módulos de la nueva oferta
+            $modulosNuevaOferta = Modulo::where('ofertas_academica_id', $nuevaOferta->id)->get();
+            foreach ($modulosNuevaOferta as $modulo) {
+                Matriculacione::create([
+                    'inscripcione_id' => $nuevaInscripcion->id,
+                    'modulo_id' => $modulo->id,
+                    'nota_regular' => null,
+                    'nota_nivelacion' => null,
+                ]);
+            }
+
+            // 7. Marcar inscripción anterior como transferida (no eliminar)
+            $inscripcionActual->update([
+                'estado' => 'Transferido',
+                'observacion' => ($inscripcionActual->observacion ?? '') .
+                    ' | Transferido a oferta ' . $request->nueva_oferta_id . ' el ' . now()->format('d/m/Y H:i')
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'msg' => 'Inscripción transferida exitosamente.',
+                'nueva_inscripcion_id' => $nuevaInscripcion->id
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'msg' => 'Error al transferir la inscripción: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

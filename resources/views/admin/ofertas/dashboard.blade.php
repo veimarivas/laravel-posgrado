@@ -1,6 +1,10 @@
 @extends('admin.dashboard')
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<!-- En la sección <head> -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
 @section('admin')
+
     <!-- Encabezado de la Oferta -->
     <div class="row">
         <div class="col-12">
@@ -179,6 +183,11 @@
                         <li class="nav-item" role="presentation">
                             <a class="nav-link" data-bs-toggle="tab" href="#tab-demografico" role="tab">
                                 <i class="ri-user-line align-middle me-1"></i> Demográfico
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" data-bs-toggle="tab" href="#tab-gestion" role="tab">
+                                <i class="ri-settings-line align-middle me-1"></i> Gestión
                             </a>
                         </li>
                     </ul>
@@ -1433,7 +1442,220 @@
                                 </div>
                             </div>
                         </div>
+
+
+                        <div class="tab-pane fade" id="tab-gestion" role="tabpanel">
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="card border">
+                                        <div class="card-header border-bottom bg-light">
+                                            <h5 class="card-title mb-0 fs-16">
+                                                <i class="ri-user-settings-line align-middle me-2"></i>
+                                                Gestión de Inscripciones (Solo Administrador)
+                                            </h5>
+                                            <div class="alert alert-warning mt-2 mb-0 py-2">
+                                                <i class="ri-alert-line me-2"></i>
+                                                Esta sección es solo para administradores. Permite eliminar o transferir
+                                                inscripciones.
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover align-middle mb-0" id="tablaGestion">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th width="5%">#</th>
+                                                            <th width="20%">Estudiante</th>
+                                                            <th width="15%">Carnet</th>
+                                                            <th width="15%">Plan Actual</th>
+                                                            <th width="10%">Estado</th>
+                                                            <th width="15%">Fecha Inscripción</th>
+                                                            <th width="20%" class="text-center">Acciones</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach ($participantesFinanzas as $index => $participante)
+                                                            @php
+                                                                $inscripcion = $oferta->inscripciones
+                                                                    ->where(
+                                                                        'estudiante_id',
+                                                                        $participante['estudiante_id'],
+                                                                    )
+                                                                    ->first();
+                                                            @endphp
+                                                            @if ($inscripcion)
+                                                                <tr data-inscripcion-id="{{ $inscripcion->id }}"
+                                                                    data-estudiante-id="{{ $participante['estudiante_id'] }}">
+                                                                    <td>{{ $index + 1 }}</td>
+                                                                    <td>
+                                                                        <a href="{{ route('admin.estudiantes.detalle', $participante['estudiante_id']) }}"
+                                                                            class="text-decoration-none">
+                                                                            <div class="d-flex align-items-center">
+                                                                                <div class="avatar-xs">
+                                                                                    <div
+                                                                                        class="avatar-title bg-light text-primary rounded-circle">
+                                                                                        {{ substr(trim($participante['estudiante']), 0, 1) }}
+                                                                                    </div>
+                                                                                </div>
+                                                                                <div class="ms-2">
+                                                                                    <h6 class="mb-0 fs-14">
+                                                                                        {{ $participante['estudiante'] }}
+                                                                                    </h6>
+                                                                                </div>
+                                                                            </div>
+                                                                        </a>
+                                                                    </td>
+                                                                    <td>
+                                                                        <span
+                                                                            class="badge bg-secondary">{{ $participante['carnet'] }}</span>
+                                                                    </td>
+                                                                    <td>
+                                                                        <span
+                                                                            class="badge bg-primary">{{ $participante['plan_pago'] }}</span>
+                                                                    </td>
+                                                                    <td>
+                                                                        @if ($inscripcion->estado == 'Inscrito')
+                                                                            <span class="badge bg-success">Inscrito</span>
+                                                                        @elseif($inscripcion->estado == 'Pre-Inscrito')
+                                                                            <span
+                                                                                class="badge bg-warning">Pre-Inscrito</span>
+                                                                        @else
+                                                                            <span
+                                                                                class="badge bg-info">{{ $inscripcion->estado }}</span>
+                                                                        @endif
+                                                                    </td>
+                                                                    <td>
+                                                                        <span
+                                                                            class="text-muted">{{ $inscripcion->fecha_registro?->format('d/m/Y') }}</span>
+                                                                    </td>
+                                                                    <td class="text-center">
+
+                                                                        @if ($inscripcion->estado != 'Transferido')
+                                                                            <div class="btn-group" role="group">
+                                                                                <button type="button"
+                                                                                    class="btn btn-sm btn-outline-danger btn-eliminar"
+                                                                                    data-inscripcion-id="{{ $inscripcion->id }}"
+                                                                                    data-estudiante="{{ $participante['estudiante'] }}">
+                                                                                    <i class="ri-delete-bin-line"></i>
+                                                                                    Eliminar
+                                                                                </button>
+                                                                                <button type="button"
+                                                                                    class="btn btn-sm btn-outline-primary btn-transferir"
+                                                                                    data-inscripcion-id="{{ $inscripcion->id }}"
+                                                                                    data-estudiante="{{ $participante['estudiante'] }}"
+                                                                                    data-estudiante-id="{{ $participante['estudiante_id'] }}">
+                                                                                    <i class="ri-exchange-line"></i>
+                                                                                    Transferir
+                                                                                </button>
+                                                                            </div>
+                                                                        @else
+                                                                            <span class="badge bg-info">Transferido</span>
+                                                                        @endif
+
+                                                                    </td>
+                                                                </tr>
+                                                            @endif
+                                                        @endforeach
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal para Eliminar Inscripción -->
+    <div class="modal fade" id="modalEliminar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Eliminación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Está seguro de eliminar la inscripción de <strong id="estudianteEliminarNombre"></strong>?</p>
+                    <div class="alert alert-danger">
+                        <i class="ri-alert-line me-2"></i>
+                        <strong>Advertencia:</strong> Esta acción eliminará todas las cuotas, pagos y notas asociadas a esta
+                        inscripción.
+                    </div>
+                    <input type="hidden" id="inscripcionEliminarId">
+                </div>
+                <!-- En el modal de eliminación -->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="confirmarEliminarBtn">
+                        <i class="ri-delete-bin-line"></i> Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Transferir Inscripción -->
+    <div class="modal fade" id="modalTransferir" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Transferir Inscripción</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Estudiante</label>
+                            <input type="text" class="form-control" id="estudianteTransferirNombre" readonly>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Carnet</label>
+                            <input type="text" class="form-control" id="estudianteTransferirCarnet" readonly>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nueva Oferta Académica *</label>
+                            <select class="form-select" id="nuevaOfertaSelect">
+                                <option value="">Seleccione una oferta</option>
+                                <!-- Las opciones se cargarán dinámicamente -->
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Plan de Pago *</label>
+                            <select class="form-select" id="planPagoSelect" disabled>
+                                <option value="">Primero seleccione una oferta</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Observación</label>
+                        <textarea class="form-control" id="observacionTransferencia" rows="2"
+                            placeholder="Motivo de la transferencia..."></textarea>
+                    </div>
+
+                    <!-- Detalles del plan seleccionado -->
+                    <div class="card border-info" id="planDetallesCard" style="display: none;">
+                        <div class="card-header bg-info-subtle">
+                            <h6 class="mb-0">Detalles del Plan de Pago</h6>
+                        </div>
+                        <div class="card-body" id="planDetallesBody">
+                            <!-- Los detalles se cargarán aquí -->
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="inscripcionTransferirId">
+                    <input type="hidden" id="estudianteTransferirId">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="confirmarTransferirBtn" disabled>Confirmar
+                        Transferencia</button>
                 </div>
             </div>
         </div>
@@ -1442,6 +1664,8 @@
 
 @push('script')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Antes de cerrar </body> -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
         $(document).ready(function() {
@@ -1510,7 +1734,7 @@
                     data: {
                         labels: ['Inscritos', 'Pre-Inscritos'],
                         datasets: [{
-                            data: [@json($totalInscritos), @json($totalPreInscritos)],
+                            data: [{{ $totalInscritos }}, {{ $totalPreInscritos }}],
                             backgroundColor: [
                                 'rgba(40, 167, 69, 0.8)',
                                 'rgba(255, 193, 7, 0.8)'
@@ -1542,7 +1766,7 @@
                     data: {
                         labels: ['Hombres', 'Mujeres'],
                         datasets: [{
-                            data: [@json($hombres), @json($mujeres)],
+                            data: [{{ $hombres }}, {{ $mujeres }}],
                             backgroundColor: [
                                 'rgba(54, 162, 235, 0.8)',
                                 'rgba(255, 99, 132, 0.8)'
@@ -1630,7 +1854,8 @@
                 const ofertaId = $(this).data('oferta-id');
 
                 if (moduloId && ofertaId) {
-                    window.location.href = `/admin/ofertas/${ofertaId}/modulo/${moduloId}/detalle`;
+                    window.location.href = '/admin/ofertas/' + ofertaId + '/modulo/' + moduloId +
+                        '/detalle';
                 }
             });
         });
@@ -1682,7 +1907,10 @@
                                     const value = context.parsed;
                                     const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                     const percentage = Math.round((value / total) * 100);
-                                    return `${label}: Bs ${value.toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${percentage}%)`;
+                                    return label + ': Bs ' + value.toLocaleString('es-BO', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    }) + ' (' + percentage + '%)';
                                 }
                             }
                         }
@@ -1747,7 +1975,7 @@
                                     const total = pagado[context.dataIndex] + pendiente[context.dataIndex];
                                     if (total > 0) {
                                         const percentage = Math.round((context.parsed.y / total) * 100);
-                                        label += ` (${percentage}%)`;
+                                        label += ' (' + percentage + '%)';
                                     }
 
                                     return label;
@@ -1789,6 +2017,470 @@
                 }
             });
         }
+    </script>
+@endpush
+
+{{-- SEPARAR ESTOS SCRIPTS EN UN PUSH DIFERENTE --}}
+@push('script')
+    <script>
+        $(document).ready(function() {
+            // Configurar CSRF token para todas las peticiones AJAX
+            $.ajaxSetup({
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                }
+            });
+
+            // Variables para almacenar datos temporales
+            let inscripcionAEliminar = null;
+            let inscripcionATransferir = null;
+            let estudianteATransferir = null;
+
+            // Script para eliminar inscripción - MODIFICADO PARA RECARGAR PÁGINA
+            $(document).on('click', '.btn-eliminar', function() {
+                const inscripcionId = $(this).data('inscripcion-id');
+                const estudiante = $(this).data('estudiante');
+
+                $('#estudianteEliminarNombre').text(estudiante);
+                $('#inscripcionEliminarId').val(inscripcionId);
+                $('#modalEliminar').modal('show');
+            });
+
+            // Función para eliminar inscripción
+            function eliminarInscripcion(inscripcionId, estudiante) {
+                const url = '/admin/ofertas/{{ $oferta->id }}/inscripciones/' + inscripcionId + '/eliminar';
+
+                // Mostrar loading
+                Swal.fire({
+                    title: 'Procesando...',
+                    text: 'Eliminando inscripción',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                $.ajax({
+                    url: url,
+                    type: 'DELETE',
+                    success: function(response) {
+                        Swal.close();
+                        if (response.success) {
+                            Swal.fire({
+                                title: '¡Éxito!',
+                                text: response.msg,
+                                icon: 'success',
+                                confirmButtonColor: '#28a745'
+                            }).then(() => {
+                                // Eliminar la fila de la tabla
+                                $(`[data-inscripcion-id="${inscripcionId}"]`).closest('tr')
+                                    .fadeOut(300, function() {
+                                        $(this).remove();
+                                        // Reorganizar los números de fila
+                                        reorganizarNumerosFilas();
+                                    });
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Error',
+                                text: response.msg,
+                                icon: 'error',
+                                confirmButtonColor: '#d33'
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        Swal.close();
+                        let mensaje = 'Error al eliminar la inscripción';
+
+                        if (xhr.status === 403) {
+                            mensaje =
+                                'No tiene permisos para realizar esta acción. Solo usuarios con rol de Administrador pueden eliminar inscripciones.';
+                        } else if (xhr.responseJSON && xhr.responseJSON.msg) {
+                            mensaje = xhr.responseJSON.msg;
+                        }
+
+                        Swal.fire({
+                            title: 'Error',
+                            text: mensaje,
+                            icon: 'error',
+                            confirmButtonColor: '#d33'
+                        });
+                    }
+                });
+            }
+
+            // Confirmar eliminación - MODIFICADO
+            $('#confirmarEliminarBtn').click(function() {
+                const inscripcionId = $('#inscripcionEliminarId').val();
+                const url = '{{ route('admin.ofertas.inscripciones.eliminar', [$oferta->id, '__id__']) }}'
+                    .replace('__id__', inscripcionId);
+
+                $.ajax({
+                    url: url,
+                    type: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    beforeSend: function() {
+                        $('#confirmarEliminarBtn').prop('disabled', true).html(
+                            '<i class="ri-loader-4-line ri-spin"></i> Eliminando...');
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            // Cerrar modal
+                            $('#modalEliminar').modal('hide');
+
+                            // Mostrar mensaje de éxito y recargar página
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Eliminado!',
+                                text: response.msg,
+                                showConfirmButton: true,
+                                timer: 3000
+                            }).then((result) => {
+                                // Recargar toda la página para actualizar todos los datos
+                                location.reload();
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        $('#confirmarEliminarBtn').prop('disabled', false).html('Eliminar');
+
+                        let errorMsg = 'Error al eliminar la inscripción';
+                        if (xhr.responseJSON && xhr.responseJSON.msg) {
+                            errorMsg = xhr.responseJSON.msg;
+                        }
+
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: errorMsg
+                        });
+                    },
+                    complete: function() {
+                        $('#confirmarEliminarBtn').prop('disabled', false).html('Eliminar');
+                    }
+                });
+            });
+
+            // ========== TRANSFERIR INSCRIPCIÓN ==========
+            $(document).on('click', '.btn-transferir', function(e) {
+                e.preventDefault();
+                const estudiante = $(this).data('estudiante');
+                const estudianteId = $(this).data('estudiante-id');
+                const inscripcionId = $(this).data('inscripcion-id');
+                const carnet = $(this).closest('tr').find('.badge.bg-secondary').text();
+
+                $('#estudianteTransferirNombre').val(estudiante);
+                $('#estudianteTransferirCarnet').val(carnet);
+                $('#inscripcionTransferirId').val(inscripcionId);
+                $('#estudianteTransferirId').val(estudianteId);
+
+                inscripcionATransferir = inscripcionId;
+                estudianteATransferir = estudianteId;
+
+                // Cargar ofertas disponibles
+                cargarOfertasDisponibles();
+
+                $('#modalTransferir').modal('show');
+            });
+
+            // Cargar ofertas disponibles para transferencia
+            function cargarOfertasDisponibles() {
+                // Mostrar loading
+                Swal.fire({
+                    title: 'Cargando',
+                    text: 'Buscando ofertas disponibles...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                $.ajax({
+                    url: '{{ route('admin.ofertas.disponibles-transferencia') }}',
+                    type: 'GET',
+                    data: {
+                        current_oferta_id: '{{ $oferta->id }}',
+                        sucursal_id: '{{ $oferta->sucursale_id }}'
+                    },
+                    success: function(response) {
+                        Swal.close();
+                        if (response.success && response.ofertas.length > 0) {
+                            let options = '<option value="">Seleccione una oferta</option>';
+                            response.ofertas.forEach(oferta => {
+                                const fechaInicio = new Date(oferta.fecha_inicio_programa)
+                                    .toLocaleDateString('es-BO');
+                                options += `<option value="${oferta.id}" data-programa="${oferta.programa.nombre}" data-sucursal="${oferta.sucursal.nombre}" data-modalidad="${oferta.modalidad.nombre}" data-fecha="${fechaInicio}">
+                            ${oferta.codigo} - ${oferta.programa.nombre} (${oferta.sucursal.nombre})
+                        </option>`;
+                            });
+                            $('#nuevaOfertaSelect').html(options).prop('disabled', false);
+                        } else {
+                            Swal.fire({
+                                title: 'Información',
+                                text: 'No hay ofertas disponibles para transferencia',
+                                icon: 'info'
+                            }).then(() => {
+                                $('#modalTransferir').modal('hide');
+                            });
+                            $('#nuevaOfertaSelect').html(
+                                '<option value="">No hay ofertas disponibles</option>').prop(
+                                'disabled', true);
+                        }
+                    },
+                    error: function() {
+                        Swal.close();
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Error al cargar las ofertas disponibles',
+                            icon: 'error'
+                        });
+                        $('#nuevaOfertaSelect').html('<option value="">Error al cargar</option>');
+                    }
+                });
+            }
+
+            // Cuando se selecciona una oferta, cargar sus planes de pago
+            $(document).on('change', '#nuevaOfertaSelect', function() {
+                const ofertaId = $(this).val();
+
+                if (!ofertaId) {
+                    $('#planPagoSelect').prop('disabled', true).html(
+                        '<option value="">Primero seleccione una oferta</option>');
+                    $('#planDetallesCard').hide();
+                    $('#confirmarTransferirBtn').prop('disabled', true);
+                    return;
+                }
+
+                // Mostrar loading
+                Swal.fire({
+                    title: 'Cargando',
+                    text: 'Buscando planes de pago...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                cargarPlanesDePago(ofertaId);
+            });
+
+            // Cargar planes de pago de la oferta seleccionada
+            function cargarPlanesDePago(ofertaId) {
+                $.ajax({
+                    url: '/admin/ofertas/' + ofertaId + '/planes-transferencia',
+                    type: 'GET',
+                    success: function(response) {
+                        Swal.close();
+                        if (response.success && response.planes.length > 0) {
+                            let options = '<option value="">Seleccione un plan de pago</option>';
+                            response.planes.forEach(plan => {
+                                options += `<option value="${plan.id}" data-conceptos='${JSON.stringify(plan.conceptos)}'>
+                            ${plan.nombre}
+                        </option>`;
+                            });
+                            $('#planPagoSelect').html(options).prop('disabled', false);
+                        } else {
+                            Swal.fire({
+                                title: 'Información',
+                                text: 'No hay planes de pago disponibles para esta oferta',
+                                icon: 'info'
+                            });
+                            $('#planPagoSelect').html(
+                                '<option value="">No hay planes disponibles</option>').prop(
+                                'disabled', true);
+                        }
+                        $('#planDetallesCard').hide();
+                        $('#confirmarTransferirBtn').prop('disabled', true);
+                    },
+                    error: function() {
+                        Swal.close();
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Error al cargar los planes de pago',
+                            icon: 'error'
+                        });
+                        $('#planPagoSelect').html('<option value="">Error al cargar</option>');
+                    }
+                });
+            }
+
+            // Cuando se selecciona un plan, mostrar sus detalles
+            $(document).on('change', '#planPagoSelect', function() {
+                const planId = $(this).val();
+                const conceptos = $(this).find(':selected').data('conceptos');
+
+                if (!planId || !conceptos) {
+                    $('#planDetallesCard').hide();
+                    $('#confirmarTransferirBtn').prop('disabled', true);
+                    return;
+                }
+
+                // Mostrar detalles del plan
+                mostrarDetallesPlan(conceptos);
+                $('#confirmarTransferirBtn').prop('disabled', false);
+            });
+
+            // Mostrar detalles del plan seleccionado
+            function mostrarDetallesPlan(conceptos) {
+                let html = '<div class="table-responsive">';
+                html += '<table class="table table-sm table-bordered">';
+                html +=
+                    '<thead><tr><th>Concepto</th><th>Cuotas</th><th>Monto por Cuota</th><th>Total</th></tr></thead>';
+                html += '<tbody>';
+
+                let totalGeneral = 0;
+                conceptos.forEach(concepto => {
+                    const montoCuota = parseFloat(concepto.monto_por_cuota.replace(',', '')) || 0;
+                    const totalConcepto = parseFloat(concepto.total_concepto.replace(',', '')) || 0;
+                    totalGeneral += totalConcepto;
+
+                    html += `<tr>
+                <td>${concepto.concepto_nombre}</td>
+                <td class="text-center">${concepto.n_cuotas}</td>
+                <td class="text-end">${concepto.monto_por_cuota} Bs</td>
+                <td class="text-end">${concepto.total_concepto} Bs</td>
+            </tr>`;
+                });
+
+                html += `<tr class="table-light">
+            <td colspan="3" class="text-end fw-bold">Total del Plan:</td>
+            <td class="text-end fw-bold">${totalGeneral.toFixed(2)} Bs</td>
+        </tr>`;
+                html += '</tbody></table></div>';
+
+                $('#planDetallesBody').html(html);
+                $('#planDetallesCard').show();
+            }
+
+            // Confirmar transferencia
+            $('#confirmarTransferirBtn').click(function() {
+                const ofertaId = $('#nuevaOfertaSelect').val();
+                const planId = $('#planPagoSelect').val();
+                const observacion = $('#observacionTransferencia').val();
+
+                if (!ofertaId || !planId) {
+                    Swal.fire({
+                        title: 'Advertencia',
+                        text: 'Por favor, seleccione una oferta y un plan de pago',
+                        icon: 'warning'
+                    });
+                    return;
+                }
+
+                const url = '/admin/ofertas/{{ $oferta->id }}/inscripciones/' + inscripcionATransferir +
+                    '/transferir';
+
+                // Mostrar confirmación
+                Swal.fire({
+                    title: '¿Confirmar transferencia?',
+                    html: `Va a transferir la inscripción a una nueva oferta.<br><br>
+                   <div class="text-start">
+                       <strong>Oferta:</strong> ${$('#nuevaOfertaSelect option:selected').text()}<br>
+                       <strong>Plan:</strong> ${$('#planPagoSelect option:selected').text()}<br>
+                       <strong>Estudiante:</strong> ${$('#estudianteTransferirNombre').val()}
+                   </div>`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#0d6efd',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Sí, transferir',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        realizarTransferencia(url, ofertaId, planId, observacion);
+                    }
+                });
+            });
+
+            // Función para realizar la transferencia
+            function realizarTransferencia(url, ofertaId, planId, observacion) {
+                // Mostrar loading
+                Swal.fire({
+                    title: 'Procesando...',
+                    text: 'Realizando transferencia',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                $.ajax({
+                    url: url,
+                    type: 'POST',
+                    data: {
+                        nueva_oferta_id: ofertaId,
+                        nuevo_plan_pago_id: planId,
+                        observacion: observacion
+                    },
+                    success: function(response) {
+                        Swal.close();
+                        if (response.success) {
+                            Swal.fire({
+                                title: '¡Transferencia Exitosa!',
+                                text: response.msg,
+                                icon: 'success',
+                                confirmButtonColor: '#28a745'
+                            }).then(() => {
+                                // Eliminar la fila de la tabla
+                                $(`[data-inscripcion-id="${inscripcionATransferir}"]`).closest(
+                                    'tr').fadeOut(300, function() {
+                                    $(this).remove();
+                                    // Reorganizar los números de fila
+                                    reorganizarNumerosFilas();
+                                });
+                                $('#modalTransferir').modal('hide');
+                            });
+                        } else {
+                            Swal.fire({
+                                title: 'Error',
+                                text: response.msg,
+                                icon: 'error',
+                                confirmButtonColor: '#d33'
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        Swal.close();
+                        let mensaje = 'Error al transferir la inscripción';
+
+                        if (xhr.status === 403) {
+                            mensaje =
+                                'No tiene permisos para realizar esta acción. Solo usuarios con rol de Administrador pueden transferir inscripciones.';
+                        } else if (xhr.responseJSON && xhr.responseJSON.msg) {
+                            mensaje = xhr.responseJSON.msg;
+                        }
+
+                        Swal.fire({
+                            title: 'Error',
+                            text: mensaje,
+                            icon: 'error',
+                            confirmButtonColor: '#d33'
+                        });
+                    }
+                });
+            }
+
+            // Función para reorganizar números de fila después de eliminar/transferir
+            function reorganizarNumerosFilas() {
+                $('#tablaGestion tbody tr').each(function(index) {
+                    $(this).find('td:first').text(index + 1);
+                });
+            }
+
+            // Limpiar modales al cerrar
+            $('#modalTransferir').on('hidden.bs.modal', function() {
+                $('#nuevaOfertaSelect').val('');
+                $('#planPagoSelect').val('').prop('disabled', true);
+                $('#observacionTransferencia').val('');
+                $('#planDetallesCard').hide();
+                $('#confirmarTransferirBtn').prop('disabled', true);
+                inscripcionATransferir = null;
+                estudianteATransferir = null;
+            });
+        });
     </script>
 
     <style>

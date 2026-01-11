@@ -147,6 +147,16 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
 
         Route::get('/admin/ofertas/{ofertaId}/modulo/{moduloId}/detalle', 'detalleModulo')
             ->name('admin.ofertas.modulo.detalle');
+
+        // En el grupo de rutas de OfertasAcademicasController, ya tienes estas rutas:
+        Route::delete('/admin/ofertas/{oferta}/inscripciones/{inscripcion}/eliminar', 'eliminarInscripcion')
+            ->name('admin.ofertas.inscripciones.eliminar');
+        Route::post('/admin/ofertas/{oferta}/inscripciones/{inscripcion}/transferir', 'transferirInscripcion')
+            ->name('admin.ofertas.inscripciones.transferir');
+        Route::get('/admin/ofertas/disponibles-transferencia', 'ofertasDisponiblesTransferencia')
+            ->name('admin.ofertas.disponibles-transferencia');
+        Route::get('/admin/ofertas/{oferta}/planes-transferencia', 'planesTransferencia')
+            ->name('admin.ofertas.planes-transferencia');
     });
 
     Route::controller(UserProfileController::class)->group(function () {
