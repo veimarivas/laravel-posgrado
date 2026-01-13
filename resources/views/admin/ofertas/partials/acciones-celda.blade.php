@@ -35,16 +35,25 @@
                 <i class="ri-add-circle-line"></i>
             </button>
 
+
             <button class="btn btn-sm btn-warning editarPlanesPagoBtn" data-oferta-id="{{ $oferta->id }}"
                 data-oferta-codigo="{{ $oferta->codigo }}" title="Editar planes de pago">
                 <i class="ri-edit-line"></i>
             </button>
+            <a href="{{ route('admin.ofertas.contabilidad.planes-pago', $oferta->id) }}" class="btn btn-info btn-sm"
+                title="Gestión Contable">
+                <i class="ri-money-dollar-circle-line"></i>
+            </a>
 
             <a href="{{ route('admin.ofertas.vermodulos', $oferta->id) }}" class="btn btn-info btn-sm"
                 title="Ver Módulos">
                 <i class="ri-book-open-line"></i>
             </a>
         @elseif ($faseId == 3)
+            <a href="{{ route('admin.ofertas.contabilidad.planes-pago', $oferta->id) }}" class="btn btn-info btn-sm"
+                title="Gestión Contable">
+                <i class="ri-money-dollar-circle-line"></i>
+            </a>
             <a href="{{ route('admin.ofertas.vermodulos', $oferta->id) }}" class="btn btn-info btn-sm"
                 title="Ver Módulos">
                 <i class="ri-book-open-line"></i>
@@ -99,5 +108,6 @@
                 | G{{ $oferta->grupo }}
             @endif
         </small>
+
     </div>
 </div>

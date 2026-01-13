@@ -422,6 +422,11 @@
                                                 <i class="ri-money-dollar-circle-line align-middle me-2"></i>
                                                 Resumen Financiero por Concepto
                                             </h5>
+                                            <!-- En la sección de acciones o en un lugar visible -->
+                                            <a href="{{ route('admin.ofertas.contabilidad.planes-pago', $oferta->id) }}"
+                                                class="btn btn-info btn-sm">
+                                                <i class="ri-money-dollar-circle-line me-1"></i> Gestión Contable
+                                            </a>
                                         </div>
                                         <div class="card-body">
                                             <div class="row g-3">
@@ -572,9 +577,11 @@
                                                     <i class="ri-user-line align-middle me-2"></i>
                                                     Estado Financiero de Participantes
                                                 </h5>
-                                                <button type="button" class="btn btn-light btn-sm" id="exportarTabla">
+                                                {{-- Reemplaza el botón actual --}}
+                                                <a href="{{ route('admin.ofertas.exportar-estado-financiero', $oferta->id) }}"
+                                                    class="btn btn-light btn-sm" id="exportarTabla" target="_blank">
                                                     <i class="ri-download-line align-middle me-1"></i> Exportar Excel
-                                                </button>
+                                                </a>
                                             </div>
                                         </div>
                                         <div class="card-body">

@@ -157,6 +157,33 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
             ->name('admin.ofertas.disponibles-transferencia');
         Route::get('/admin/ofertas/{oferta}/planes-transferencia', 'planesTransferencia')
             ->name('admin.ofertas.planes-transferencia');
+
+        // area contable para administrar planes de pago
+        Route::get('/admin/ofertas/{id}/contabilidad/planes-pago', 'administrarPlanesPagoContable')
+            ->name('admin.ofertas.contabilidad.planes-pago');
+        Route::post('/admin/ofertas/{id}/contabilidad/planes-pago/actualizar', 'actualizarPlanesPagoContable')
+            ->name('admin.ofertas.contabilidad.planes-pago.actualizar');
+
+        // En el grupo de OfertasAcademicasController
+        Route::post('/admin/ofertas/actualizar-plan-pago', 'actualizarPlanPago')
+            ->name('admin.ofertas.actualizar-plan-pago');
+        Route::post('/admin/ofertas/eliminar-plan-pago', 'eliminarPlanPago')
+            ->name('admin.ofertas.eliminar-plan-pago');
+
+        // En el grupo de OfertasAcademicasController
+        Route::post('/admin/ofertas/obtener-precio-principal', [OfertasAcademicasController::class, 'obtenerPrecioPrincipal'])
+            ->name('admin.ofertas.obtener-precio-principal');
+
+        Route::post('/admin/ofertas/verificar-plan-principal', [OfertasAcademicasController::class, 'verificarPlanPrincipal'])
+            ->name('admin.ofertas.verificar-plan-principal');
+
+        Route::get('/admin/ofertas/{id}/planes-inscripcion', [OfertasAcademicasController::class, 'obtenerPlanesPagoParaInscripcion'])->name('admin.ofertas.planes-inscripcion');
+
+        Route::get(
+            '/admin/ofertas/{id}/exportar-estado-financiero',
+            [OfertasAcademicasController::class, 'exportarEstadoFinancieroParticipantes']
+        )
+            ->name('admin.ofertas.exportar-estado-financiero');
     });
 
     Route::controller(UserProfileController::class)->group(function () {

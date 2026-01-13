@@ -16,19 +16,13 @@ class PlanesConcepto extends Model
         'ofertas_academica_id',
         'planes_pago_id',
         'concepto_id',
-        'fecha_inicio_promocion',
-        'fecha_fin_promocion',
-        'es_promocion',
         'precio_regular',
-        'descuento_porcentaje'
+        'descuento_bs'
     ];
 
     protected $casts = [
-        'fecha_inicio_promocion' => 'date',
-        'fecha_fin_promocion' => 'date',
-        'es_promocion' => 'boolean',
         'precio_regular' => 'decimal:2',
-        'descuento_porcentaje' => 'decimal:2',
+        'descuento_bs' => 'decimal:2',
         'pago_bs' => 'decimal:2'
     ];
 
@@ -75,11 +69,20 @@ class PlanesConcepto extends Model
         return $this->precio_regular ?? $this->pago_bs;
     }
 
-    // Método para calcular el descuento
+    // Método para calcular el descuento en Bs
     public function getDescuentoCalculadoAttribute()
     {
-        if ($this->es_promocion && $this->promocion_vigente && $this->precio_regular) {
+        if ($this->precio_regular && $this->precio_regular > 0) {
             return $this->precio_regular - $this->pago_bs;
+        }
+        return 0;
+    }
+
+    // Método para obtener el porcentaje de descuento
+    public function getDescuentoPorcentajeAttribute()
+    {
+        if ($this->precio_regular && $this->precio_regular > 0 && $this->descuento_bs) {
+            return ($this->descuento_bs / $this->precio_regular) * 100;
         }
         return 0;
     }

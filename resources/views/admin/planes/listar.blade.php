@@ -40,7 +40,62 @@
                     </div>
                 </div>
             </div>
-            <div class="col-xl-9">
+            <div class="col-xl-3 col-md-6">
+                <div class="card border border-success">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="avatar-sm rounded-circle bg-success bg-opacity-10">
+                                    <i class="ri-checkbox-circle-line fs-24 text-success"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <p class="text-muted mb-1">Habilitados</p>
+                                <h4 class="mb-0" id="totalHabilitados">0</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="card border border-warning">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="avatar-sm rounded-circle bg-warning bg-opacity-10">
+                                    <i class="ri-star-line fs-24 text-warning"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <p class="text-muted mb-1">Plan Principal</p>
+                                <h4 class="mb-0" id="totalPrincipales">0</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="card border border-info">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="avatar-sm rounded-circle bg-info bg-opacity-10">
+                                    <i class="ri-percent-line fs-24 text-info"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <p class="text-muted mb-1">Promociones</p>
+                                <h4 class="mb-0" id="totalPromociones">0</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Box -->
+        <div class="row mt-3">
+            <div class="col-12">
                 <div class="card">
                     <div class="card-body">
                         <div class="d-flex flex-wrap gap-3">
@@ -53,6 +108,26 @@
                                 </div>
                             </div>
                             <div>
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-secondary btn-lg dropdown-toggle" type="button"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="ri-filter-line align-bottom me-1"></i> Filtrar por
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item filter-item" href="#" data-filter="all">Todos</a>
+                                        </li>
+                                        <li><a class="dropdown-item filter-item" href="#"
+                                                data-filter="habilitado">Habilitados</a></li>
+                                        <li><a class="dropdown-item filter-item" href="#"
+                                                data-filter="principal">Principal</a></li>
+                                        <li><a class="dropdown-item filter-item" href="#"
+                                                data-filter="promocion">Promociones</a></li>
+                                        <li><a class="dropdown-item filter-item" href="#"
+                                                data-filter="vigente">Promociones Vigentes</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div>
                                 <button type="button" id="clearFilters" class="btn btn-outline-secondary btn-lg">
                                     <i class="ri-refresh-line align-bottom me-1"></i> Limpiar
                                 </button>
@@ -62,6 +137,7 @@
                 </div>
             </div>
         </div>
+
         <!-- Results Table -->
         <div class="row">
             <div class="col-12">
@@ -76,8 +152,8 @@
                             <ul class="dropdown-menu">
                                 <li><a class="dropdown-item active" href="#"><i
                                             class="ri-list-check align-bottom me-2"></i> Tabla</a></li>
-                                <li><a class="dropdown-item" href="#"><i class="ri-grid-line align-bottom me-2"></i>
-                                        Cuadrícula</a></li>
+                                <li><a class="dropdown-item" href="#"><i
+                                            class="ri-grid-line align-bottom me-2"></i> Cuadrícula</a></li>
                             </ul>
                         </div>
                     </div>
@@ -88,7 +164,11 @@
                                     <tr>
                                         <th class="px-3 py-3" width="5%">#</th>
                                         <th class="px-3 py-3">Nombre del Plan</th>
-                                        <th class="px-3 py-3 text-center" width="15%">Estado</th>
+                                        <th class="px-3 py-3 text-center" width="10%">Habilitado</th>
+                                        <th class="px-3 py-3 text-center" width="10%">Principal</th>
+                                        <th class="px-3 py-3 text-center" width="10%">Promoción</th>
+                                        <th class="px-3 py-3 text-center" width="15%">Fechas Promoción</th>
+                                        <th class="px-3 py-3 text-center" width="15%">Estado Promoción</th>
                                         <th class="px-3 py-3 text-end" width="15%">Acciones</th>
                                     </tr>
                                 </thead>
@@ -141,6 +221,62 @@
                                     <small id="feedback_registro" class="form-text mt-1"></small>
                                 </div>
                             </div>
+
+                            <div class="col-lg-12">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                id="habilitado_registro" name="habilitado" value="1" checked>
+                                            <label class="form-check-label" for="habilitado_registro">Habilitado</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                id="principal_registro" name="principal" value="1">
+                                            <label class="form-check-label" for="principal_registro">Principal</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                id="es_promocion_registro" name="es_promocion" value="1">
+                                            <label class="form-check-label" for="es_promocion_registro">Es
+                                                Promoción</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Campos de fechas para promoción (inicialmente ocultos) -->
+                            <div class="col-lg-12" id="fechas_promocion_container" style="display: none;">
+                                <div class="border rounded p-3 bg-light">
+                                    <h6 class="mb-3 fw-bold">Datos de la Promoción</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="fecha_inicio_promocion_registro" class="form-label">Fecha
+                                                    Inicio <span class="text-danger">*</span></label>
+                                                <input type="date" id="fecha_inicio_promocion_registro"
+                                                    name="fecha_inicio_promocion" class="form-control">
+                                                <div class="invalid-feedback">Por favor ingresa la fecha de inicio de la
+                                                    promoción</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="fecha_fin_promocion_registro" class="form-label">Fecha Fin
+                                                    <span class="text-danger">*</span></label>
+                                                <input type="date" id="fecha_fin_promocion_registro"
+                                                    name="fecha_fin_promocion" class="form-control">
+                                                <div class="invalid-feedback">Por favor ingresa la fecha de fin de la
+                                                    promoción</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer bg-light p-3">
@@ -180,6 +316,62 @@
                                         name="nombre" required>
                                     <div class="invalid-feedback">Por favor ingresa el nombre del plan</div>
                                     <small id="feedback_edicion" class="form-text mt-1"></small>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-12">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                id="habilitado_edicion" name="habilitado" value="1">
+                                            <label class="form-check-label" for="habilitado_edicion">Habilitado</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                id="principal_edicion" name="principal" value="1">
+                                            <label class="form-check-label" for="principal_edicion">Principal</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" role="switch"
+                                                id="es_promocion_edicion" name="es_promocion" value="1">
+                                            <label class="form-check-label" for="es_promocion_edicion">Es
+                                                Promoción</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Campos de fechas para promoción -->
+                            <div class="col-lg-12" id="fechas_promocion_container_edicion">
+                                <div class="border rounded p-3 bg-light">
+                                    <h6 class="mb-3 fw-bold">Datos de la Promoción</h6>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="fecha_inicio_promocion_edicion" class="form-label">Fecha
+                                                    Inicio <span class="text-danger">*</span></label>
+                                                <input type="date" id="fecha_inicio_promocion_edicion"
+                                                    name="fecha_inicio_promocion" class="form-control">
+                                                <div class="invalid-feedback">Por favor ingresa la fecha de inicio de la
+                                                    promoción</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="fecha_fin_promocion_edicion" class="form-label">Fecha Fin
+                                                    <span class="text-danger">*</span></label>
+                                                <input type="date" id="fecha_fin_promocion_edicion"
+                                                    name="fecha_fin_promocion" class="form-control">
+                                                <div class="invalid-feedback">Por favor ingresa la fecha de fin de la
+                                                    promoción</div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -381,6 +573,11 @@
         .toast-container {
             z-index: 999999 !important;
         }
+
+        .form-switch .form-check-input {
+            width: 3em;
+            height: 1.5em;
+        }
     </style>
 @endpush
 
@@ -389,6 +586,7 @@
         $(document).ready(function() {
             let debounceTimer;
             let isProcessing = false;
+            let currentFilter = 'all';
 
             // Inicializar tooltips
             $('[data-bs-toggle="tooltip"]').each(function() {
@@ -399,6 +597,8 @@
             $('#registrar, #modalModificar, #modalEliminar').on('hidden.bs.modal', function() {
                 if (this.id === 'registrar') {
                     $('#addForm')[0].reset();
+                    $('#habilitado_registro').prop('checked', true);
+                    $('#fechas_promocion_container').hide();
                     $('#feedback_registro').removeClass('text-success text-danger').text('');
                     $('.addBtn').prop('disabled', true);
                     $('#addForm').removeClass('was-validated');
@@ -409,6 +609,32 @@
                     $('#updateForm').removeClass('was-validated');
                 } else if (this.id === 'modalEliminar') {
                     $('#deleteForm')[0].reset();
+                }
+            });
+
+            // Manejar checkbox "Es Promoción" en registro
+            $('#es_promocion_registro').change(function() {
+                if ($(this).is(':checked')) {
+                    $('#fechas_promocion_container').slideDown();
+                    $('#fecha_inicio_promocion_registro').prop('required', true);
+                    $('#fecha_fin_promocion_registro').prop('required', true);
+                } else {
+                    $('#fechas_promocion_container').slideUp();
+                    $('#fecha_inicio_promocion_registro').prop('required', false);
+                    $('#fecha_fin_promocion_registro').prop('required', false);
+                }
+            });
+
+            // Manejar checkbox "Es Promoción" en edición
+            $('#es_promocion_edicion').change(function() {
+                if ($(this).is(':checked')) {
+                    $('#fechas_promocion_container_edicion').slideDown();
+                    $('#fecha_inicio_promocion_edicion').prop('required', true);
+                    $('#fecha_fin_promocion_edicion').prop('required', true);
+                } else {
+                    $('#fechas_promocion_container_edicion').slideUp();
+                    $('#fecha_inicio_promocion_edicion').prop('required', false);
+                    $('#fecha_fin_promocion_registro').prop('required', false);
                 }
             });
 
@@ -550,11 +776,71 @@
                 }, 500);
             });
 
-            // Editar plan
+            // Editar plan - VERSIÓN MEJORADA
             $(document).on('click', '.editBtn', function() {
                 const data = $(this).data('bs-obj');
+
                 $('#planeId').val(data.id);
                 $('#nombre_edicion').val(data.nombre);
+                $('#habilitado_edicion').prop('checked', data.habilitado == 1);
+                $('#principal_edicion').prop('checked', data.principal == 1);
+                $('#es_promocion_edicion').prop('checked', data.es_promocion == 1);
+
+                // Función para formatear fecha
+                const formatDateForInput = (dateString) => {
+                    if (!dateString) return '';
+
+                    // Si ya está en formato YYYY-MM-DD
+                    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                        return dateString;
+                    }
+
+                    // Si está en formato ISO (con T)
+                    if (dateString.includes('T')) {
+                        return dateString.split('T')[0];
+                    }
+
+                    // Si está en formato con espacio
+                    if (dateString.includes(' ')) {
+                        return dateString.split(' ')[0];
+                    }
+
+                    // Intentar crear Date object
+                    try {
+                        const date = new Date(dateString);
+                        if (!isNaN(date.getTime())) {
+                            return date.toISOString().split('T')[0];
+                        }
+                    } catch (e) {
+                        console.error('Error formateando fecha:', e);
+                    }
+
+                    return '';
+                };
+
+                // Manejar fechas de promoción
+                if (data.es_promocion == 1) {
+                    // Mostrar el contenedor de fechas
+                    $('#fechas_promocion_container_edicion').show();
+
+                    // Formatear y establecer fechas
+                    const fechaInicio = formatDateForInput(data.fecha_inicio_promocion);
+                    const fechaFin = formatDateForInput(data.fecha_fin_promocion);
+
+                    $('#fecha_inicio_promocion_edicion').val(fechaInicio);
+                    $('#fecha_fin_promocion_edicion').val(fechaFin);
+
+                    // Hacer requeridos los campos si es promoción
+                    $('#fecha_inicio_promocion_edicion').prop('required', true);
+                    $('#fecha_fin_promocion_edicion').prop('required', true);
+                } else {
+                    // Ocultar y limpiar campos si no es promoción
+                    $('#fechas_promocion_container_edicion').hide();
+                    $('#fecha_inicio_promocion_edicion').val('');
+                    $('#fecha_fin_promocion_edicion').val('');
+                    $('#fecha_inicio_promocion_edicion').prop('required', false);
+                    $('#fecha_fin_promocion_edicion').prop('required', false);
+                }
 
                 // Reset y activar verificación
                 $('#feedback_edicion').removeClass('text-success text-danger').text('');
@@ -568,13 +854,29 @@
                 }, 100);
             });
 
+            // Función para manejar el cambio del checkbox "Es Promoción" en edición
+            $(document).ready(function() {
+                // Esta función ya debería existir, asegurarse de que funcione
+                $('#es_promocion_edicion').change(function() {
+                    if ($(this).is(':checked')) {
+                        $('#fechas_promocion_container_edicion').slideDown();
+                        $('#fecha_inicio_promocion_edicion').prop('required', true);
+                        $('#fecha_fin_promocion_edicion').prop('required', true);
+                    } else {
+                        $('#fechas_promocion_container_edicion').slideUp();
+                        $('#fecha_inicio_promocion_edicion').prop('required', false);
+                        $('#fecha_fin_promocion_edicion').prop('required', false);
+                    }
+                });
+            });
+
             // Eliminar plan
             $(document).on('click', '.deleteBtn', function() {
                 const data = $(this).data('bs-obj');
                 $('#eliminarId').val(data.id);
             });
 
-            // REGISTRAR PLAN - CORREGIDO
+            // REGISTRAR PLAN
             $('#addForm').submit(function(e) {
                 e.preventDefault();
                 if (isProcessing) return;
@@ -584,6 +886,22 @@
                     e.stopPropagation();
                     form.classList.add('was-validated');
                     return;
+                }
+
+                // Validar fechas si es promoción
+                if ($('#es_promocion_registro').is(':checked')) {
+                    const fechaInicio = $('#fecha_inicio_promocion_registro').val();
+                    const fechaFin = $('#fecha_fin_promocion_registro').val();
+
+                    if (!fechaInicio || !fechaFin) {
+                        showToast('error', 'Debe ingresar ambas fechas para la promoción');
+                        return;
+                    }
+
+                    if (new Date(fechaFin) <= new Date(fechaInicio)) {
+                        showToast('error', 'La fecha de fin debe ser posterior a la fecha de inicio');
+                        return;
+                    }
                 }
 
                 isProcessing = true;
@@ -609,7 +927,8 @@
 
                             // Recargar datos después de 500ms
                             setTimeout(() => {
-                                loadResults($('#searchInput').val().trim());
+                                loadResults($('#searchInput').val().trim(),
+                                    currentFilter);
                             }, 500);
                         } else {
                             showToast('error', res.msg || 'Error al registrar el plan');
@@ -617,8 +936,9 @@
                     },
                     error: function(xhr) {
                         let errorMsg = 'Error al registrar el plan. Intenta nuevamente.';
-                        if (xhr.responseJSON?.errors?.nombre) {
-                            errorMsg = xhr.responseJSON.errors.nombre[0];
+                        if (xhr.responseJSON?.errors) {
+                            errorMsg = Object.values(xhr.responseJSON.errors).flat().join(
+                                '<br>');
                         } else if (xhr.responseJSON?.msg) {
                             errorMsg = xhr.responseJSON.msg;
                         }
@@ -631,7 +951,7 @@
                 });
             });
 
-            // ======== ACTUALIZAR PLAN - VERSIÓN CORREGIDA ========
+            // ACTUALIZAR PLAN
             $('#updateForm').submit(function(e) {
                 e.preventDefault();
                 if (isProcessing) return;
@@ -641,6 +961,22 @@
                     e.stopPropagation();
                     form.classList.add('was-validated');
                     return;
+                }
+
+                // Validar fechas si es promoción
+                if ($('#es_promocion_edicion').is(':checked')) {
+                    const fechaInicio = $('#fecha_inicio_promocion_edicion').val();
+                    const fechaFin = $('#fecha_fin_promocion_edicion').val();
+
+                    if (!fechaInicio || !fechaFin) {
+                        showToast('error', 'Debe ingresar ambas fechas para la promoción');
+                        return;
+                    }
+
+                    if (new Date(fechaFin) <= new Date(fechaInicio)) {
+                        showToast('error', 'La fecha de fin debe ser posterior a la fecha de inicio');
+                        return;
+                    }
                 }
 
                 isProcessing = true;
@@ -670,7 +1006,8 @@
 
                             // Recargar datos inmediatamente
                             setTimeout(() => {
-                                loadResults($('#searchInput').val().trim());
+                                loadResults($('#searchInput').val().trim(),
+                                    currentFilter);
                             }, 300);
                         } else {
                             showToast('error', res.msg || 'Error al actualizar el plan');
@@ -678,8 +1015,9 @@
                     },
                     error: function(xhr) {
                         let errorMsg = 'Error al actualizar el plan. Intenta nuevamente.';
-                        if (xhr.responseJSON?.errors?.nombre) {
-                            errorMsg = xhr.responseJSON.errors.nombre[0];
+                        if (xhr.responseJSON?.errors) {
+                            errorMsg = Object.values(xhr.responseJSON.errors).flat().join(
+                                '<br>');
                         } else if (xhr.responseJSON?.msg) {
                             errorMsg = xhr.responseJSON.msg;
                         }
@@ -692,7 +1030,7 @@
                 });
             });
 
-            // ======== ELIMINAR PLAN - VERSIÓN CORREGIDA ========
+            // ELIMINAR PLAN
             $('#deleteForm').submit(function(e) {
                 e.preventDefault();
                 if (isProcessing) return;
@@ -724,7 +1062,8 @@
 
                             // Recargar datos inmediatamente
                             setTimeout(() => {
-                                loadResults($('#searchInput').val().trim());
+                                loadResults($('#searchInput').val().trim(),
+                                    currentFilter);
                             }, 300);
                         } else {
                             showToast('error', res.msg || 'Error al eliminar el plan');
@@ -744,8 +1083,8 @@
                 });
             });
 
-            // FUNCIÓN PARA CARGAR RESULTADOS - CORREGIDA
-            function loadResults(search = '') {
+            // FUNCIÓN PARA CARGAR RESULTADOS
+            function loadResults(search = '', filter = 'all') {
                 if (isProcessing) return;
                 isProcessing = true;
 
@@ -753,13 +1092,14 @@
                     url: '{{ route('admin.planes.listar') }}',
                     method: 'GET',
                     data: {
-                        search: search
+                        search: search,
+                        filter: filter
                     },
                     dataType: 'json',
                     beforeSend: function() {
                         $('#planesTableBody').html(`
                         <tr>
-                            <td colspan="4" class="text-center py-5">
+                            <td colspan="8" class="text-center py-5">
                                 <div class="spinner-border text-primary" role="status">
                                     <span class="visually-hidden">Cargando...</span>
                                 </div>
@@ -785,6 +1125,9 @@
 
                                 // Actualizar contador
                                 $('#totalPlanesCounter').text(response.total);
+                                $('#totalHabilitados').text(response.habilitados || 0);
+                                $('#totalPrincipales').text(response.principales || 0);
+                                $('#totalPromociones').text(response.promociones || 0);
                             }
 
                             // Re-inicializar tooltips
@@ -801,7 +1144,7 @@
                         showToast('error', 'Error al cargar los resultados');
                         $('#planesTableBody').html(`
                         <tr>
-                            <td colspan="4" class="text-center py-5 text-danger">
+                            <td colspan="8" class="text-center py-5 text-danger">
                                 <i class="ri-error-warning-line display-5"></i>
                                 <p class="mt-2">Error al cargar los datos</p>
                             </td>
@@ -819,13 +1162,25 @@
                 const searchTerm = $(this).val().trim();
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(() => {
-                    loadResults(searchTerm);
+                    loadResults(searchTerm, currentFilter);
                 }, 500);
+            });
+
+            // Filtros
+            $('.filter-item').on('click', function(e) {
+                e.preventDefault();
+                currentFilter = $(this).data('filter');
+                $('.filter-item').removeClass('active');
+                $(this).addClass('active');
+                loadResults($('#searchInput').val().trim(), currentFilter);
             });
 
             // Limpiar filtros
             $('#clearFilters').on('click', function() {
                 $('#searchInput').val('');
+                currentFilter = 'all';
+                $('.filter-item').removeClass('active');
+                $('.filter-item[data-filter="all"]').addClass('active');
                 loadResults();
             });
 
@@ -841,13 +1196,14 @@
                     url: url,
                     method: 'GET',
                     data: {
-                        search: search
+                        search: search,
+                        filter: currentFilter
                     },
                     dataType: 'json',
                     beforeSend: function() {
                         $('#planesTableBody').html(`
                         <tr>
-                            <td colspan="4" class="text-center py-5">
+                            <td colspan="8" class="text-center py-5">
                                 <div class="spinner-border text-primary" role="status">
                                     <span class="visually-hidden">Cargando...</span>
                                 </div>
@@ -872,11 +1228,15 @@
                                 );
 
                                 $('#totalPlanesCounter').text(response.total);
+                                $('#totalHabilitados').text(response.habilitados || 0);
+                                $('#totalPrincipales').text(response.principales || 0);
+                                $('#totalPromociones').text(response.promociones || 0);
                             }
 
                             // Actualizar URL sin recargar
                             const newUrl = url + (search ? '&search=' + encodeURIComponent(
-                                search) : '');
+                                search) : '') + (currentFilter !== 'all' ? '&filter=' +
+                                currentFilter : '');
                             window.history.pushState({}, '', newUrl);
                         }
                     },
@@ -970,6 +1330,25 @@
                     }, false);
                 });
             })();
+
+            // Inicializar contadores
+            setTimeout(() => {
+                $.ajax({
+                    url: '{{ route('admin.planes.listar') }}',
+                    method: 'GET',
+                    data: {
+                        stats: true
+                    },
+                    dataType: 'json',
+                    success: function(response) {
+                        if (response.stats) {
+                            $('#totalHabilitados').text(response.stats.habilitados || 0);
+                            $('#totalPrincipales').text(response.stats.principales || 0);
+                            $('#totalPromociones').text(response.stats.promociones || 0);
+                        }
+                    }
+                });
+            }, 1000);
         });
     </script>
 @endpush

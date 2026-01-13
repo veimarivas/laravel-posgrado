@@ -11,6 +11,8 @@ class PlanesPagosController extends Controller
     public function planesListar(Request $request)
     {
         $search = $request->get('search', '');
+        $filter = $request->get('filter', 'all');
+        $stats = $request->get('stats', false);
 
         $query = PlanesPago::query();
 
@@ -20,8 +22,43 @@ class PlanesPagosController extends Controller
             });
         }
 
+        // Aplicar filtros
+        if ($filter === 'habilitado') {
+            $query->where('habilitado', 1);
+        } elseif ($filter === 'principal') {
+            $query->where('principal', 1);
+        } elseif ($filter === 'promocion') {
+            $query->where('es_promocion', 1);
+        } elseif ($filter === 'vigente') {
+            $query->where('es_promocion', 1)
+                ->where('fecha_inicio_promocion', '<=', now())
+                ->where('fecha_fin_promocion', '>=', now());
+        }
+
         $planes = $query->paginate(10);
-        $planes->appends(['search' => $search]);
+        $planes->appends(['search' => $search, 'filter' => $filter]);
+
+        // Formatear las fechas para JSON
+        $planes->transform(function ($plan) {
+            // Formatear fechas para el JSON
+            if ($plan->fecha_inicio_promocion) {
+                $plan->fecha_inicio_promocion_formatted = $plan->fecha_inicio_promocion->format('Y-m-d');
+            }
+            if ($plan->fecha_fin_promocion) {
+                $plan->fecha_fin_promocion_formatted = $plan->fecha_fin_promocion->format('Y-m-d');
+            }
+            return $plan;
+        });
+
+        if ($stats) {
+            return response()->json([
+                'stats' => [
+                    'habilitados' => PlanesPago::where('habilitado', 1)->count(),
+                    'principales' => PlanesPago::where('principal', 1)->count(),
+                    'promociones' => PlanesPago::where('es_promocion', 1)->count(),
+                ]
+            ]);
+        }
 
         if ($request->ajax()) {
             return response()->json([
@@ -29,7 +66,10 @@ class PlanesPagosController extends Controller
                 'pagination' => $planes->links('pagination::bootstrap-5')->toHtml(),
                 'total' => $planes->total(),
                 'from' => $planes->firstItem(),
-                'to' => $planes->lastItem()
+                'to' => $planes->lastItem(),
+                'habilitados' => PlanesPago::where('habilitado', 1)->count(),
+                'principales' => PlanesPago::where('principal', 1)->count(),
+                'promociones' => PlanesPago::where('es_promocion', 1)->count(),
             ]);
         }
 
@@ -40,10 +80,20 @@ class PlanesPagosController extends Controller
     {
         $request->validate([
             'nombre' => 'required|unique:planes_pagos,nombre',
+            'habilitado' => 'nullable|boolean',
+            'principal' => 'nullable|boolean',
+            'es_promocion' => 'nullable|boolean',
+            'fecha_inicio_promocion' => 'nullable|date|required_if:es_promocion,1',
+            'fecha_fin_promocion' => 'nullable|date|after:fecha_inicio_promocion|required_if:es_promocion,1',
         ]);
 
         $plan = PlanesPago::create([
-            'nombre' => $request->nombre
+            'nombre' => $request->nombre,
+            'habilitado' => $request->habilitado ?? 0,
+            'principal' => $request->principal ?? 0,
+            'es_promocion' => $request->es_promocion ?? 0,
+            'fecha_inicio_promocion' => $request->es_promocion ? $request->fecha_inicio_promocion : null,
+            'fecha_fin_promocion' => $request->es_promocion ? $request->fecha_fin_promocion : null,
         ]);
 
         return response()->json([
@@ -92,10 +142,20 @@ class PlanesPagosController extends Controller
         $request->validate([
             'id' => 'required|exists:planes_pagos,id',
             'nombre' => 'required|unique:planes_pagos,nombre,' . $request->id,
+            'habilitado' => 'nullable|boolean',
+            'principal' => 'nullable|boolean',
+            'es_promocion' => 'nullable|boolean',
+            'fecha_inicio_promocion' => 'nullable|date|required_if:es_promocion,1',
+            'fecha_fin_promocion' => 'nullable|date|after:fecha_inicio_promocion|required_if:es_promocion,1',
         ]);
 
         $plan = PlanesPago::findOrFail($request->id);
         $plan->nombre = $request->nombre;
+        $plan->habilitado = $request->habilitado ?? 0;
+        $plan->principal = $request->principal ?? 0;
+        $plan->es_promocion = $request->es_promocion ?? 0;
+        $plan->fecha_inicio_promocion = $request->es_promocion ? $request->fecha_inicio_promocion : null;
+        $plan->fecha_fin_promocion = $request->es_promocion ? $request->fecha_fin_promocion : null;
         $plan->save();
 
         return response()->json([

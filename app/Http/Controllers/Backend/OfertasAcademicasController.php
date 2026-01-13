@@ -31,6 +31,9 @@ use App\Models\Inscripcione;
 use App\Models\Pago;
 use App\Models\PlanesConcepto;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use App\Exports\EstadoFinancieroParticipantesExport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class OfertasAcademicasController extends Controller
 {
@@ -217,6 +220,77 @@ class OfertasAcademicasController extends Controller
                 'precio_regular' => $precioRegular ? number_format($precioRegular, 2) : null,
                 'descuento_porcentaje' => $descuento,
                 'descuento_bs' => $precioRegular ? number_format($precioRegular - $pc->pago_bs, 2) : null
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'planes' => array_values($planesAgrupados),
+            'total_planes' => count($planesAgrupados)
+        ]);
+    }
+
+    // Agrega este método al OfertasAcademicasController.php
+    public function obtenerPlanesPagoParaInscripcion($id)
+    {
+        $oferta = OfertasAcademica::with([
+            'plan_concepto.plan_pago',
+            'plan_concepto.concepto'
+        ])->findOrFail($id);
+
+        // Agrupar por plan de pago con filtros
+        $planesAgrupados = [];
+        $now = now()->format('Y-m-d');
+
+        foreach ($oferta->plan_concepto as $pc) {
+            $planPago = $pc->plan_pago;
+
+            // Filtrar por habilitado = 1
+            if (!isset($planPago->habilitado) || $planPago->habilitado != 1) {
+                continue;
+            }
+
+            // Filtrar promociones por fecha
+            if ($planPago->es_promocion == 1) {
+                $fechaInicio = $planPago->fecha_inicio_promocion;
+                $fechaFin = $planPago->fecha_fin_promocion;
+
+                // Verificar si la promoción está vigente
+                if ($fechaInicio && $fechaFin) {
+                    if (!($now >= $fechaInicio && $now <= $fechaFin)) {
+                        continue; // Promoción no vigente, saltar
+                    }
+                } else {
+                    continue; // Fechas no definidas, saltar
+                }
+            }
+
+            $planId = $planPago->id;
+            $planNombre = $planPago->nombre ?? 'Sin nombre';
+
+            if (!isset($planesAgrupados[$planId])) {
+                $planesAgrupados[$planId] = [
+                    'id' => $planId,
+                    'nombre' => $planNombre,
+                    'es_promocion' => $planPago->es_promocion ?? 0,
+                    'fecha_inicio_promocion' => $planPago->fecha_inicio_promocion,
+                    'fecha_fin_promocion' => $planPago->fecha_fin_promocion,
+                    'conceptos' => []
+                ];
+            }
+
+            // Calcular el monto por cuota (pago_bs / n_cuotas)
+            $montoPorCuota = $pc->n_cuotas > 0 ? $pc->pago_bs / $pc->n_cuotas : $pc->pago_bs;
+
+            $planesAgrupados[$planId]['conceptos'][] = [
+                'concepto_id' => $pc->concepto_id,
+                'concepto_nombre' => $pc->concepto->nombre ?? 'Sin concepto',
+                'n_cuotas' => $pc->n_cuotas,
+                'monto_por_cuota' => number_format($montoPorCuota, 2),
+                'total_concepto' => number_format($pc->pago_bs, 2),
+                'es_promocion' => $pc->es_promocion,
+                'precio_regular' => $pc->precio_regular ? number_format($pc->precio_regular, 2) : null,
+                'descuento_porcentaje' => $pc->descuento_porcentaje,
             ];
         }
 
@@ -744,8 +818,6 @@ class OfertasAcademicasController extends Controller
         return $conceptos;
     }
 
-    // En OfertasAcademicasController.php - agregar este método
-    // En OfertasAcademicasController.php - método actualizarPlanesPago (VERSIÓN CORREGIDA)
     public function actualizarPlanesPago(Request $request, $id)
     {
         $oferta = OfertasAcademica::findOrFail($id);
@@ -760,11 +832,16 @@ class OfertasAcademicasController extends Controller
 
         $request->validate([
             'planes' => 'required|array|min:1',
-            'planes.*.planes_pago_id' => 'required|exists:planes_pagos,id', // ID del plan existente
+            'planes.*.planes_pago_id' => 'required|exists:planes_pagos,id',
             'planes.*.conceptos' => 'required|array|min:1',
             'planes.*.conceptos.*.concepto_id' => 'required|exists:conceptos,id',
             'planes.*.conceptos.*.n_cuotas' => 'required|integer|min:1',
             'planes.*.conceptos.*.pago_bs' => 'required|numeric|min:0',
+            'planes.*.conceptos.*.es_promocion' => 'nullable|boolean',
+            'planes.*.conceptos.*.fecha_inicio_promocion' => 'nullable|date',
+            'planes.*.conceptos.*.fecha_fin_promocion' => 'nullable|date|after:fecha_inicio_promocion',
+            'planes.*.conceptos.*.precio_regular' => 'nullable|numeric|min:0',
+            'planes.*.conceptos.*.descuento_porcentaje' => 'nullable|numeric|min:0|max:100',
         ]);
 
         // Eliminar los planes_concepto existentes para esta oferta
@@ -780,11 +857,32 @@ class OfertasAcademicasController extends Controller
             }
 
             foreach ($planData['conceptos'] as $conceptoData) {
+                // VALORES POR DEFECTO PARA EVITAR NULL
+                $esPromocion = isset($conceptoData['es_promocion']) ? (bool)$conceptoData['es_promocion'] : false;
+
+                // Convertir valores vacíos a 0
+                $precioRegular = isset($conceptoData['precio_regular']) && $conceptoData['precio_regular'] !== ''
+                    ? (float)$conceptoData['precio_regular']
+                    : 0.00;
+
+                $descuentoPorcentaje = isset($conceptoData['descuento_porcentaje']) && $conceptoData['descuento_porcentaje'] !== ''
+                    ? (float)$conceptoData['descuento_porcentaje']
+                    : 0.00;
+
                 $oferta->plan_concepto()->create([
                     'planes_pago_id' => $planPago->id,
                     'concepto_id' => $conceptoData['concepto_id'],
                     'n_cuotas' => $conceptoData['n_cuotas'],
                     'pago_bs' => $conceptoData['pago_bs'],
+                    'es_promocion' => $esPromocion,
+                    'fecha_inicio_promocion' => !empty($conceptoData['fecha_inicio_promocion'])
+                        ? $conceptoData['fecha_inicio_promocion']
+                        : null,
+                    'fecha_fin_promocion' => !empty($conceptoData['fecha_fin_promocion'])
+                        ? $conceptoData['fecha_fin_promocion']
+                        : null,
+                    'precio_regular' => $precioRegular,
+                    'descuento_porcentaje' => $descuentoPorcentaje,
                 ]);
             }
         }
@@ -1570,32 +1668,120 @@ class OfertasAcademicasController extends Controller
         return response()->json($oferta);
     }
 
+    // Método para agregar nuevo plan de pago (CORREGIDO)
     public function agregarPlanPago(Request $request)
     {
-        $request->validate([
-            'oferta_id' => 'required|exists:ofertas_academicas,id',
-            'planes_pago_id' => 'required|exists:planes_pagos,id',
-            'conceptos' => 'required|array|min:1',
-            'conceptos.*.concepto_id' => 'required|exists:conceptos,id',
-            'conceptos.*.n_cuotas' => 'required|integer|min:1',
-            'conceptos.*.pago_bs' => 'required|numeric|min:0',
-        ]);
+        try {
+            \Log::info('Agregar plan de pago - Datos recibidos:', $request->all());
 
-        $oferta = OfertasAcademica::findOrFail($request->oferta_id);
-
-        foreach ($request->conceptos as $c) {
-            $oferta->plan_concepto()->create([
-                'planes_pago_id' => $request->planes_pago_id,
-                'concepto_id' => $c['concepto_id'],
-                'n_cuotas' => $c['n_cuotas'],
-                'pago_bs' => $c['pago_bs'],
+            // Validación simplificada
+            $request->validate([
+                'oferta_id' => 'required|exists:ofertas_academicas,id',
+                'planes_pago_id' => 'required|exists:planes_pagos,id',
+                'es_promocion' => 'nullable|boolean',
+                'fecha_inicio_promocion' => 'nullable|required_if:es_promocion,1|date',
+                'fecha_fin_promocion' => 'nullable|required_if:es_promocion,1|date|after:fecha_inicio_promocion',
+                'conceptos' => 'required|array|min:1',
             ]);
-        }
 
-        return response()->json([
-            'success' => true,
-            'msg' => 'Plan de pago agregado correctamente.'
-        ]);
+            $oferta = OfertasAcademica::findOrFail($request->oferta_id);
+
+            // Verificar si el plan ya existe en la oferta
+            $planExistente = PlanesConcepto::where('ofertas_academica_id', $oferta->id)
+                ->where('planes_pago_id', $request->planes_pago_id)
+                ->exists();
+
+            if ($planExistente) {
+                return response()->json([
+                    'success' => false,
+                    'msg' => 'Este plan de pago ya está registrado en esta oferta.'
+                ], 422);
+            }
+
+            // Si es promoción, obtener el plan principal para precios de referencia
+            $planPrincipal = null;
+            if ($request->es_promocion) {
+                $planPrincipal = PlanesPago::whereHas('plan_concepto', function ($query) use ($oferta) {
+                    $query->where('ofertas_academica_id', $oferta->id);
+                })
+                    ->where('principal', true)
+                    ->first();
+            }
+
+            DB::beginTransaction();
+
+            try {
+                // Actualizar o crear el plan de pago con información de promoción
+                $planPago = PlanesPago::find($request->planes_pago_id);
+                if ($request->es_promocion) {
+                    $planPago->es_promocion = true;
+                    $planPago->fecha_inicio_promocion = $request->fecha_inicio_promocion;
+                    $planPago->fecha_fin_promocion = $request->fecha_fin_promocion;
+                    $planPago->save();
+                }
+
+                foreach ($request->conceptos as $index => $conceptoData) {
+                    // Validar cada concepto individualmente
+                    $validator = Validator::make($conceptoData, [
+                        'concepto_id' => 'required|exists:conceptos,id',
+                        'n_cuotas' => 'required|integer|min:1',
+                        'pago_bs' => 'required|numeric|min:0',
+                        'precio_regular' => 'nullable|numeric|min:0',
+                        'descuento_bs' => 'nullable|numeric|min:0',
+                    ]);
+
+                    if ($validator->fails()) {
+                        throw new \Exception("Error en concepto {$index}: " . implode(', ', $validator->errors()->all()));
+                    }
+
+                    // Si es promoción y no se proporcionó precio_regular, usar el del plan principal
+                    $precioRegular = $conceptoData['precio_regular'] ?? 0;
+                    $descuentoBs = $conceptoData['descuento_bs'] ?? 0;
+
+                    if ($request->es_promocion && $planPrincipal && $precioRegular == 0) {
+                        // Buscar el precio regular del mismo concepto en el plan principal
+                        $conceptoPrincipal = PlanesConcepto::where('ofertas_academica_id', $oferta->id)
+                            ->where('planes_pago_id', $planPrincipal->id)
+                            ->where('concepto_id', $conceptoData['concepto_id'])
+                            ->first();
+
+                        if ($conceptoPrincipal) {
+                            $precioRegular = $conceptoPrincipal->pago_bs;
+                        }
+                    }
+
+                    PlanesConcepto::create([
+                        'ofertas_academica_id' => $oferta->id,
+                        'planes_pago_id' => $planPago->id,
+                        'concepto_id' => $conceptoData['concepto_id'],
+                        'n_cuotas' => (int)$conceptoData['n_cuotas'],
+                        'pago_bs' => (float)$conceptoData['pago_bs'],
+                        'precio_regular' => (float)$precioRegular,
+                        'descuento_bs' => (float)$descuentoBs,
+                    ]);
+                }
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'msg' => 'Plan de pago agregado correctamente.'
+                ]);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                \Log::error('Error en transacción agregarPlanPago: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'msg' => 'Error al agregar el plan de pago: ' . $e->getMessage()
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error general en agregarPlanPago: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'msg' => 'Error interno del servidor: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function actualizarFase2(Request $request)
@@ -1889,6 +2075,463 @@ class OfertasAcademicasController extends Controller
             return response()->json([
                 'success' => false,
                 'msg' => 'Error al transferir la inscripción: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Método para obtener planes agrupados (para la vista)
+    private function obtenerPlanesAgrupados($oferta)
+    {
+        $planesAgrupados = [];
+
+        foreach ($oferta->plan_concepto as $pc) {
+            $planId = $pc->planes_pago_id;
+
+            if (!isset($planesAgrupados[$planId])) {
+                $planesAgrupados[$planId] = [
+                    'plan' => $pc->plan_pago,
+                    'conceptos' => [],
+                    'total_plan' => 0
+                ];
+            }
+
+            $planesAgrupados[$planId]['conceptos'][] = $pc;
+            $planesAgrupados[$planId]['total_plan'] += $pc->pago_bs;
+        }
+
+        return $planesAgrupados;
+    }
+
+    // En el método administrarPlanesPagoContable:
+    public function administrarPlanesPagoContable($id)
+    {
+        $oferta = OfertasAcademica::with([
+            'plan_concepto.plan_pago',
+            'plan_concepto.concepto',
+            'sucursal.sede',
+            'programa',
+            'posgrado.convenio',
+            'inscripciones' => function ($query) {
+                $query->where('estado', 'Inscrito');
+            }
+        ])->findOrFail($id);
+
+        $planesPagos = PlanesPago::all();
+        $conceptos = Concepto::all();
+
+        // Información financiera
+        $informacionFinanciera = $this->obtenerInformacionFinanciera($oferta);
+
+        // Planes con inscripciones
+        $planesConInscripciones = $oferta->inscripciones
+            ->pluck('planes_pago_id')
+            ->unique()
+            ->filter()
+            ->values()
+            ->toArray();
+
+        // Planes disponibles para agregar
+        $planesEnUso = $oferta->plan_concepto->pluck('planes_pago_id')->unique()->toArray();
+        $planesDisponibles = PlanesPago::whereNotIn('id', $planesEnUso)->get();
+
+        // Obtener información de promoción para cada plan
+        $planesAgrupados = [];
+        foreach ($oferta->plan_concepto->groupBy('planes_pago_id') as $planId => $conceptosPlan) {
+            $planPago = $conceptosPlan->first()->plan_pago;
+
+            // Verificar si el plan es promoción
+            $esPromocion = $planPago->es_promocion ?? false;
+            $fechaInicioPromocion = $planPago->fecha_inicio_promocion ?? null;
+            $fechaFinPromocion = $planPago->fecha_fin_promocion ?? null;
+            $promocionVigente = false;
+
+            if ($esPromocion && $fechaInicioPromocion && $fechaFinPromocion) {
+                $hoy = now();
+                $inicio = \Carbon\Carbon::parse($fechaInicioPromocion);
+                $fin = \Carbon\Carbon::parse($fechaFinPromocion);
+                $promocionVigente = $hoy->between($inicio, $fin);
+            }
+
+            $planesAgrupados[$planId] = [
+                'plan' => $planPago,
+                'conceptos' => $conceptosPlan,
+                'total_plan' => $conceptosPlan->sum('pago_bs'),
+                'es_promocion' => $esPromocion,
+                'fecha_inicio_promocion' => $fechaInicioPromocion,
+                'fecha_fin_promocion' => $fechaFinPromocion,
+                'promocion_vigente' => $promocionVigente
+            ];
+        }
+
+        return view('admin.ofertas.contabilidad.planes-pago', compact(
+            'oferta',
+            'planesPagos',
+            'conceptos',
+            'informacionFinanciera',
+            'planesConInscripciones',
+            'planesDisponibles',
+            'planesAgrupados'
+        ));
+    }
+
+    // Nuevo método para actualizar un plan específico
+    public function actualizarPlanPago(Request $request)
+    {
+        $request->validate([
+            'oferta_id' => 'required|exists:ofertas_academicas,id',
+            'plan_pago_id' => 'required|exists:planes_pagos,id',
+            'es_promocion' => 'nullable|boolean',
+            'fecha_inicio_promocion' => 'nullable|required_if:es_promocion,1|date',
+            'fecha_fin_promocion' => 'nullable|required_if:es_promocion,1|date|after:fecha_inicio_promocion',
+            'conceptos' => 'required|array|min:1',
+            'conceptos.*.concepto_id' => 'required|exists:conceptos,id',
+            'conceptos.*.n_cuotas' => 'required|integer|min:1',
+            'conceptos.*.pago_bs' => 'required|numeric|min:0',
+            'conceptos.*.precio_regular' => 'nullable|numeric|min:0',
+            'conceptos.*.descuento_bs' => 'nullable|numeric|min:0',
+        ]);
+
+        $oferta = OfertasAcademica::findOrFail($request->oferta_id);
+
+        // Verificar si el plan tiene inscripciones
+        $tieneInscripciones = $oferta->inscripciones()
+            ->where('estado', 'Inscrito')
+            ->where('planes_pago_id', $request->plan_pago_id)
+            ->exists();
+
+        if ($tieneInscripciones) {
+            return response()->json([
+                'success' => false,
+                'msg' => 'No se puede modificar un plan que ya tiene inscripciones registradas.'
+            ], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            // Actualizar información de promoción del plan
+            $planPago = PlanesPago::find($request->plan_pago_id);
+            if ($request->has('es_promocion')) {
+                $planPago->es_promocion = $request->es_promocion;
+                if ($request->es_promocion) {
+                    $planPago->fecha_inicio_promocion = $request->fecha_inicio_promocion;
+                    $planPago->fecha_fin_promocion = $request->fecha_fin_promocion;
+                } else {
+                    $planPago->fecha_inicio_promocion = null;
+                    $planPago->fecha_fin_promocion = null;
+                }
+                $planPago->save();
+            }
+
+            // Eliminar conceptos existentes para este plan
+            PlanesConcepto::where('ofertas_academica_id', $oferta->id)
+                ->where('planes_pago_id', $request->plan_pago_id)
+                ->delete();
+
+            // Crear nuevos conceptos
+            foreach ($request->conceptos as $conceptoData) {
+                PlanesConcepto::create([
+                    'ofertas_academica_id' => $oferta->id,
+                    'planes_pago_id' => $request->plan_pago_id,
+                    'concepto_id' => $conceptoData['concepto_id'],
+                    'n_cuotas' => $conceptoData['n_cuotas'],
+                    'pago_bs' => $conceptoData['pago_bs'],
+                    'precio_regular' => $conceptoData['precio_regular'] ?? 0,
+                    'descuento_bs' => $conceptoData['descuento_bs'] ?? 0,
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'msg' => 'Plan de pago actualizado correctamente.'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'msg' => 'Error al actualizar el plan de pago: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Método para eliminar un plan específico
+    public function eliminarPlanPago(Request $request)
+    {
+        $request->validate([
+            'oferta_id' => 'required|exists:ofertas_academicas,id',
+            'plan_pago_id' => 'required|exists:planes_pagos,id',
+        ]);
+
+        $oferta = OfertasAcademica::findOrFail($request->oferta_id);
+
+        // Verificar si el plan tiene inscripciones
+        $tieneInscripciones = $oferta->inscripciones()
+            ->where('estado', 'Inscrito')
+            ->where('planes_pago_id', $request->plan_pago_id)
+            ->exists();
+
+        if ($tieneInscripciones) {
+            return response()->json([
+                'success' => false,
+                'msg' => 'No se puede eliminar un plan que ya tiene inscripciones registradas.'
+            ], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            // Eliminar conceptos del plan
+            PlanesConcepto::where('ofertas_academica_id', $oferta->id)
+                ->where('planes_pago_id', $request->plan_pago_id)
+                ->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'msg' => 'Plan de pago eliminado correctamente.'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'msg' => 'Error al eliminar el plan de pago: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function obtenerInformacionFinanciera($oferta)
+    {
+        $totalRecaudado = 0;
+        $totalDeuda = 0;
+        $totalInscritos = $oferta->inscripciones->count();
+
+        foreach ($oferta->inscripciones as $inscripcion) {
+            $totalRecaudado += $inscripcion->cuotas->sum(function ($cuota) {
+                return $cuota->pago_total_bs - $cuota->pago_pendiente_bs;
+            });
+
+            $totalDeuda += $inscripcion->cuotas->sum('pago_pendiente_bs');
+        }
+
+        return [
+            'total_inscritos' => $totalInscritos,
+            'total_recaudado' => $totalRecaudado,
+            'total_deuda' => $totalDeuda,
+            'total_esperado' => $totalRecaudado + $totalDeuda
+        ];
+    }
+
+    public function actualizarPlanesPagoContable(Request $request, $id)
+    {
+        $oferta = OfertasAcademica::findOrFail($id);
+
+        try {
+            // Decodificar el JSON de planes
+            $planes = json_decode($request->input('planes'), true);
+
+            if (empty($planes)) {
+                return response()->json([
+                    'success' => false,
+                    'msg' => 'No se recibieron datos de planes.'
+                ], 422);
+            }
+
+            // Validar estructura de datos
+            $validator = Validator::make(['planes' => $planes], [
+                'planes' => 'required|array|min:1',
+                'planes.*.planes_pago_id' => 'required|exists:planes_pagos,id',
+                'planes.*.conceptos' => 'required|array|min:1',
+                'planes.*.conceptos.*.concepto_id' => 'required|exists:conceptos,id',
+                'planes.*.conceptos.*.n_cuotas' => 'required|integer|min:1',
+                'planes.*.conceptos.*.pago_bs' => 'required|numeric|min:0',
+                'planes.*.conceptos.*.es_promocion' => 'nullable|boolean',
+                'planes.*.conceptos.*.fecha_inicio_promocion' => 'nullable|date',
+                'planes.*.conceptos.*.fecha_fin_promocion' => 'nullable|date|after:fecha_inicio_promocion',
+                'planes.*.conceptos.*.precio_regular' => 'nullable|numeric|min:0',
+                'planes.*.conceptos.*.descuento_porcentaje' => 'nullable|numeric|min:0|max:100',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'msg' => 'Error de validación: ' . implode(' ', $validator->errors()->all())
+                ], 422);
+            }
+
+            DB::beginTransaction();
+
+            try {
+                // Obtener planes que ya tienen inscripciones
+                $planesConInscripciones = $oferta->inscripciones()
+                    ->where('estado', 'Inscrito')
+                    ->pluck('planes_pago_id')
+                    ->unique()
+                    ->toArray();
+
+                // Obtener planes actuales en la oferta
+                $planesActuales = $oferta->plan_concepto()
+                    ->pluck('planes_pago_id')
+                    ->unique()
+                    ->toArray();
+
+                // Procesar cada plan del request
+                foreach ($planes as $planData) {
+                    $planPagoId = $planData['planes_pago_id'];
+
+                    // Verificar si el plan ya existe en la oferta
+                    $planYaExiste = in_array($planPagoId, $planesActuales);
+
+                    // Verificar si el plan tiene inscripciones
+                    $tieneInscripciones = in_array($planPagoId, $planesConInscripciones);
+
+                    // Si el plan ya existe Y tiene inscripciones, NO LO MODIFICAMOS
+                    if ($planYaExiste && $tieneInscripciones) {
+                        continue; // Saltamos este plan, no lo tocamos
+                    }
+
+                    // Si el plan ya existe pero NO tiene inscripciones, lo eliminamos primero
+                    if ($planYaExiste && !$tieneInscripciones) {
+                        $oferta->plan_concepto()
+                            ->where('planes_pago_id', $planPagoId)
+                            ->delete();
+                    }
+
+                    // Crear los nuevos conceptos para este plan
+                    foreach ($planData['conceptos'] as $conceptoData) {
+                        // VALORES POR DEFECTO PARA EVITAR NULL
+                        $esPromocion = isset($conceptoData['es_promocion']) ? (bool)$conceptoData['es_promocion'] : false;
+
+                        // Convertir valores vacíos a 0
+                        $precioRegular = isset($conceptoData['precio_regular']) && $conceptoData['precio_regular'] !== ''
+                            ? (float)$conceptoData['precio_regular']
+                            : 0.00;
+
+                        $descuentoPorcentaje = isset($conceptoData['descuento_porcentaje']) && $conceptoData['descuento_porcentaje'] !== ''
+                            ? (float)$conceptoData['descuento_porcentaje']
+                            : 0.00;
+
+                        $oferta->plan_concepto()->create([
+                            'planes_pago_id' => $planPagoId,
+                            'concepto_id' => $conceptoData['concepto_id'],
+                            'n_cuotas' => $conceptoData['n_cuotas'],
+                            'pago_bs' => $conceptoData['pago_bs'],
+                            'es_promocion' => $esPromocion,
+                            'fecha_inicio_promocion' => !empty($conceptoData['fecha_inicio_promocion'])
+                                ? $conceptoData['fecha_inicio_promocion']
+                                : null,
+                            'fecha_fin_promocion' => !empty($conceptoData['fecha_fin_promocion'])
+                                ? $conceptoData['fecha_fin_promocion']
+                                : null,
+                            'precio_regular' => $precioRegular,
+                            'descuento_porcentaje' => $descuentoPorcentaje,
+                        ]);
+                    }
+                }
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'msg' => 'Planes de pago actualizados correctamente.',
+                    'redirect' => route('admin.ofertas.contabilidad.planes-pago', $id)
+                ]);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                \Log::error('Error al actualizar planes de pago contable: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'msg' => 'Error al actualizar los planes de pago: ' . $e->getMessage()
+                ], 500);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error general en actualizarPlanesPagoContable: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'msg' => 'Error interno del servidor: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    // En OfertasAcademicasController.php
+    public function obtenerPrecioPrincipal(Request $request)
+    {
+        $request->validate([
+            'oferta_id' => 'required|exists:ofertas_academicas,id',
+            'concepto_id' => 'required|exists:conceptos,id'
+        ]);
+
+        // Buscar el precio del concepto en el plan principal
+        $precioRegular = PlanesConcepto::where('ofertas_academica_id', $request->oferta_id)
+            ->where('concepto_id', $request->concepto_id)
+            ->whereHas('plan_pago', function ($query) {
+                $query->where('principal', true);
+            })
+            ->value('pago_bs');
+
+        return response()->json([
+            'success' => true,
+            'precio_regular' => $precioRegular ?? 0
+        ]);
+    }
+
+    public function verificarPlanPrincipal(Request $request)
+    {
+        $request->validate([
+            'oferta_id' => 'required|exists:ofertas_academicas,id'
+        ]);
+
+        $existe = PlanesPago::whereHas('plan_concepto', function ($query) use ($request) {
+            $query->where('ofertas_academica_id', $request->oferta_id);
+        })
+            ->where('principal', true)
+            ->exists();
+
+        return response()->json([
+            'success' => true,
+            'existe' => $existe
+        ]);
+    }
+
+
+
+    // Agrega este método al final del controlador
+    public function exportarEstadoFinancieroParticipantes($id)
+    {
+        try {
+            $oferta = OfertasAcademica::with([
+                'sucursal.sede',
+                'programa',
+                'inscripciones' => function ($query) {
+                    $query->where('estado', 'Inscrito');
+                }
+            ])->findOrFail($id);
+
+            // Obtener los datos financieros de participantes
+            $participantesFinanzas = $this->getDatosFinancierosParticipantes($oferta);
+
+            // Información para el reporte
+            $sede = $oferta->sucursal->sede->nombre ?? 'Sin sede';
+            $sucursal = $oferta->sucursal->nombre ?? 'Sin sucursal';
+            $nombreOferta = $oferta->programa->nombre ?? 'Sin nombre';
+
+            // Nombre del archivo
+            $filename = 'Estado_Financiero_Participantes_' .
+                $oferta->codigo . '_' .
+                now()->format('Ymd_His') . '.xlsx';
+
+            return Excel::download(
+                new EstadoFinancieroParticipantesExport(
+                    $participantesFinanzas,
+                    $sede,
+                    $sucursal,
+                    $nombreOferta
+                ),
+                $filename
+            );
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'msg' => 'Error al generar el reporte: ' . $e->getMessage()
             ], 500);
         }
     }
