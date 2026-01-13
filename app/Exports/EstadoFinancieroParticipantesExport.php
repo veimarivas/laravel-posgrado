@@ -464,28 +464,4 @@ class EstadoFinancieroParticipantesExport implements FromCollection, WithHeading
             }
         ];
     }
-
-    // En la misma clase de exportación, agrega:
-    public function sheets(): array
-    {
-        $sheets = [];
-
-        // Hoja principal con detalle
-        $sheets[] = new EstadoFinancieroParticipantesExport(
-            $this->participantes,
-            $this->sede,
-            $this->sucursal,
-            $this->oferta
-        );
-
-        // Hoja de resumen
-        $sheets[] = new ResumenFinancieroExport(
-            $this->participantes,
-            $this->sede,
-            $this->sucursal,
-            $this->oferta
-        );
-
-        return $sheets;
-    }
 }
