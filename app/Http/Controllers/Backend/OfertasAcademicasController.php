@@ -33,6 +33,7 @@ use App\Models\PlanesConcepto;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use App\Exports\EstadoFinancieroParticipantesExport;
+use App\Exports\DetalleParticipantesExport;
 use Maatwebsite\Excel\Facades\Excel;
 
 class OfertasAcademicasController extends Controller
@@ -450,6 +451,9 @@ class OfertasAcademicasController extends Controller
         // 8. Resumen por concepto
         $resumenPorConcepto = $this->getResumenPorConcepto($oferta);
 
+        // 9. Detalle completo de participantes
+        $detalleParticipantes = $this->getDetalleParticipantes($oferta);
+
         // Mantener variables individuales para compatibilidad
         $hombres = $estadisticasDemograficas['hombres'];
         $mujeres = $estadisticasDemograficas['mujeres'];
@@ -473,7 +477,8 @@ class OfertasAcademicasController extends Controller
             'hombres',
             'mujeres',
             'promedioEdad',
-            'topCiudades'
+            'topCiudades',
+            'detalleParticipantes'  // Agregar esta línea
         ));
     }
 
@@ -602,6 +607,8 @@ class OfertasAcademicasController extends Controller
         return $ingresosPorPlan;
     }
 
+
+
     // CORREGIDO: Método para obtener datos financieros de participantes
     private function getDatosFinancierosParticipantes(OfertasAcademica $oferta)
     {
@@ -614,8 +621,10 @@ class OfertasAcademicasController extends Controller
                 'estudiante.persona' => function ($query) {
                     $query->orderBy('apellido_paterno')
                         ->orderBy('apellido_materno')
-                        ->orderBy('nombres');
+                        ->orderBy('nombres')
+                        ->with(['estudios.profesion']); // Agregar estudios
                 },
+                'estudiante.persona.ciudad.departamento',
                 'planesPago',
                 'cuotas',
                 'trabajador_cargo.trabajador.persona'
@@ -628,9 +637,20 @@ class OfertasAcademicasController extends Controller
                     $persona->nombres;
             });
 
-        foreach ($inscripcionesOrdenadas  as $inscripcion) {
-            $estudiante = $inscripcion->estudiante->persona;
+        foreach ($inscripcionesOrdenadas as $inscripcion) {
+            $persona = $inscripcion->estudiante->persona;
             $planPago = $inscripcion->planesPago;
+
+            // Obtener la profesión del primer estudio principal
+            $profesion = 'No registrado';
+            if ($persona->estudios && $persona->estudios->isNotEmpty()) {
+                $estudioPrincipal = $persona->estudios->where('principal', 1)->first() ??
+                    $persona->estudios->first();
+
+                if ($estudioPrincipal->profesion) {
+                    $profesion = $estudioPrincipal->profesion->nombre;
+                }
+            }
 
             // Obtener el vendedor con su persona_id
             $vendedor = null;
@@ -647,7 +667,7 @@ class OfertasAcademicasController extends Controller
                     $personaVendedor->nombres . ' ' .
                         $personaVendedor->apellido_paterno
                 );
-                $vendedorPersonaId = $personaVendedor->id;  // Este es el persona_id correcto
+                $vendedorPersonaId = $personaVendedor->id;
             }
 
             // Inicializar arrays para los conceptos
@@ -678,7 +698,7 @@ class OfertasAcademicasController extends Controller
                 ],
             ];
 
-            // PRIMERO: Obtener las cuotas ordenadas (igual que en estudiantes.detalle)
+            // PRIMERO: Obtener las cuotas ordenadas
             $cuotasOrdenadas = $inscripcion->cuotas->sortBy('n_cuota');
 
             // Variables para rastrear la asignación
@@ -751,11 +771,14 @@ class OfertasAcademicasController extends Controller
 
             $participantes[] = [
                 'estudiante_id' => $inscripcion->estudiante->id,
-                'estudiante' => trim($estudiante->nombres . ' ' .
-                    $estudiante->apellido_paterno . ' ' .
-                    $estudiante->apellido_materno),
-                'carnet' => $estudiante->carnet,
-                'plan_pago' => $planPago->nombre,
+                'apellido_paterno' => $persona->apellido_paterno ?? '',
+                'apellido_materno' => $persona->apellido_materno ?? '',
+                'nombres' => $persona->nombres ?? '',
+                'nombre_completo' => trim(($persona->apellido_paterno ?? '') . ' ' .
+                    ($persona->apellido_materno ?? '') . ' ' .
+                    ($persona->nombres ?? '')),
+                'carnet' => $persona->carnet ?? '',
+                'plan_pago' => $planPago->nombre ?? '',
                 'total_plan' => $totalPlan,
                 'conceptos' => $conceptos,
                 'total_pagado' => $totalPagado,
@@ -763,7 +786,12 @@ class OfertasAcademicasController extends Controller
                 'saldo' => $totalDeuda,
                 'porcentaje_pagado' => $totalPlan > 0 ? ($totalPagado / $totalPlan) * 100 : 0,
                 'vendedor' => $vendedor,
-                'vendedor_persona_id' => $vendedorPersonaId,  // Cambiado a persona_id
+                'vendedor_persona_id' => $vendedorPersonaId,
+                // NUEVOS CAMPOS
+                'fecha_inscripcion' => $inscripcion->fecha_registro,
+                'profesion' => $profesion,
+                'celular' => $persona->celular ?? 'Sin celular',
+                'correo' => $persona->correo ?? 'Sin correo',
             ];
         }
 
@@ -771,7 +799,6 @@ class OfertasAcademicasController extends Controller
     }
 
     // NUEVO MÉTODO: Obtener ingresos por plan de pago para gráficos
-    // Método para obtener resumen por concepto
     private function getResumenPorConcepto(OfertasAcademica $oferta)
     {
         $conceptos = [
@@ -962,11 +989,14 @@ class OfertasAcademicasController extends Controller
         $tabla = [];
 
         foreach ($oferta->inscripciones->where('estado', 'Inscrito') as $inscripcion) {
+            $persona = $inscripcion->estudiante->persona;
+
             $fila = [
                 'estudiante_id' => $inscripcion->estudiante->id,
-                'estudiante' => trim($inscripcion->estudiante->persona->nombres . ' ' .
-                    $inscripcion->estudiante->persona->apellido_paterno),
-                'carnet' => $inscripcion->estudiante->persona->carnet,
+                'estudiante' => trim($persona->apellido_paterno . ' ' .
+                    $persona->apellido_materno . ' ' .
+                    $persona->nombres), // Cambiado aquí
+                'carnet' => $persona->carnet,
                 'modulos' => []
             ];
 
@@ -2529,10 +2559,134 @@ class OfertasAcademicasController extends Controller
                 $filename
             );
         } catch (\Exception $e) {
+            \Log::error('Error al exportar estado financiero: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'msg' => 'Error al generar el reporte: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function exportarDetalleParticipantes($id)
+    {
+        try {
+            $oferta = OfertasAcademica::with([
+                'sucursal.sede',
+                'programa',
+                'inscripciones' => function ($query) {
+                    $query->where('estado', 'Inscrito');
+                }
+            ])->findOrFail($id);
+
+            // Obtener los datos detallados de participantes
+            $detalleParticipantes = $this->getDetalleParticipantes($oferta);
+
+            // Información para el reporte
+            $sede = $oferta->sucursal->sede->nombre ?? 'Sin sede';
+            $sucursal = $oferta->sucursal->nombre ?? 'Sin sucursal';
+            $nombreOferta = $oferta->programa->nombre ?? 'Sin nombre';
+
+            // Nombre del archivo
+            $filename = 'Detalle_Participantes_' .
+                $oferta->codigo . '_' .
+                now()->format('Ymd_His') . '.xlsx';
+
+            return Excel::download(
+                new DetalleParticipantesExport(
+                    $detalleParticipantes,
+                    $sede,
+                    $sucursal,
+                    $nombreOferta
+                ),
+                $filename
+            );
+        } catch (\Exception $e) {
+            \Log::error('Error al exportar detalle de participantes: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'msg' => 'Error al generar el reporte: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Nuevo método: Obtener datos detallados de participantes - CORREGIDO
+    private function getDetalleParticipantes(OfertasAcademica $oferta)
+    {
+        $participantes = [];
+
+        // Obtener inscripciones ordenadas alfabéticamente
+        $inscripcionesOrdenadas = $oferta->inscripciones()
+            ->where('estado', 'Inscrito')
+            ->with([
+                'estudiante.persona.ciudad.departamento',
+                'estudiante.persona.estudios.profesion',  // Cambiado: 'profesion' no 'profesione'
+                'estudiante.persona.estudios.grado_academico',
+                'estudiante.persona.estudios.universidad'
+            ])
+            ->get()
+            ->sortBy(function ($inscripcion) {
+                $persona = $inscripcion->estudiante->persona;
+                return $persona->apellido_paterno . ' ' .
+                    $persona->apellido_materno . ' ' .
+                    $persona->nombres;
+            });
+
+        foreach ($inscripcionesOrdenadas as $index => $inscripcion) {
+            $persona = $inscripcion->estudiante->persona;
+            $ciudad = $persona->ciudad;
+            $departamento = $ciudad ? $ciudad->departamento : null;
+
+            // Obtener la profesión principal del estudiante (si tiene estudios)
+            $profesion = 'No registrado';
+            $gradoAcademico = 'No registrado';
+            $institucion = 'No especificada';
+
+            if ($persona->estudios && $persona->estudios->isNotEmpty()) {
+                // Tomar el estudio principal o el primero
+                $estudioPrincipal = $persona->estudios->where('principal', 1)->first() ??
+                    $persona->estudios->first();
+
+                if ($estudioPrincipal->profesion) {
+                    $profesion = $estudioPrincipal->profesion->nombre;
+                }
+                if ($estudioPrincipal->grado_academico) {
+                    $gradoAcademico = $estudioPrincipal->grado_academico->nombre;
+                }
+                if ($estudioPrincipal->universidad) {
+                    $institucion = $estudioPrincipal->universidad->nombre;
+                }
+            }
+
+            $participantes[] = [
+                'numero' => $index + 1,
+                'estudiante_id' => $inscripcion->estudiante->id,
+                'carnet' => $persona->carnet ?? 'Sin carnet',
+                'expedido' => $persona->expedido ?? 'No definido',
+                'apellido_paterno' => $persona->apellido_paterno ?? '',
+                'apellido_materno' => $persona->apellido_materno ?? '',
+                'nombres' => $persona->nombres ?? '',
+                'correo' => $persona->correo ?? 'Sin correo',
+                'direccion' => $persona->direccion ?? 'Sin dirección',
+                'celular' => $persona->celular ?? 'Sin celular',
+                'telefono' => $persona->telefono ?? 'Sin teléfono',
+                'ciudad' => $ciudad ? $ciudad->nombre : 'No registrada',
+                'departamento' => $departamento ? $departamento->nombre : 'No registrado',
+                'ciudade_id' => $persona->ciudade_id,
+                'profesion' => $profesion,
+                'grado_academico' => $gradoAcademico,
+                'institucion' => $institucion,
+                'estudios' => $persona->estudios ? $persona->estudios->map(function ($estudio) {
+                    return [
+                        'grado' => $estudio->grado_academico ? $estudio->grado_academico->nombre : 'No especificado',
+                        'profesion' => $estudio->profesion ? $estudio->profesion->nombre : 'Sin profesión',
+                        'institucion' => $estudio->universidad ? $estudio->universidad->nombre : 'No especificada',
+                        'gestion' => 'No especificada', // Agregar este campo si existe en tu tabla
+                        'principal' => $estudio->principal ?? 0
+                    ];
+                })->toArray() : []
+            ];
+        }
+
+        return $participantes;
     }
 }

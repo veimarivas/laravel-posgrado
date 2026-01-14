@@ -184,6 +184,13 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
             [OfertasAcademicasController::class, 'exportarEstadoFinancieroParticipantes']
         )
             ->name('admin.ofertas.exportar-estado-financiero');
+
+        // Ruta para exportar detalle de participantes
+        Route::get(
+            '/ofertas/{id}/exportar-detalle-participantes',
+            [OfertasAcademicasController::class, 'exportarDetalleParticipantes']
+        )
+            ->name('admin.ofertas.exportar-detalle-participantes');
     });
 
     Route::controller(UserProfileController::class)->group(function () {

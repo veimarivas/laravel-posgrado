@@ -37,10 +37,19 @@ class EstadoFinancieroParticipantesExport implements FromCollection, WithHeading
         return collect($this->participantes)->map(function ($participante) {
             return [
                 '#' => '', // Se llenará automáticamente
-                'ESTUDIANTE' => $participante['estudiante'],
+                'APELLIDO PATERNO' => $participante['apellido_paterno'] ?? '',
+                'APELLIDO MATERNO' => $participante['apellido_materno'] ?? '',
+                'NOMBRES' => $participante['nombres'] ?? '',
                 'CARNET' => $participante['carnet'],
                 'PLAN DE PAGO' => $participante['plan_pago'],
                 'VENDEDOR' => $participante['vendedor'] ?? 'N/A',
+                // NUEVAS COLUMNAS
+                'FECHA INSCRIPCIÓN' => isset($participante['fecha_inscripcion']) ?
+                    \Carbon\Carbon::parse($participante['fecha_inscripcion'])->format('d/m/Y') : '',
+                'PROFESIÓN' => $participante['profesion'] ?? 'No registrado',
+                'CELULAR' => $participante['celular'] ?? 'Sin celular',
+                'CORREO' => $participante['correo'] ?? 'Sin correo',
+                // FIN NUEVAS COLUMNAS
                 'TOTAL PLAN (Bs)' => $participante['total_plan'],
 
                 // MATRÍCULA
@@ -79,10 +88,18 @@ class EstadoFinancieroParticipantesExport implements FromCollection, WithHeading
             [''], // Línea en blanco
             [
                 '#',
-                'ESTUDIANTE',
+                'APELLIDO PATERNO',
+                'APELLIDO MATERNO',
+                'NOMBRES',
                 'CARNET',
                 'PLAN DE PAGO',
                 'VENDEDOR',
+                // NUEVAS COLUMNAS
+                'FECHA INSCRIPCIÓN',
+                'PROFESIÓN',
+                'CELULAR',
+                'CORREO',
+                // FIN NUEVAS COLUMNAS
                 'TOTAL PLAN (Bs)',
                 'MATRÍCULA TOTAL (Bs)',
                 'MATRÍCULA PAGADO (Bs)',
@@ -105,39 +122,14 @@ class EstadoFinancieroParticipantesExport implements FromCollection, WithHeading
 
     public function styles(Worksheet $sheet)
     {
-        // Configurar anchos de columna
-        $sheet->getColumnDimension('A')->setWidth(4);
-        $sheet->getColumnDimension('B')->setWidth(30);
-        $sheet->getColumnDimension('C')->setWidth(15);
-        $sheet->getColumnDimension('D')->setWidth(20);
-        $sheet->getColumnDimension('E')->setWidth(20);
-        $sheet->getColumnDimension('F')->setWidth(15);
-
-        // Columnas de Matrícula
-        $sheet->getColumnDimension('G')->setWidth(18);
-        $sheet->getColumnDimension('H')->setWidth(18);
-        $sheet->getColumnDimension('I')->setWidth(18);
+        // Configurar anchos de columna para las nuevas columnas
+        $sheet->getColumnDimension('H')->setWidth(15);
+        $sheet->getColumnDimension('I')->setWidth(20);
         $sheet->getColumnDimension('J')->setWidth(15);
+        $sheet->getColumnDimension('K')->setWidth(25);
 
-        // Columnas de Colegiatura
-        $sheet->getColumnDimension('K')->setWidth(18);
-        $sheet->getColumnDimension('L')->setWidth(18);
-        $sheet->getColumnDimension('M')->setWidth(18);
-        $sheet->getColumnDimension('N')->setWidth(15);
-
-        // Columnas de Certificación
-        $sheet->getColumnDimension('O')->setWidth(18);
-        $sheet->getColumnDimension('P')->setWidth(18);
-        $sheet->getColumnDimension('Q')->setWidth(18);
-        $sheet->getColumnDimension('R')->setWidth(15);
-
-        // Total y saldo
-        $sheet->getColumnDimension('S')->setWidth(18);
-        $sheet->getColumnDimension('T')->setWidth(18);
-        $sheet->getColumnDimension('U')->setWidth(12);
-
-        // Estilo para el título principal (fila 1)
-        $sheet->getStyle('A1:U1')->applyFromArray([
+        // Ajustar rangos para las nuevas columnas (ahora hasta AA)
+        $sheet->getStyle('A1:AA1')->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 16,
@@ -153,8 +145,7 @@ class EstadoFinancieroParticipantesExport implements FromCollection, WithHeading
             ]
         ]);
 
-        // Estilo para información de sede (fila 2)
-        $sheet->getStyle('A2:U2')->applyFromArray([
+        $sheet->getStyle('A2:AA2')->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 12,
@@ -165,8 +156,7 @@ class EstadoFinancieroParticipantesExport implements FromCollection, WithHeading
             ]
         ]);
 
-        // Estilo para fecha (fila 3)
-        $sheet->getStyle('A3:U3')->applyFromArray([
+        $sheet->getStyle('A3:AA3')->applyFromArray([
             'font' => [
                 'italic' => true,
                 'size' => 10,
@@ -177,8 +167,7 @@ class EstadoFinancieroParticipantesExport implements FromCollection, WithHeading
             ]
         ]);
 
-        // Estilo para encabezados de columnas (fila 5)
-        $sheet->getStyle('A5:U5')->applyFromArray([
+        $sheet->getStyle('A5:AA5')->applyFromArray([
             'font' => [
                 'bold' => true,
                 'size' => 11,
@@ -202,39 +191,47 @@ class EstadoFinancieroParticipantesExport implements FromCollection, WithHeading
         ]);
 
         // Combinar celdas del título
-        $sheet->mergeCells('A1:U1');
-        $sheet->mergeCells('A2:U2');
-        $sheet->mergeCells('A3:U3');
+        $sheet->mergeCells('A1:AA1');
+        $sheet->mergeCells('A2:AA2');
+        $sheet->mergeCells('A3:AA3');
     }
 
     public function columnWidths(): array
     {
         return [
             'A' => 4,   // #
-            'B' => 30,  // ESTUDIANTE
-            'C' => 15,  // CARNET
-            'D' => 20,  // PLAN DE PAGO
-            'E' => 20,  // VENDEDOR
-            'F' => 15,  // TOTAL PLAN
+            'B' => 15,  // APELLIDO PATERNO
+            'C' => 15,  // APELLIDO MATERNO
+            'D' => 20,  // NOMBRES
+            'E' => 15,  // CARNET
+            'F' => 20,  // PLAN DE PAGO
+            'G' => 20,  // VENDEDOR
+            // NUEVAS COLUMNAS
+            'H' => 15,  // FECHA INSCRIPCIÓN
+            'I' => 20,  // PROFESIÓN
+            'J' => 15,  // CELULAR
+            'K' => 25,  // CORREO
+            // FIN NUEVAS COLUMNAS
+            'L' => 15,  // TOTAL PLAN
 
-            'G' => 18,  // MATRÍCULA TOTAL
-            'H' => 18,  // MATRÍCULA PAGADO
-            'I' => 18,  // MATRÍCULA PENDIENTE
-            'J' => 15,  // MATRÍCULA CUOTAS
+            'M' => 18,  // MATRÍCULA TOTAL
+            'N' => 18,  // MATRÍCULA PAGADO
+            'O' => 18,  // MATRÍCULA PENDIENTE
+            'P' => 15,  // MATRÍCULA CUOTAS
 
-            'K' => 18,  // COLEGIATURA TOTAL
-            'L' => 18,  // COLEGIATURA PAGADO
-            'M' => 18,  // COLEGIATURA PENDIENTE
-            'N' => 15,  // COLEGIATURA CUOTAS
+            'Q' => 18,  // COLEGIATURA TOTAL
+            'R' => 18,  // COLEGIATURA PAGADO
+            'S' => 18,  // COLEGIATURA PENDIENTE
+            'T' => 15,  // COLEGIATURA CUOTAS
 
-            'O' => 18,  // CERTIFICACIÓN TOTAL
-            'P' => 18,  // CERTIFICACIÓN PAGADO
-            'Q' => 18,  // CERTIFICACIÓN PENDIENTE
-            'R' => 15,  // CERTIFICACIÓN CUOTAS
+            'U' => 18,  // CERTIFICACIÓN TOTAL
+            'V' => 18,  // CERTIFICACIÓN PAGADO
+            'W' => 18,  // CERTIFICACIÓN PENDIENTE
+            'X' => 15,  // CERTIFICACIÓN CUOTAS
 
-            'S' => 18,  // TOTAL PAGADO
-            'T' => 18,  // SALDO DEUDA
-            'U' => 12,  // % PAGADO
+            'Y' => 18,  // TOTAL PAGADO
+            'Z' => 18,  // SALDO DEUDA
+            'AA' => 12, // % PAGADO
         ];
     }
 
@@ -250,7 +247,7 @@ class EstadoFinancieroParticipantesExport implements FromCollection, WithHeading
                 $sheet = $event->sheet->getDelegate();
 
                 // Agregar números de fila automáticamente
-                $totalRows = count($this->participantes) + 5; // +5 por las filas de encabezado
+                $totalRows = count($this->participantes) + 5;
 
                 for ($i = 6; $i <= $totalRows; $i++) {
                     $sheet->setCellValue("A{$i}", $i - 5);
@@ -261,7 +258,7 @@ class EstadoFinancieroParticipantesExport implements FromCollection, WithHeading
                 $dataEndRow = $totalRows;
 
                 // Bordes para todas las celdas de datos
-                $sheet->getStyle("A{$dataStartRow}:U{$dataEndRow}")->applyFromArray([
+                $sheet->getStyle("A{$dataStartRow}:AA{$dataEndRow}")->applyFromArray([
                     'borders' => [
                         'allBorders' => [
                             'borderStyle' => Border::BORDER_THIN,
@@ -274,38 +271,46 @@ class EstadoFinancieroParticipantesExport implements FromCollection, WithHeading
                 ]);
 
                 // Formato de moneda para columnas numéricas
-                $currencyColumns = ['F', 'G', 'H', 'I', 'K', 'L', 'M', 'O', 'P', 'Q', 'S', 'T'];
+                $currencyColumns = ['L', 'M', 'N', 'O', 'Q', 'R', 'S', 'U', 'V', 'W', 'Y', 'Z'];
                 foreach ($currencyColumns as $col) {
                     $sheet->getStyle("{$col}{$dataStartRow}:{$col}{$dataEndRow}")
                         ->getNumberFormat()
                         ->setFormatCode('#,##0.00');
                 }
 
-                // Formato de porcentaje para columna U
-                $sheet->getStyle("U{$dataStartRow}:U{$dataEndRow}")
+                // Formato de porcentaje para columna AA
+                $sheet->getStyle("AA{$dataStartRow}:AA{$dataEndRow}")
                     ->getNumberFormat()
                     ->setFormatCode('0.00%');
 
-                // COLORES POR CONCEPTO (para fácil identificación contable)
+                // COLORES POR CONCEPTO (actualizado para nuevas columnas)
 
-                // Matrícula - Azul claro
-                $sheet->getStyle("G{$dataStartRow}:J{$dataEndRow}")->applyFromArray([
+                // Información personal - Azul claro (columnas B-K)
+                $sheet->getStyle("B{$dataStartRow}:K{$dataEndRow}")->applyFromArray([
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
                         'startColor' => ['rgb' => 'E8F4FD']
                     ]
                 ]);
 
-                // Colegiatura - Verde claro
-                $sheet->getStyle("K{$dataStartRow}:N{$dataEndRow}")->applyFromArray([
+                // Matrícula - Azul más oscuro
+                $sheet->getStyle("M{$dataStartRow}:P{$dataEndRow}")->applyFromArray([
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
-                        'startColor' => ['rgb' => 'E8F6F3']
+                        'startColor' => ['rgb' => 'D6EAF8']
+                    ]
+                ]);
+
+                // Colegiatura - Verde claro
+                $sheet->getStyle("Q{$dataStartRow}:T{$dataEndRow}")->applyFromArray([
+                    'fill' => [
+                        'fillType' => Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => 'D5F4E6']
                     ]
                 ]);
 
                 // Certificación - Amarillo claro
-                $sheet->getStyle("O{$dataStartRow}:R{$dataEndRow}")->applyFromArray([
+                $sheet->getStyle("U{$dataStartRow}:X{$dataEndRow}")->applyFromArray([
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
                         'startColor' => ['rgb' => 'FEF9E7']
@@ -315,7 +320,7 @@ class EstadoFinancieroParticipantesExport implements FromCollection, WithHeading
                 // COLORES POR ESTADO DE PAGO
 
                 // Pagado - Verde
-                $pagadoColumns = ['H', 'L', 'P', 'S'];
+                $pagadoColumns = ['N', 'R', 'V', 'Y'];
                 foreach ($pagadoColumns as $col) {
                     $sheet->getStyle("{$col}{$dataStartRow}:{$col}{$dataEndRow}")->applyFromArray([
                         'font' => [
@@ -329,7 +334,7 @@ class EstadoFinancieroParticipantesExport implements FromCollection, WithHeading
                 }
 
                 // Pendiente - Rojo
-                $pendienteColumns = ['I', 'M', 'Q', 'T'];
+                $pendienteColumns = ['O', 'S', 'W', 'Z'];
                 foreach ($pendienteColumns as $col) {
                     $sheet->getStyle("{$col}{$dataStartRow}:{$col}{$dataEndRow}")->applyFromArray([
                         'font' => [
@@ -343,9 +348,9 @@ class EstadoFinancieroParticipantesExport implements FromCollection, WithHeading
                 }
 
                 // COLOR POR PORCENTAJE DE PAGO
-                $porcentajeCol = 'U';
+                $porcentajeCol = 'AA';
                 for ($row = $dataStartRow; $row <= $dataEndRow; $row++) {
-                    $value = $sheet->getCell("{$porcentajeCol}{$row}")->getValue();
+                    $value = $sheet->getCell("{$porcentajeCol}{$row}")->getValue() * 100; // Convertir a porcentaje
 
                     if ($value >= 100) {
                         $color = '27AE60'; // Verde
@@ -414,27 +419,27 @@ class EstadoFinancieroParticipantesExport implements FromCollection, WithHeading
                     $totales['saldo_deuda'] += $participante['saldo'];
                 }
 
-                // Escribir totales
-                $sheet->setCellValue("F{$totalRow}", $totales['total_plan']);
-                $sheet->setCellValue("G{$totalRow}", $totales['matricula_total']);
-                $sheet->setCellValue("H{$totalRow}", $totales['matricula_pagado']);
-                $sheet->setCellValue("I{$totalRow}", $totales['matricula_pendiente']);
-                $sheet->setCellValue("K{$totalRow}", $totales['colegiatura_total']);
-                $sheet->setCellValue("L{$totalRow}", $totales['colegiatura_pagado']);
-                $sheet->setCellValue("M{$totalRow}", $totales['colegiatura_pendiente']);
-                $sheet->setCellValue("O{$totalRow}", $totales['certificacion_total']);
-                $sheet->setCellValue("P{$totalRow}", $totales['certificacion_pagado']);
-                $sheet->setCellValue("Q{$totalRow}", $totales['certificacion_pendiente']);
-                $sheet->setCellValue("S{$totalRow}", $totales['total_pagado']);
-                $sheet->setCellValue("T{$totalRow}", $totales['saldo_deuda']);
+                // Escribir totales (ajustar columnas)
+                $sheet->setCellValue("L{$totalRow}", $totales['total_plan']);
+                $sheet->setCellValue("M{$totalRow}", $totales['matricula_total']);
+                $sheet->setCellValue("N{$totalRow}", $totales['matricula_pagado']);
+                $sheet->setCellValue("O{$totalRow}", $totales['matricula_pendiente']);
+                $sheet->setCellValue("Q{$totalRow}", $totales['colegiatura_total']);
+                $sheet->setCellValue("R{$totalRow}", $totales['colegiatura_pagado']);
+                $sheet->setCellValue("S{$totalRow}", $totales['colegiatura_pendiente']);
+                $sheet->setCellValue("U{$totalRow}", $totales['certificacion_total']);
+                $sheet->setCellValue("V{$totalRow}", $totales['certificacion_pagado']);
+                $sheet->setCellValue("W{$totalRow}", $totales['certificacion_pendiente']);
+                $sheet->setCellValue("Y{$totalRow}", $totales['total_pagado']);
+                $sheet->setCellValue("Z{$totalRow}", $totales['saldo_deuda']);
 
                 // Calcular porcentaje general
                 $porcentajeGeneral = $totales['total_plan'] > 0 ?
                     ($totales['total_pagado'] / $totales['total_plan']) * 100 : 0;
-                $sheet->setCellValue("U{$totalRow}", $porcentajeGeneral / 100);
+                $sheet->setCellValue("AA{$totalRow}", $porcentajeGeneral / 100);
 
                 // Estilo para la fila de totales
-                $sheet->getStyle("B{$totalRow}:U{$totalRow}")->applyFromArray([
+                $sheet->getStyle("B{$totalRow}:AA{$totalRow}")->applyFromArray([
                     'font' => ['bold' => true],
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
@@ -452,10 +457,10 @@ class EstadoFinancieroParticipantesExport implements FromCollection, WithHeading
                 ]);
 
                 // Formato de moneda para totales
-                $sheet->getStyle("F{$totalRow}:T{$totalRow}")
+                $sheet->getStyle("L{$totalRow}:Z{$totalRow}")
                     ->getNumberFormat()
                     ->setFormatCode('#,##0.00');
-                $sheet->getStyle("U{$totalRow}")
+                $sheet->getStyle("AA{$totalRow}")
                     ->getNumberFormat()
                     ->setFormatCode('0.00%');
 

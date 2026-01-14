@@ -171,6 +171,11 @@
                             </a>
                         </li>
                         <li class="nav-item" role="presentation">
+                            <a class="nav-link" data-bs-toggle="tab" href="#tab-participantes" role="tab">
+                                <i class="ri-user-search-line align-middle me-1"></i> Participantes
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
                             <a class="nav-link" data-bs-toggle="tab" href="#tab-finanzas" role="tab">
                                 <i class="ri-money-dollar-circle-line align-middle me-1"></i> Finanzas
                             </a>
@@ -193,7 +198,6 @@
                     </ul>
 
                     <div class="tab-content">
-                        <!-- Pestaña 1: Resumen -->
                         <!-- Pestaña 1: Resumen - MODIFICADA -->
                         <div class="tab-pane fade show active" id="tab-resumen" role="tabpanel">
                             <div class="row">
@@ -411,6 +415,203 @@
                             </div>
                         </div>
 
+                        <!-- Pestaña 6: Participantes -->
+                        <div class="tab-pane fade" id="tab-participantes" role="tabpanel">
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="card border">
+                                        <div
+                                            class="card-header border-bottom bg-light d-flex justify-content-between align-items-center">
+                                            <h5 class="card-title mb-0 fs-16">
+                                                <i class="ri-user-search-line align-middle me-2"></i>
+                                                Detalle de Participantes Inscritos
+                                            </h5>
+                                            <div>
+                                                <span class="badge bg-primary me-2">{{ count($detalleParticipantes) }}
+                                                    participantes</span>
+                                                <a href="{{ route('admin.ofertas.exportar-detalle-participantes', $oferta->id) }}"
+                                                    class="btn btn-light btn-sm" id="exportarParticipantes">
+                                                    <i class="ri-download-line align-middle me-1"></i> Exportar Excel
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="table-responsive">
+                                                <table class="table table-hover align-middle mb-0"
+                                                    id="tablaParticipantes">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th width="3%">#</th>
+                                                            <th width="10%">Carnet/CI</th>
+                                                            <th width="12%">Apellido Paterno</th>
+                                                            <th width="12%">Apellido Materno</th>
+                                                            <th width="12%">Nombres</th>
+                                                            <th width="10%">Correo</th>
+                                                            <th width="8%">Celular</th>
+                                                            <th width="10%">Dirección</th>
+                                                            <th width="10%">Ciudad</th>
+                                                            <th width="8%">Departamento</th>
+                                                            <th width="5%">Profesión</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach ($detalleParticipantes as $participante)
+                                                            <tr>
+                                                                <td class="text-center">{{ $loop->iteration }}</td>
+                                                                <td>
+                                                                    <div class="d-flex align-items-center">
+                                                                        <div class="avatar-xs me-2">
+                                                                            <div
+                                                                                class="avatar-title bg-primary-subtle text-primary rounded">
+                                                                                <i class="ri-id-card-line"></i>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div>
+                                                                            <strong>{{ $participante['carnet'] }}</strong>
+                                                                            <div class="text-muted fs-10">
+                                                                                Exp: {{ $participante['expedido'] }}
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <span
+                                                                        class="fw-medium">{{ $participante['apellido_paterno'] }}</span>
+                                                                </td>
+                                                                <td>
+                                                                    <span
+                                                                        class="fw-medium">{{ $participante['apellido_materno'] }}</span>
+                                                                </td>
+                                                                <td>
+                                                                    <div>
+                                                                        <strong>{{ $participante['nombres'] }}</strong>
+                                                                        <div class="text-muted fs-10">
+                                                                            <a href="{{ route('admin.estudiantes.detalle', $participante['estudiante_id']) }}"
+                                                                                class="text-decoration-none">
+                                                                                <i class="ri-eye-line me-1"></i>Ver detalle
+                                                                            </a>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    @if ($participante['correo'] && $participante['correo'] !== 'Sin correo')
+                                                                        <a href="mailto:{{ $participante['correo'] }}"
+                                                                            class="text-decoration-none d-flex align-items-center">
+                                                                            <i class="ri-mail-line me-1 text-primary"></i>
+                                                                            <span class="text-truncate"
+                                                                                style="max-width: 150px;"
+                                                                                title="{{ $participante['correo'] }}">
+                                                                                {{ $participante['correo'] }}
+                                                                            </span>
+                                                                        </a>
+                                                                    @else
+                                                                        <span class="text-muted">Sin correo</span>
+                                                                    @endif
+                                                                </td>
+                                                                <td>
+                                                                    @if ($participante['celular'] && $participante['celular'] !== 'Sin celular')
+                                                                        <a href="tel:{{ $participante['celular'] }}"
+                                                                            class="text-decoration-none d-flex align-items-center">
+                                                                            <i class="ri-phone-line me-1 text-success"></i>
+                                                                            {{ $participante['celular'] }}
+                                                                        </a>
+                                                                        @if ($participante['telefono'] && $participante['telefono'] !== 'Sin teléfono')
+                                                                            <div class="text-muted fs-10">
+                                                                                Telf: {{ $participante['telefono'] }}
+                                                                            </div>
+                                                                        @endif
+                                                                    @else
+                                                                        <span class="text-muted">Sin celular</span>
+                                                                    @endif
+                                                                </td>
+                                                                <td>
+                                                                    <div class="text-truncate" style="max-width: 150px;"
+                                                                        title="{{ $participante['direccion'] }}">
+                                                                        {{ $participante['direccion'] }}
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    <span class="badge bg-info-subtle text-info">
+                                                                        {{ $participante['ciudad'] }}
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    <span class="badge bg-secondary-subtle text-secondary">
+                                                                        {{ $participante['departamento'] }}
+                                                                    </span>
+                                                                </td>
+                                                                <td>
+                                                                    @if ($participante['estudios'] && count($participante['estudios']) > 0)
+                                                                        <button type="button"
+                                                                            class="btn btn-sm btn-outline-primary btn-estudios-tooltip"
+                                                                            data-bs-toggle="tooltip" data-bs-html="true"
+                                                                            data-bs-title="
+                    <div class='text-start'>
+                        <h6 class='mb-2'>Estudios:</h6>
+                        <div class='list-unstyled'>
+                            @foreach ($participante['estudios'] as $index => $estudio)
+<div class='mb-1'>
+                                <strong>{{ $estudio['grado'] }}</strong><br>
+                                <small>{{ $estudio['profesion'] }}</small><br>
+                                <small><i>{{ $estudio['institucion'] }}</i></small>
+                                @if ($estudio['principal'])
+<span class='badge bg-success'>Principal</span>
+@endif
+                            </div>
+                            @if (!$loop->last)
+<hr>
+@endif
+@endforeach
+                        </div>
+                    </div>
+                ">
+                                                                            <i class="ri-graduation-cap-line"></i>
+                                                                        </button>
+                                                                    @endif
+                                                                    <div class="mt-1 small">
+                                                                        <div>
+                                                                            <strong>{{ $participante['profesion'] }}</strong>
+                                                                        </div>
+                                                                        <div class="text-muted">
+                                                                            {{ $participante['grado_academico'] }}</div>
+                                                                        <div class="text-muted">
+                                                                            {{ $participante['institucion'] }}</div>
+                                                                    </div>
+                                                                </td>
+
+                                                                <script>
+                                                                    // Inicializar tooltips
+                                                                    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                                                                    var tooltipList = tooltipTriggerList.map(function(tooltipTriggerEl) {
+                                                                        return new bootstrap.Tooltip(tooltipTriggerEl, {
+                                                                            html: true,
+                                                                            placement: 'left'
+                                                                        });
+                                                                    });
+                                                                </script>
+                                                            </tr>
+                                                        @endforeach
+                                                    </tbody>
+                                                </table>
+                                            </div>
+
+                                            @if (count($detalleParticipantes) === 0)
+                                                <div class="text-center py-5">
+                                                    <div class="avatar-lg mx-auto mb-3">
+                                                        <div class="avatar-title bg-light text-primary rounded-circle">
+                                                            <i class="ri-user-line fs-24"></i>
+                                                        </div>
+                                                    </div>
+                                                    <h5 class="text-muted">No hay participantes inscritos en esta oferta
+                                                    </h5>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Pestaña 2: Finanzas (MODIFICADA) -->
                         <div class="tab-pane fade" id="tab-finanzas" role="tabpanel">
                             <!-- Sección: Resumen por Concepto -->
@@ -587,24 +788,33 @@
                                         <div class="card-body">
                                             <div class="table-responsive">
                                                 <table class="table table-hover align-middle mb-0" id="tablaFinanzas">
+                                                    <!-- Modifica los encabezados de la tabla -->
                                                     <thead class="table-light">
                                                         <tr>
-                                                            <th class="text-center" width="4%">#</th>
-                                                            <th width="16%">Estudiante</th>
-                                                            <th class="text-center" width="8%">Carnet</th>
+                                                            <th class="text-center" width="3%">#</th>
+                                                            <th width="8%">Apellido Paterno</th>
+                                                            <th width="8%">Apellido Materno</th>
+                                                            <th width="10%">Nombres</th>
+                                                            <th class="text-center" width="7%">Carnet</th>
                                                             <th class="text-center" width="10%">Plan de Pago</th>
-                                                            <th class="text-center" width="12%">Vendedor</th>
+                                                            <th class="text-center" width="10%">Vendedor</th>
+                                                            <!-- NUEVAS COLUMNAS -->
+                                                            <th class="text-center" width="8%">Fecha Inscripción</th>
+                                                            <th class="text-center" width="10%">Profesión</th>
+                                                            <th class="text-center" width="8%">Celular</th>
+                                                            <th class="text-center" width="12%">Correo</th>
+                                                            <!-- FIN NUEVAS COLUMNAS -->
                                                             <th class="text-end" width="8%">Total Plan (Bs)</th>
 
                                                             <!-- Columnas en ORDEN FIJO -->
-                                                            <th class="text-end" width="10%">Matrícula (Bs)</th>
-                                                            <th class="text-end" width="10%">Colegiatura (Bs)</th>
-                                                            <th class="text-end" width="10%">Certificación (Bs)</th>
+                                                            <th class="text-end" width="9%">Matrícula (Bs)</th>
+                                                            <th class="text-end" width="9%">Colegiatura (Bs)</th>
+                                                            <th class="text-end" width="9%">Certificación (Bs)</th>
 
                                                             <th class="text-end" width="8%">Total Pagado (Bs)</th>
                                                             <th class="text-end" width="8%">Saldo Deuda (Bs)</th>
                                                             <th class="text-center" width="6%">% Pagado</th>
-                                                            <th width="8%">Progreso</th>
+                                                            <th width="7%">Progreso</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -621,6 +831,15 @@
                                                             @endphp
                                                             <tr>
                                                                 <td class="text-center">{{ $index + 1 }}</td>
+                                                                <!-- Apellidos y Nombres separados -->
+                                                                <td>
+                                                                    <span
+                                                                        class="fw-medium">{{ $participante['apellido_paterno'] }}</span>
+                                                                </td>
+                                                                <td>
+                                                                    <span
+                                                                        class="fw-medium">{{ $participante['apellido_materno'] }}</span>
+                                                                </td>
                                                                 <td>
                                                                     <a href="{{ route('admin.estudiantes.detalle', $participante['estudiante_id']) }}"
                                                                         class="text-decoration-none">
@@ -628,12 +847,13 @@
                                                                             <div class="avatar-xs">
                                                                                 <div
                                                                                     class="avatar-title bg-light text-primary rounded-circle">
-                                                                                    {{ substr(trim($participante['estudiante']), 0, 1) }}
+                                                                                    {{ substr(trim($participante['nombre_completo']), 0, 1) }}
                                                                                 </div>
                                                                             </div>
                                                                             <div class="ms-2">
                                                                                 <h6 class="mb-0 fs-14">
-                                                                                    {{ $participante['estudiante'] }}</h6>
+                                                                                    {{ $participante['nombre_completo'] }}
+                                                                                </h6>
                                                                             </div>
                                                                         </div>
                                                                     </a>
@@ -646,7 +866,6 @@
                                                                     <span
                                                                         class="badge bg-primary">{{ $participante['plan_pago'] }}</span>
                                                                 </td>
-                                                                <!-- En la tabla de participantes financieros, modificar la columna del vendedor -->
                                                                 <td class="text-center">
                                                                     @if ($participante['vendedor_persona_id'] ?? null)
                                                                         <a href="{{ route('admin.vendedor.inscripciones', $participante['vendedor_persona_id']) }}"
@@ -662,6 +881,40 @@
                                                                         </span>
                                                                     @endif
                                                                 </td>
+                                                                <!-- NUEVAS COLUMNAS -->
+                                                                <td class="text-center">
+                                                                    <span
+                                                                        class="text-muted">{{ \Carbon\Carbon::parse($participante['fecha_inscripcion'])->format('d/m/Y') }}</span>
+                                                                </td>
+                                                                <td class="text-center">
+                                                                    <span
+                                                                        class="badge bg-warning-subtle text-warning">{{ $participante['profesion'] }}</span>
+                                                                </td>
+                                                                <td class="text-center">
+                                                                    @if ($participante['celular'] != 'Sin celular')
+                                                                        <a href="tel:{{ $participante['celular'] }}"
+                                                                            class="text-decoration-none d-flex align-items-center justify-content-center">
+                                                                            <i class="ri-phone-line me-1"></i>
+                                                                            <span>{{ $participante['celular'] }}</span>
+                                                                        </a>
+                                                                    @else
+                                                                        <span class="text-muted">Sin celular</span>
+                                                                    @endif
+                                                                </td>
+                                                                <td class="text-center">
+                                                                    @if ($participante['correo'] != 'Sin correo')
+                                                                        <a href="mailto:{{ $participante['correo'] }}"
+                                                                            class="text-decoration-none d-flex align-items-center justify-content-center">
+                                                                            <i class="ri-mail-line me-1"></i>
+                                                                            <span class="text-truncate"
+                                                                                style="max-width: 150px;">{{ $participante['correo'] }}</span>
+                                                                        </a>
+                                                                    @else
+                                                                        <span class="text-muted">Sin correo</span>
+                                                                    @endif
+                                                                </td>
+                                                                <!-- FIN NUEVAS COLUMNAS -->
+                                                                <!-- Resto de las columnas financieras (se mantienen igual) -->
                                                                 <td class="text-end fw-bold">
                                                                     {{ number_format($participante['total_plan'], 2) }}
                                                                 </td>
@@ -686,15 +939,6 @@
                                                                                         class="text-danger">Pendiente:</small>
                                                                                     <small
                                                                                         class="text-danger">{{ number_format($matricula['pendiente'], 2) }}</small>
-                                                                                </div>
-                                                                            @endif
-                                                                            @if ($matricula['n_cuotas'] > 1)
-                                                                                <div
-                                                                                    class="d-flex justify-content-between">
-                                                                                    <small
-                                                                                        class="text-info">Cuotas:</small>
-                                                                                    <small
-                                                                                        class="text-info">{{ $matricula['n_cuotas'] }}</small>
                                                                                 </div>
                                                                             @endif
                                                                         @else
@@ -725,15 +969,6 @@
                                                                                         class="text-danger">{{ number_format($colegiatura['pendiente'], 2) }}</small>
                                                                                 </div>
                                                                             @endif
-                                                                            @if ($colegiatura['n_cuotas'] > 1)
-                                                                                <div
-                                                                                    class="d-flex justify-content-between">
-                                                                                    <small
-                                                                                        class="text-info">Cuotas:</small>
-                                                                                    <small
-                                                                                        class="text-info">{{ $colegiatura['n_cuotas'] }}</small>
-                                                                                </div>
-                                                                            @endif
                                                                         @else
                                                                             <span class="text-muted">-</span>
                                                                         @endif
@@ -760,15 +995,6 @@
                                                                                         class="text-danger">Pendiente:</small>
                                                                                     <small
                                                                                         class="text-danger">{{ number_format($certificacion['pendiente'], 2) }}</small>
-                                                                                </div>
-                                                                            @endif
-                                                                            @if ($certificacion['n_cuotas'] > 1)
-                                                                                <div
-                                                                                    class="d-flex justify-content-between">
-                                                                                    <small
-                                                                                        class="text-info">Cuotas:</small>
-                                                                                    <small
-                                                                                        class="text-info">{{ $certificacion['n_cuotas'] }}</small>
                                                                                 </div>
                                                                             @endif
                                                                         @else
@@ -809,12 +1035,12 @@
                                                     <!-- En la sección de tfoot, reemplaza los cálculos con: -->
                                                     <tfoot class="table-light">
                                                         <tr>
-                                                            <td colspan="5" class="fw-bold text-end">TOTALES:</td>
+                                                            <td colspan="11" class="fw-bold text-end">TOTALES:</td>
                                                             <td class="text-end fw-bold">
                                                                 {{ number_format(collect($participantesFinanzas)->sum('total_plan'), 2) }}
                                                             </td>
 
-                                                            <!-- Totales Matrícula - CALCULAR BASADO EN CUOTAS REALES -->
+                                                            <!-- Totales Matrícula -->
                                                             @php
                                                                 $totalMatricula = 0;
                                                                 $pagadoMatricula = 0;
@@ -845,13 +1071,6 @@
                                                                             <small class="text-danger">Pendiente:</small>
                                                                             <small
                                                                                 class="text-danger">{{ number_format($pendienteMatricula, 2) }}</small>
-                                                                        </div>
-                                                                    @endif
-                                                                    @if ($cuotasMatricula > 0)
-                                                                        <div class="d-flex justify-content-between">
-                                                                            <small class="text-info">Total Cuotas:</small>
-                                                                            <small
-                                                                                class="text-info">{{ $cuotasMatricula }}</small>
                                                                         </div>
                                                                     @endif
                                                                 </div>
@@ -888,13 +1107,6 @@
                                                                             <small class="text-danger">Pendiente:</small>
                                                                             <small
                                                                                 class="text-danger">{{ number_format($pendienteColegiatura, 2) }}</small>
-                                                                        </div>
-                                                                    @endif
-                                                                    @if ($cuotasColegiatura > 0)
-                                                                        <div class="d-flex justify-content-between">
-                                                                            <small class="text-info">Total Cuotas:</small>
-                                                                            <small
-                                                                                class="text-info">{{ $cuotasColegiatura }}</small>
                                                                         </div>
                                                                     @endif
                                                                 </div>
@@ -934,17 +1146,9 @@
                                                                                 class="text-danger">{{ number_format($pendienteCertificacion, 2) }}</small>
                                                                         </div>
                                                                     @endif
-                                                                    @if ($cuotasCertificacion > 0)
-                                                                        <div class="d-flex justify-content-between">
-                                                                            <small class="text-info">Total Cuotas:</small>
-                                                                            <small
-                                                                                class="text-info">{{ $cuotasCertificacion }}</small>
-                                                                        </div>
-                                                                    @endif
                                                                 </div>
                                                             </td>
 
-                                                            <!-- Resto del código permanece igual -->
                                                             <td class="text-end fw-bold text-success">
                                                                 {{ number_format(collect($participantesFinanzas)->sum('total_pagado'), 2) }}
                                                             </td>
@@ -1066,6 +1270,8 @@
                                                                             <div
                                                                                 class="avatar-title bg-light text-primary rounded-circle">
                                                                                 {{ substr(trim($fila['estudiante']), 0, 1) }}
+                                                                                <!-- Nota: Aquí $fila['estudiante'] viene del método getTablaAcademica, que ya usa 'estudiante' -->
+                                                                                <!-- Si también cambiaste ese método, actualízalo aquí -->
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -1501,12 +1707,12 @@
                                                                                 <div class="avatar-xs">
                                                                                     <div
                                                                                         class="avatar-title bg-light text-primary rounded-circle">
-                                                                                        {{ substr(trim($participante['estudiante']), 0, 1) }}
+                                                                                        {{ substr(trim($participante['nombre_completo']), 0, 1) }}
                                                                                     </div>
                                                                                 </div>
                                                                                 <div class="ms-2">
                                                                                     <h6 class="mb-0 fs-14">
-                                                                                        {{ $participante['estudiante'] }}
+                                                                                        {{ $participante['nombre_completo'] }}
                                                                                     </h6>
                                                                                 </div>
                                                                             </div>
@@ -1542,14 +1748,14 @@
                                                                                 <button type="button"
                                                                                     class="btn btn-sm btn-outline-danger btn-eliminar"
                                                                                     data-inscripcion-id="{{ $inscripcion->id }}"
-                                                                                    data-estudiante="{{ $participante['estudiante'] }}">
+                                                                                    data-estudiante="{{ $participante['nombre_completo'] }}">
                                                                                     <i class="ri-delete-bin-line"></i>
                                                                                     Eliminar
                                                                                 </button>
                                                                                 <button type="button"
                                                                                     class="btn btn-sm btn-outline-primary btn-transferir"
                                                                                     data-inscripcion-id="{{ $inscripcion->id }}"
-                                                                                    data-estudiante="{{ $participante['estudiante'] }}"
+                                                                                    data-estudiante="{{ $participante['nombre_completo'] }}"
                                                                                     data-estudiante-id="{{ $participante['estudiante_id'] }}">
                                                                                     <i class="ri-exchange-line"></i>
                                                                                     Transferir
@@ -2022,6 +2228,18 @@
                         mode: 'index'
                     }
                 }
+            });
+            // Inicializar popovers para mostrar estudios
+            $(document).ready(function() {
+                // Inicializar popovers
+                const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
+                const popoverList = [...popoverTriggerList].map(popoverTriggerEl => {
+                    return new bootstrap.Popover(popoverTriggerEl, {
+                        trigger: 'focus'
+                    });
+                });
+
+
             });
         }
     </script>
