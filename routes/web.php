@@ -488,6 +488,12 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
         Route::post('/admin/pagos/registrar', 'registrarPago')->name('admin.pagos.registrar');
 
         Route::get('/admin/inscripciones/{inscripcion}/cuotas-pendientes', 'cuotasPendientes')->name('admin.inscripciones.cuotas-pendientes');
+
+        // web.php
+        Route::post('/inscripciones/convertir-pre-inscrito/{inscripcion}', [InscripcionesController::class, 'convertirPreInscrito'])
+            ->name('admin.inscripciones.convertir-pre-inscrito');
+        Route::post('/admin/inscripciones/cambiar-plan-pago', [InscripcionesController::class, 'cambiarPlanPago'])
+            ->name('admin.inscripciones.cambiar-plan-pago');
     });
 
     // DOCENTES

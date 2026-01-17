@@ -402,7 +402,7 @@ class OfertasAcademicasController extends Controller
             'posgrado.convenio',
             'modalidad',
             'fase',
-            'inscripciones.estudiante.persona.ciudad.departamento', // Agregar departamento
+            'inscripciones.estudiante.persona.ciudad.departamento',
             'inscripciones.cuotas' => function ($query) {
                 $query->orderBy('n_cuota', 'asc');
             },
@@ -414,13 +414,9 @@ class OfertasAcademicasController extends Controller
             'inscripciones.matriculaciones.modulo'
         ])->findOrFail($id);
 
-
         // 1. Estadísticas de inscritos
         $totalInscritos = $oferta->inscripciones->where('estado', 'Inscrito')->count();
         $totalPreInscritos = $oferta->inscripciones->where('estado', 'Pre-Inscrito')->count();
-
-        // Gráfico de inscripciones por mes
-        $inscripcionesPorMes = $this->getInscripcionesPorMes($oferta);
 
         // 2. Datos financieros detallados por participante (ordenados alfabéticamente)
         $participantesFinanzas = $this->getDatosFinancierosParticipantes($oferta);
@@ -460,10 +456,68 @@ class OfertasAcademicasController extends Controller
         $promedioEdad = $estadisticasDemograficas['promedioEdad'];
         $topCiudades = $estadisticasDemograficas['topDepartamentos']; // Cambiado de topCiudades a topDepartamentos
 
+        // Agregar estos cálculos
+        $totalInscritosConAdelanto = Inscripcione::where('ofertas_academica_id', $id)
+            ->where('estado', 'Inscrito-Con-Adelanto')
+            ->count();
+
+        $totalAdelantado = Inscripcione::where('ofertas_academica_id', $id)
+            ->where('estado', 'Inscrito-Con-Adelanto')
+            ->sum('adelanto_bs');
+
+        $inscripcionesConAdelanto = Inscripcione::with(['estudiante.persona'])
+            ->where('ofertas_academica_id', $id)
+            ->where('estado', 'Inscrito-Con-Adelanto')
+            ->get()
+            ->map(function ($inscripcion) {
+                return [
+                    'estudiante_id' => $inscripcion->estudiante_id,
+                    'estudiante' => $inscripcion->estudiante->persona->nombre_completo ?? 'Sin nombre',
+                    'carnet' => $inscripcion->estudiante->persona->carnet ?? 'Sin carnet',
+                    'adelanto_bs' => $inscripcion->adelanto_bs,
+                    'fecha_registro' => $inscripcion->fecha_registro,
+                    'observaciones' => $inscripcion->observaciones,
+                ];
+            });
+
+        // Actualizar las inscripciones por mes para incluir el nuevo estado
+        $inscripcionesPorMesRaw = Inscripcione::where('ofertas_academica_id', $id)
+            ->selectRaw('MONTH(fecha_registro) as mes, estado, COUNT(*) as total')
+            ->groupBy('mes', 'estado')
+            ->get()
+            ->groupBy('mes')
+            ->map(function ($mes) {
+                $result = [
+                    'Inscrito' => 0,
+                    'Pre-Inscrito' => 0,
+                    'Inscrito-Con-Adelanto' => 0,
+                ];
+
+                foreach ($mes as $item) {
+                    $result[$item->estado] = $item->total;
+                }
+
+                return $result;
+            })
+            ->toArray();
+
+        // Asegurar que todos los meses tengan los 3 estados
+        $inscripcionesPorMes = [];
+        for ($i = 1; $i <= 12; $i++) {
+            $inscripcionesPorMes[$i] = $inscripcionesPorMesRaw[$i] ?? [
+                'Inscrito' => 0,
+                'Pre-Inscrito' => 0,
+                'Inscrito-Con-Adelanto' => 0,
+            ];
+        }
+
         return view('admin.ofertas.dashboard', compact(
             'oferta',
             'totalInscritos',
             'totalPreInscritos',
+            'totalInscritosConAdelanto',
+            'totalAdelantado',
+            'inscripcionesConAdelanto',
             'inscripcionesPorMes',
             'participantesFinanzas',
             'ingresosPorPlanPago',
@@ -473,23 +527,24 @@ class OfertasAcademicasController extends Controller
             'resumenPorConcepto',
             'preInscritosConAsesor',
             'estadisticasDemograficas',
-            // Variables individuales para compatibilidad
             'hombres',
             'mujeres',
             'promedioEdad',
             'topCiudades',
-            'detalleParticipantes'  // Agregar esta línea
+            'detalleParticipantes'
         ));
     }
 
     // Nuevo método: Obtener pre-inscritos con asesor
+    // En OfertasAcademicasController.php - método getPreInscritosConAsesor
     private function getPreInscritosConAsesor(OfertasAcademica $oferta)
     {
         return $oferta->inscripciones()
-            ->where('estado', 'Pre-Inscrito')
+            ->where('estado', 'Pre-Inscrito') // Solo Pre-Inscrito
             ->with([
                 'estudiante.persona',
-                'trabajador_cargo.trabajador.persona'  // Asegurar relación completa
+                'trabajador_cargo.trabajador.persona',
+                'planesPago' // ← Asegúrate de cargar esta relación
             ])
             ->get()
             ->map(function ($inscripcion) {
@@ -500,11 +555,11 @@ class OfertasAcademicasController extends Controller
                     $inscripcion->trabajador_cargo->trabajador &&
                     $inscripcion->trabajador_cargo->trabajador->persona
                 ) {
-
                     $asesorPersonaId = $inscripcion->trabajador_cargo->trabajador->persona->id;
                 }
 
                 return [
+                    'inscripcion_id' => $inscripcion->id, // ← AGREGAR ESTA LÍNEA
                     'estudiante_id' => $inscripcion->estudiante->id,
                     'estudiante' => trim(
                         optional($inscripcion->estudiante->persona)->apellido_paterno . ' ' .
@@ -512,7 +567,7 @@ class OfertasAcademicasController extends Controller
                             optional($inscripcion->estudiante->persona)->nombres
                     ),
                     'carnet' => optional($inscripcion->estudiante->persona)->carnet,
-                    'asesor_persona_id' => $asesorPersonaId,  // Cambiado a persona_id
+                    'asesor_persona_id' => $asesorPersonaId,
                     'asesor' => $inscripcion->trabajador_cargo && $inscripcion->trabajador_cargo->trabajador &&
                         $inscripcion->trabajador_cargo->trabajador->persona ?
                         trim(
@@ -521,6 +576,10 @@ class OfertasAcademicasController extends Controller
                                 $inscripcion->trabajador_cargo->trabajador->persona->nombres
                         ) : 'Sin asesor',
                     'fecha_registro' => $inscripcion->fecha_registro,
+                    'adelanto_bs' => $inscripcion->adelanto_bs ?? 0, // 0 si no hay adelanto
+                    'plan_pago' => $inscripcion->planesPago->nombre ?? 'No especificado', // Nombre del plan
+                    'plan_pago_id' => $inscripcion->planes_pago_id, // ID del plan para referencia
+                    'estado' => $inscripcion->estado, // ← AGREGAR ESTADO
                 ];
             })
             ->sortBy('estudiante')

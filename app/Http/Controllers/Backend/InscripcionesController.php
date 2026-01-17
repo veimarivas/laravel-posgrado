@@ -19,6 +19,7 @@ use App\Models\TrabajadoresCargo;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class InscripcionesController extends Controller
 {
@@ -48,48 +49,22 @@ class InscripcionesController extends Controller
 
     public function registrar(Request $request)
     {
-        \Log::info('=== INICIANDO REGISTRO DE INSCRIPCIÓN ===');
+        \Log::info('=== INICIANDO REGISTRO DE INSCRIPCIÓN MEJORADO ===');
 
         $user = Auth::user();
-        \Log::info('Usuario autenticado:', [
-            'user_id' => $user?->id,
-            'user_email' => $user?->email,
-            'persona_id' => $user?->persona_id,
-        ]);
 
-        if (!$user || !$user->persona) {
-            \Log::warning('El usuario NO tiene una persona asociada.');
-        } else {
-            \Log::info('Persona encontrada:', [
-                'persona_id' => $user->persona->id,
-                'nombres' => $user->persona->nombres,
-            ]);
-
-            $trabajador = $user->persona->trabajador;
-            if (!$trabajador) {
-                \Log::warning('La persona NO tiene un trabajador asociado.');
-            } else {
-                \Log::info('Trabajador encontrado:', [
-                    'trabajador_id' => $trabajador->id,
-                ]);
-
-                $cargosVigentes = $trabajador->trabajadores_cargos()->where('estado', 'Vigente')->get();
-                \Log::info('Cargos vigentes del trabajador:', $cargosVigentes->toArray());
-
-                if ($cargosVigentes->isEmpty()) {
-                    \Log::warning('El trabajador NO tiene cargos vigentes.');
-                }
-            }
-        }
+        // Validación actualizada
         $request->validate([
             'oferta_id' => 'required|exists:ofertas_academicas,id',
             'estudiante_id' => 'required|exists:estudiantes,id',
             'estado' => 'required|in:Pre-Inscrito,Inscrito',
+            'planes_pago_id' => 'required|exists:planes_pagos,id',
+            'adelanto_bs' => 'nullable|numeric|min:0',
         ]);
 
         $oferta = OfertasAcademica::findOrFail($request->oferta_id);
 
-        // ✅ NUEVA VALIDACIÓN: Verificar si ya está inscrito/pre-inscrito en esta oferta
+        // ✅ Validación: Verificar si ya está inscrito/pre-inscrito
         $inscripcionExistente = Inscripcione::where('ofertas_academica_id', $oferta->id)
             ->where('estudiante_id', $request->estudiante_id)
             ->whereIn('estado', ['Pre-Inscrito', 'Inscrito'])
@@ -102,27 +77,19 @@ class InscripcionesController extends Controller
             ], 422);
         }
 
-        // Validación adicional solo para "Inscrito"
-        if ($request->estado === 'Inscrito') {
-            $request->validate([
-                'planes_pago_id' => 'required|exists:planes_pagos,id',
-            ]);
+        // ✅ Validación: Verificar que el plan pertenezca a la oferta
+        $planExisteEnOferta = PlanesConcepto::where('ofertas_academica_id', $oferta->id)
+            ->where('planes_pago_id', $request->planes_pago_id)
+            ->exists();
 
-            $planExisteEnOferta = PlanesConcepto::where('ofertas_academica_id', $oferta->id)
-                ->where('planes_pago_id', $request->planes_pago_id)
-                ->exists();
-
-            if (!$planExisteEnOferta) {
-                return response()->json([
-                    'success' => false,
-                    'msg' => 'El plan de pago seleccionado no pertenece a esta oferta académica.'
-                ], 422);
-            }
+        if (!$planExisteEnOferta) {
+            return response()->json([
+                'success' => false,
+                'msg' => 'El plan de pago seleccionado no pertenece a esta oferta académica.'
+            ], 422);
         }
 
-        // ✅ Obtener el usuario autenticado correctamente
-        $user = Auth::user();
-
+        // ✅ Obtener usuario autenticado
         if (!$user || !$user->persona?->trabajador) {
             return response()->json([
                 'success' => false,
@@ -130,10 +97,9 @@ class InscripcionesController extends Controller
             ], 422);
         }
 
-
         $trabajadorCargo = $user->persona->trabajador->trabajadores_cargos()
             ->where('estado', 'Vigente')
-            ->latest('fecha_ingreso')  // Recomendado: el cargo más reciente
+            ->latest('fecha_ingreso')
             ->firstOrFail();
 
         if (!$trabajadorCargo) {
@@ -143,62 +109,30 @@ class InscripcionesController extends Controller
             ], 422);
         }
 
-        // Registrar la inscripción
-        $inscripcion = Inscripcione::create([
+        // ✅ Registrar la inscripción
+        $inscripcionData = [
             'ofertas_academica_id' => $oferta->id,
             'estudiante_id' => $request->estudiante_id,
             'trabajadores_cargo_id' => $trabajadorCargo->id,
             'estado' => $request->estado,
             'fecha_registro' => now(),
-            'planes_pago_id' => $request->estado === 'Inscrito' ? $request->planes_pago_id : null,
-        ]);
+            'planes_pago_id' => $request->planes_pago_id,
+            'adelanto_bs' => $request->adelanto_bs ?? null,
+        ];
 
-        // Si es "Inscrito", devolver vista previa de cuotas
-        if ($request->estado === 'Inscrito') {
-            $planesConceptos = PlanesConcepto::where('ofertas_academica_id', $oferta->id)
-                ->where('planes_pago_id', $request->planes_pago_id)
-                ->with('concepto')
-                ->get();
+        // ✅ Crear la inscripción
+        $inscripcion = Inscripcione::create($inscripcionData);
 
-            $cuotasPreview = [];
-            foreach ($planesConceptos as $pc) {
-                $montoTotal = $pc->pago_bs;
-                $nCuotas = $pc->n_cuotas;
-                $montoBase = floor($montoTotal / $nCuotas);
-                $resto = $montoTotal - ($montoBase * $nCuotas);
+        // ✅ Solo para "Inscrito": generar cuotas y matrículas (esto se manejará en confirmarCuotas)
+        // ✅ Para "Pre-Inscrito": solo guardar la inscripción sin cuotas ni matrículas
 
-                for ($i = 1; $i <= $nCuotas; $i++) {
-                    $monto = $i == $nCuotas ? $montoBase + $resto : $montoBase;
-                    $fechaPago = now()->copy()->addMonths($i - 1)->format('Y-m-d');
-
-                    $cuotasPreview[] = [
-                        'nombre' => "Cuota {$i} - {$pc->concepto->nombre}",
-                        'n_cuota' => $i,
-                        'pago_total_bs' => $monto,
-                        'pago_pendiente_bs' => $monto,
-                        'descuento_bs' => 0,
-                        'fecha_pago' => $fechaPago,
-                        'pago_terminado' => 'no',
-                        'concepto_id' => $pc->concepto_id,
-                        'concepto_nombre' => $pc->concepto->nombre,
-                        'planes_concepto_id' => $pc->id,
-                        'n_cuotas' => $nCuotas,
-                    ];
-                }
-            }
-
-            return response()->json([
-                'success' => true,
-                'msg' => 'Inscripción registrada como "Inscrito". Por favor, revise y confirme las cuotas.',
-                'inscripcion_id' => $inscripcion->id,
-                'cuotas_preview' => $cuotasPreview,
-            ]);
-        }
-
-        // ✅ Respuesta para Pre-Inscrito
         return response()->json([
             'success' => true,
-            'msg' => 'Inscripción registrada como "Pre-Inscrito" correctamente.'
+            'msg' => $request->estado === 'Inscrito'
+                ? 'Inscripción registrada. Por favor, confirme las cuotas para completar el proceso.'
+                : 'Pre-inscripción registrada exitosamente. El estudiante puede ser convertido a inscrito posteriormente.',
+            'inscripcion_id' => $inscripcion->id,
+            'estado' => $request->estado,
         ]);
     }
 
@@ -289,6 +223,7 @@ class InscripcionesController extends Controller
             'oferta_id' => 'required|exists:ofertas_academicas,id',
             'estudiante_id' => 'required|exists:estudiantes,id',
             'planes_pago_id' => 'required|exists:planes_pagos,id',
+            'estado' => 'required|in:Inscrito', // Solo Inscrito
             'cuotas_data' => 'required|array|min:1',
             'cuotas_data.*.concepto_id' => 'required|exists:conceptos,id',
             'cuotas_data.*.n_cuota' => 'required|integer|min:1',
@@ -310,66 +245,31 @@ class InscripcionesController extends Controller
             ], 422);
         }
 
-        // Agrupar las cuotas por concepto_id
-        $cuotasPorConcepto = collect($request->cuotas_data)->groupBy('concepto_id');
-
-        // Verificar que cada concepto tenga la cantidad correcta de cuotas
-        foreach ($cuotasPorConcepto as $conceptoId => $cuotas) {
-            $planConcepto = PlanesConcepto::where('ofertas_academica_id', $oferta->id)
-                ->where('planes_pago_id', $request->planes_pago_id)
-                ->where('concepto_id', $conceptoId)
-                ->first();
-
-            if (!$planConcepto) {
-                return response()->json([
-                    'success' => false,
-                    'msg' => "El concepto ID {$conceptoId} no está asociado al plan de pago en esta oferta."
-                ], 422);
-            }
-
-            if ($cuotas->count() != $planConcepto->n_cuotas) {
-                return response()->json([
-                    'success' => false,
-                    'msg' => "El concepto {$conceptoId} debe tener exactamente {$planConcepto->n_cuotas} cuotas, pero se enviaron {$cuotas->count()}."
-                ], 422);
-            }
-
-            // Verificar que las n_cuota sean 1, 2, ..., N sin saltos ni duplicados
-            $numerosCuota = $cuotas->pluck('n_cuota')->sort()->values();
-            $esperado = collect(range(1, $planConcepto->n_cuotas));
-            if ($numerosCuota->implode(',') !== $esperado->implode(',')) {
-                return response()->json([
-                    'success' => false,
-                    'msg' => "Las cuotas del concepto {$conceptoId} deben ser secuenciales desde 1 hasta {$planConcepto->n_cuotas}."
-                ], 422);
-            }
-        }
-
-        // Crear la inscripción si no existe
+        // Buscar o crear la inscripción
         $inscripcion = Inscripcione::where([
-            ['ofertas_academica_id', $oferta->id],
+            ['ofertas_academica_id', $request->oferta_id],
             ['estudiante_id', $request->estudiante_id],
             ['planes_pago_id', $request->planes_pago_id],
-            ['estado', 'Inscrito']
         ])->first();
 
         if (!$inscripcion) {
             $user = Auth::user();
-
             $trabajadorCargo = $user->persona->trabajador->trabajadores_cargos()
                 ->where('estado', 'Vigente')
                 ->first();
-            // Usar un trabajador cargo válido (puedes mejorar esta lógica)
-
 
             $inscripcion = Inscripcione::create([
-                'ofertas_academica_id' => $oferta->id,
+                'ofertas_academica_id' => $request->oferta_id,
                 'estudiante_id' => $request->estudiante_id,
                 'trabajadores_cargo_id' => $trabajadorCargo->id,
                 'estado' => 'Inscrito',
                 'fecha_registro' => now(),
                 'planes_pago_id' => $request->planes_pago_id,
             ]);
+        } else {
+            // Actualizar estado si ya existe como Pre-Inscrito
+            $inscripcion->estado = 'Inscrito';
+            $inscripcion->save();
         }
 
         // Registrar cuotas
@@ -383,12 +283,12 @@ class InscripcionesController extends Controller
                 'pago_pendiente_bs' => $cuotaData['monto_bs'],
                 'descuento_bs' => 0,
                 'fecha_pago' => $cuotaData['fecha_pago'],
-                'pago_terminado' => 'no', // 👈 CORREGIDO: string 'no', no boolean false
+                'pago_terminado' => 'no',
                 'inscripcione_id' => $inscripcion->id,
             ]);
         }
 
-        // Matricular en todos los módulos
+        // Matricular en todos los módulos (solo para Inscrito)
         foreach ($oferta->modulos as $modulo) {
             Matriculacione::firstOrCreate([
                 'inscripcione_id' => $inscripcion->id,
@@ -398,8 +298,197 @@ class InscripcionesController extends Controller
 
         return response()->json([
             'success' => true,
-            'msg' => 'Cuotas y matrículas registradas correctamente.'
+            'msg' => 'Inscripción completada exitosamente. Cuotas y matrículas registradas correctamente.'
         ]);
+    }
+
+    public function convertirPreInscrito(Request $request, $inscripcionId = null)
+    {
+        \Log::info('=== CONVERTIR PRE-INSCRITO INICIADO ===');
+        \Log::info('Datos recibidos:', $request->all());
+        \Log::info('Parámetro de ruta insercionId:', ['inscripcionId' => $inscripcionId]);
+
+        // Si viene como parámetro de ruta, usarlo
+        if ($inscripcionId) {
+            $request->merge(['inscripcion_id' => $inscripcionId]);
+        }
+
+        $request->validate([
+            'inscripcion_id' => 'required|exists:inscripciones,id',
+            'oferta_id' => 'required|exists:ofertas_academicas,id',
+            'planes_pago_id' => 'required|exists:planes_pagos,id',
+        ]);
+
+        $inscripcionId = $request->inscripcion_id;
+        $ofertaId = $request->oferta_id;
+        $planPagoId = $request->planes_pago_id;
+
+        \Log::info('IDs procesados:', [
+            'inscripcion_id' => $inscripcionId,
+            'oferta_id' => $ofertaId,
+            'planes_pago_id' => $planPagoId
+        ]);
+
+        // Buscar la inscripción
+        $inscripcion = Inscripcione::with(['ofertaAcademica.modulos', 'estudiante'])
+            ->where('id', $inscripcionId)
+            ->first();
+
+        if (!$inscripcion) {
+            return response()->json([
+                'success' => false,
+                'msg' => 'La inscripción no existe en el sistema.'
+            ], 422);
+        }
+
+        // Verificar que sea Pre-Inscrito
+        if ($inscripcion->estado !== 'Pre-Inscrito') {
+            return response()->json([
+                'success' => false,
+                'msg' => 'Solo se pueden convertir pre-inscripciones. Estado actual: ' . $inscripcion->estado
+            ], 422);
+        }
+
+        // Verificar que pertenezca a la oferta indicada
+        if ($inscripcion->ofertas_academica_id != $ofertaId) {
+            return response()->json([
+                'success' => false,
+                'msg' => 'La inscripción no pertenece a la oferta académica indicada.'
+            ], 422);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $oferta = $inscripcion->ofertaAcademica;
+
+            // 2. Verificar que el plan pertenece a la oferta
+            $planExisteEnOferta = PlanesConcepto::where('ofertas_academica_id', $oferta->id)
+                ->where('planes_pago_id', $planPagoId)
+                ->exists();
+
+            if (!$planExisteEnOferta) {
+                return response()->json([
+                    'success' => false,
+                    'msg' => 'El plan de pago no pertenece a esta oferta académica.'
+                ], 422);
+            }
+
+            // 3. Obtener los conceptos del plan
+            $planesConceptos = PlanesConcepto::where('ofertas_academica_id', $oferta->id)
+                ->where('planes_pago_id', $planPagoId)
+                ->with('concepto')
+                ->get();
+
+            if ($planesConceptos->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'msg' => 'No se encontraron conceptos para este plan de pago.'
+                ], 422);
+            }
+
+            // 4. Cambiar estado a Inscrito
+            $inscripcion->estado = 'Inscrito';
+            $inscripcion->fecha_registro = now();
+            $inscripcion->save();
+
+            // 5. Generar cuotas basadas en los conceptos del plan
+            $cuotaNumero = 1;
+            foreach ($planesConceptos as $pc) {
+                $montoTotal = $pc->pago_bs;
+                $nCuotas = $pc->n_cuotas;
+
+                // Calcular monto por cuota (redondeado)
+                $montoBase = floor($montoTotal / $nCuotas * 100) / 100; // Redondear a 2 decimales
+                $resto = round($montoTotal - ($montoBase * $nCuotas), 2);
+
+                // Fecha base para las cuotas (usar fecha de inicio del programa o hoy)
+                $fechaBase = $oferta->fecha_inicio_programa ?: now();
+
+                for ($i = 1; $i <= $nCuotas; $i++) {
+                    $fechaPago = $fechaBase->copy()->addMonths($i - 1)->format('Y-m-d');
+                    // Si es la última cuota, sumar el resto
+                    $montoPorCuota = $i == $nCuotas ? round($montoBase + $resto, 2) : $montoBase;
+
+                    Cuota::create([
+                        'nombre' => "Cuota {$i} - {$pc->concepto->nombre}",
+                        'n_cuota' => $cuotaNumero,
+                        'pago_total_bs' => $montoPorCuota,
+                        'pago_pendiente_bs' => $montoPorCuota,
+                        'descuento_bs' => 0,
+                        'fecha_pago' => $fechaPago,
+                        'pago_terminado' => 'no',
+                        'inscripcione_id' => $inscripcion->id,
+                    ]);
+                    $cuotaNumero++;
+                }
+            }
+
+            // 6. Matricular en todos los módulos de la oferta
+            foreach ($oferta->modulos as $modulo) {
+                Matriculacione::create([
+                    'inscripcione_id' => $inscripcion->id,
+                    'modulo_id' => $modulo->id,
+                    'nota_regular' => 0,
+                    'nota_nivelacion' => 0,
+                ]);
+            }
+
+            // 7. Si hay adelanto registrado, aplicarlo a la primera cuota
+            if ($inscripcion->adelanto_bs && $inscripcion->adelanto_bs > 0) {
+                // Crear pago por adelanto
+                $pagoAdelanto = Pago::create([
+                    'recibo' => $this->generarRecibo(),
+                    'pago_bs' => $inscripcion->adelanto_bs,
+                    'descuento_bs' => 0,
+                    'fecha_pago' => now(),
+                    'tipo_pago' => 'efectivo',
+                    'observacion' => 'Adelanto pre-inscripción a inscripción',
+                ]);
+
+                // Aplicar el adelanto a la primera cuota
+                $primeraCuota = Cuota::where('inscripcione_id', $inscripcion->id)
+                    ->orderBy('n_cuota', 'asc')
+                    ->first();
+
+                if ($primeraCuota) {
+                    $montoAplicar = min($inscripcion->adelanto_bs, $primeraCuota->pago_pendiente_bs);
+                    $primeraCuota->pago_pendiente_bs = round($primeraCuota->pago_pendiente_bs - $montoAplicar, 2);
+                    $primeraCuota->pago_terminado = $primeraCuota->pago_pendiente_bs <= 0.01 ? 'si' : 'no';
+                    $primeraCuota->save();
+
+                    // Registrar relación pago-cuota
+                    PagosCuota::create([
+                        'cuota_id' => $primeraCuota->id,
+                        'pago_id' => $pagoAdelanto->id,
+                        'pago_bs' => $montoAplicar
+                    ]);
+                }
+            }
+
+            // 8. Registrar en observaciones
+            $observacionActual = $inscripcion->observacion ?? '';
+            $inscripcion->observacion = $observacionActual .
+                " | Convertido a Inscrito el " . now()->format('d/m/Y H:i') .
+                " por " . Auth::user()->name;
+            $inscripcion->save();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'msg' => 'Pre-inscripción convertida a inscripción exitosamente. Se generaron ' . ($cuotaNumero - 1) . ' cuotas y ' . $oferta->modulos->count() . ' matrículas.',
+                'inscripcion_id' => $inscripcion->id,
+                'estudiante' => $inscripcion->estudiante->persona->nombre_completo ?? 'Estudiante'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error al convertir pre-inscrito: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'msg' => 'Error al convertir la pre-inscripción: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function listarPorOferta(OfertasAcademica $oferta)
@@ -947,6 +1036,218 @@ class InscripcionesController extends Controller
                 'success' => false,
                 'message' => 'Error al registrar la pre-inscripción. Por favor, inténtalo nuevamente o contacta con soporte.',
                 'error' => config('app.debug') ? $e->getMessage() : 'Error interno del servidor'
+            ], 500);
+        }
+    }
+
+    // Método para convertir "Inscrito-Con-Adelanto" a "Inscrito"
+    public function convertirAInscrito(Request $request, $inscripcionId)
+    {
+        $request->validate([
+            'planes_pago_id' => 'required|exists:planes_pagos,id',
+            'monto_minimo' => 'required|numeric|min:0',
+        ]);
+
+        $inscripcion = Inscripcione::findOrFail($inscripcionId);
+
+        // Verificar que esté en estado "Inscrito-Con-Adelanto"
+        if ($inscripcion->estado !== 'Inscrito-Con-Adelanto') {
+            return response()->json([
+                'success' => false,
+                'msg' => 'Solo se pueden convertir inscripciones con adelanto.'
+            ], 422);
+        }
+
+        $oferta = $inscripcion->ofertaAcademica;
+
+        // Verificar que el plan pertenece a la oferta
+        $planExisteEnOferta = PlanesConcepto::where('ofertas_academica_id', $oferta->id)
+            ->where('planes_pago_id', $request->planes_pago_id)
+            ->exists();
+
+        if (!$planExisteEnOferta) {
+            return response()->json([
+                'success' => false,
+                'msg' => 'El plan de pago no pertenece a esta oferta.'
+            ], 422);
+        }
+
+        DB::beginTransaction();
+        try {
+            // Registrar el pago del monto mínimo
+            $pagoMinimo = Pago::create([
+                'recibo' => $this->generarRecibo(),
+                'pago_bs' => $request->monto_minimo,
+                'descuento_bs' => 0,
+                'fecha_pago' => now(),
+                'tipo_pago' => 'efectivo',
+                'observacion' => 'Pago mínimo para formalizar inscripción',
+            ]);
+
+            // Cambiar estado a "Inscrito"
+            $inscripcion->estado = 'Inscrito';
+            $inscripcion->planes_pago_id = $request->planes_pago_id;
+            $inscripcion->save();
+
+            // Generar cuotas (similar a confirmarCuotas pero usando el adelanto)
+            $planesConceptos = PlanesConcepto::where('ofertas_academica_id', $oferta->id)
+                ->where('planes_pago_id', $request->planes_pago_id)
+                ->with('concepto')
+                ->get();
+
+            $adelantoRestante = $inscripcion->adelanto_bs ?? 0;
+
+            foreach ($planesConceptos as $pc) {
+                $montoTotal = $pc->pago_bs;
+                $nCuotas = $pc->n_cuotas;
+                $montoBase = floor($montoTotal / $nCuotas);
+                $resto = $montoTotal - ($montoBase * $nCuotas);
+
+                for ($i = 1; $i <= $nCuotas; $i++) {
+                    $montoCuota = $i == $nCuotas ? $montoBase + $resto : $montoBase;
+                    $fechaPago = now()->copy()->addMonths($i - 1)->format('Y-m-d');
+                    $pagoPendiente = $montoCuota;
+
+                    // Aplicar adelanto a la primera cuota
+                    if ($i == 1 && $adelantoRestante > 0) {
+                        $adelantoAplicado = min($adelantoRestante, $montoCuota);
+                        $pagoPendiente = max(0, $montoCuota - $adelantoAplicado);
+                        $adelantoRestante -= $adelantoAplicado;
+                    }
+
+                    $cuota = Cuota::create([
+                        'nombre' => "Cuota {$i} - {$pc->concepto->nombre}",
+                        'n_cuota' => $i,
+                        'pago_total_bs' => $montoCuota,
+                        'pago_pendiente_bs' => $pagoPendiente,
+                        'descuento_bs' => 0,
+                        'fecha_pago' => $fechaPago,
+                        'pago_terminado' => $pagoPendiente <= 0 ? 'si' : 'no',
+                        'inscripcione_id' => $inscripcion->id,
+                    ]);
+
+                    // Registrar pago del adelanto aplicado
+                    if ($i == 1 && isset($adelantoAplicado) && $adelantoAplicado > 0) {
+                        PagosCuota::create([
+                            'cuota_id' => $cuota->id,
+                            'pago_id' => $pagoMinimo->id, // O buscar el pago del adelanto original
+                            'pago_bs' => $adelantoAplicado
+                        ]);
+                    }
+                }
+            }
+
+            // Matricular en módulos
+            foreach ($oferta->modulos as $modulo) {
+                Matriculacione::firstOrCreate([
+                    'inscripcione_id' => $inscripcion->id,
+                    'modulo_id' => $modulo->id,
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'msg' => 'Inscripción formalizada correctamente. El estudiante ahora está inscrito.'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'msg' => 'Error al formalizar la inscripción: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function cambiarPlanPago(Request $request)
+    {
+        $request->validate([
+            'inscripcion_id' => 'required|exists:inscripciones,id',
+            'nuevo_plan_pago_id' => 'required|exists:planes_pagos,id',
+            'oferta_id' => 'required|exists:ofertas_academicas,id',
+            'adelanto_bs' => 'nullable|numeric|min:0', // Validar adelanto
+        ]);
+
+        try {
+            // Buscar la inscripción
+            $inscripcion = Inscripcione::findOrFail($request->inscripcion_id);
+
+            // Verificar que sea Pre-Inscrito
+            if ($inscripcion->estado !== 'Pre-Inscrito') {
+                return response()->json([
+                    'success' => false,
+                    'msg' => 'Solo se puede cambiar el plan de pago de pre-inscripciones.'
+                ], 422);
+            }
+
+            // Verificar que la inscripción pertenezca a la oferta
+            if ($inscripcion->ofertas_academica_id != $request->oferta_id) {
+                return response()->json([
+                    'success' => false,
+                    'msg' => 'La inscripción no pertenece a esta oferta académica.'
+                ], 422);
+            }
+
+            // Verificar que el nuevo plan pertenezca a la oferta
+            $planExisteEnOferta = PlanesConcepto::where('ofertas_academica_id', $request->oferta_id)
+                ->where('planes_pago_id', $request->nuevo_plan_pago_id)
+                ->exists();
+
+            if (!$planExisteEnOferta) {
+                return response()->json([
+                    'success' => false,
+                    'msg' => 'El plan de pago no pertenece a esta oferta académica.'
+                ], 422);
+            }
+
+            // Verificar si el estudiante ya tiene una inscripción con el nuevo plan
+            $inscripcionExistente = Inscripcione::where('estudiante_id', $inscripcion->estudiante_id)
+                ->where('ofertas_academica_id', $request->oferta_id)
+                ->where('planes_pago_id', $request->nuevo_plan_pago_id)
+                ->where('id', '!=', $inscripcion->id)
+                ->exists();
+
+            if ($inscripcionExistente) {
+                return response()->json([
+                    'success' => false,
+                    'msg' => 'El estudiante ya tiene una inscripción con este plan de pago.'
+                ], 422);
+            }
+
+            // Obtener el nuevo plan
+            $nuevoPlan = PlanesPago::find($request->nuevo_plan_pago_id);
+
+            // Actualizar el plan de pago y el adelanto
+            $inscripcion->planes_pago_id = $request->nuevo_plan_pago_id;
+
+            // Si se proporcionó un adelanto, actualizarlo
+            if ($request->has('adelanto_bs') && $request->adelanto_bs > 0) {
+                $inscripcion->adelanto_bs = $request->adelanto_bs;
+            }
+
+            $inscripcion->save();
+
+            // Registrar en observaciones
+            $observacionActual = $inscripcion->observacion ?? '';
+            $adelantoMsg = $request->has('adelanto_bs') && $request->adelanto_bs > 0
+                ? " | Adelanto registrado: " . number_format($request->adelanto_bs, 2) . " Bs"
+                : "";
+
+            $inscripcion->observacion = $observacionActual .
+                " | Cambio de plan: " . now()->format('d/m/Y H:i') .
+                " - Nuevo plan: " . $nuevoPlan->nombre . $adelantoMsg;
+            $inscripcion->save();
+
+            return response()->json([
+                'success' => true,
+                'msg' => 'Plan de pago ' . ($request->has('adelanto_bs') && $request->adelanto_bs > 0 ? 'y adelanto ' : '') . 'actualizado correctamente.'
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error al cambiar plan de pago: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'msg' => 'Error al cambiar el plan de pago: ' . $e->getMessage()
             ], 500);
         }
     }

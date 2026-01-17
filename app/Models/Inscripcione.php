@@ -14,12 +14,14 @@ class Inscripcione extends Model
         'trabajadores_cargo_id',
         'planes_pago_id',
         'estado',
+        'adelanto_bs',
         'fecha_registro',
         'observacion'
     ];
 
     protected $casts = [
         'fecha_registro' => 'datetime:Y-m-d H:i:s',
+        'adelanto_bs' => 'decimal:2',
     ];
 
     public function ofertaAcademica()

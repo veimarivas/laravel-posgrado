@@ -339,10 +339,12 @@
                                                         <thead class="table-light">
                                                             <tr>
                                                                 <th width="5%">#</th>
-                                                                <th width="25%">Estudiante</th>
-                                                                <th width="15%">Carnet</th>
-                                                                <th width="25%">Asesor</th>
-                                                                <th width="20%">Fecha de Registro</th>
+                                                                <th width="20%">Estudiante</th>
+                                                                <th width="10%">Carnet</th>
+                                                                <th width="15%">Asesor</th>
+                                                                <th width="15%">Plan de Pago</th>
+                                                                <th width="10%">Adelanto (Bs)</th>
+                                                                <th width="15%">Fecha de Registro</th>
                                                                 <th width="10%" class="text-center">Acciones</th>
                                                             </tr>
                                                         </thead>
@@ -385,14 +387,54 @@
                                                                     </td>
                                                                     <td>
                                                                         <span
+                                                                            class="badge bg-primary">{{ $preInscrito['plan_pago'] }}</span>
+                                                                    </td>
+                                                                    <td>
+                                                                        @if ($preInscrito['adelanto_bs'] > 0)
+                                                                            <span class="fw-bold text-success">
+                                                                                {{ number_format($preInscrito['adelanto_bs'], 2) }}
+                                                                                Bs
+                                                                            </span>
+                                                                        @else
+                                                                            <span class="text-muted">0.00 Bs</span>
+                                                                        @endif
+                                                                    </td>
+                                                                    <td>
+                                                                        <span
                                                                             class="text-muted">{{ \Carbon\Carbon::parse($preInscrito['fecha_registro'])->format('d/m/Y H:i') }}</span>
                                                                     </td>
+                                                                    <!-- En la sección de acciones de pre-inscritos -->
                                                                     <td class="text-center">
-                                                                        <a href="{{ route('admin.estudiantes.detalle', $preInscrito['estudiante_id']) }}"
-                                                                            class="btn btn-sm btn-light"
-                                                                            title="Ver detalle">
-                                                                            <i class="ri-eye-line"></i>
-                                                                        </a>
+                                                                        <div class="btn-group">
+                                                                            <a href="{{ route('admin.estudiantes.detalle', $preInscrito['estudiante_id']) }}"
+                                                                                class="btn btn-sm btn-light"
+                                                                                title="Ver detalle">
+                                                                                <i class="ri-eye-line"></i>
+                                                                            </a>
+
+                                                                            <!-- Botón para cambiar plan de pago (solo para Pre-Inscritos) -->
+                                                                            @if ($preInscrito['estado'] == 'Pre-Inscrito')
+                                                                                <button
+                                                                                    class="btn btn-sm btn-warning cambiar-plan-pago-btn"
+                                                                                    data-inscripcion-id="{{ $preInscrito['inscripcion_id'] ?? '' }}"
+                                                                                    data-estudiante-id="{{ $preInscrito['estudiante_id'] }}"
+                                                                                    data-oferta-id="{{ $oferta->id }}"
+                                                                                    data-plan-actual-id="{{ $preInscrito['plan_pago_id'] }}"
+                                                                                    data-plan-actual-nombre="{{ $preInscrito['plan_pago'] }}"
+                                                                                    title="Cambiar Plan de Pago">
+                                                                                    <i class="ri-exchange-dollar-line"></i>
+                                                                                </button>
+                                                                            @endif
+
+                                                                            <button
+                                                                                class="btn btn-sm btn-success convertir-inscrito-btn"
+                                                                                data-inscripcion-id="{{ $preInscrito['inscripcion_id'] }}"
+                                                                                data-oferta-id="{{ $oferta->id }}"
+                                                                                data-plan-pago-id="{{ $preInscrito['plan_pago_id'] }}"
+                                                                                title="Convertir a Inscrito">
+                                                                                <i class="ri-check-double-line"></i>
+                                                                            </button>
+                                                                        </div>
                                                                     </td>
                                                                 </tr>
                                                             @endforeach
@@ -413,6 +455,8 @@
                                     </div>
                                 </div>
                             </div>
+
+
                         </div>
 
                         <!-- Pestaña 6: Participantes -->
@@ -1873,6 +1917,58 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal para Cambiar Plan de Pago -->
+    <div class="modal fade" id="modalCambiarPlanPago" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Cambiar Plan de Pago y Adelanto</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formCambiarPlanPago">
+                        @csrf
+                        <input type="hidden" name="inscripcion_id" id="cambiar_plan_inscripcion_id">
+                        <input type="hidden" name="oferta_id" id="cambiar_plan_oferta_id">
+
+                        <div class="mb-3">
+                            <label class="form-label">Plan Actual</label>
+                            <input type="text" id="plan_actual_nombre" class="form-control" readonly>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Nuevo Plan de Pago *</label>
+                            <select name="nuevo_plan_pago_id" class="form-select" id="nuevo_plan_pago_select" required>
+                                <option value="">Cargando planes...</option>
+                            </select>
+                        </div>
+
+                        <!-- NUEVO: Campo para adelanto -->
+                        <div class="mb-3">
+                            <label class="form-label">Adelanto (Bs) - Opcional</label>
+                            <div class="input-group">
+                                <span class="input-group-text">Bs</span>
+                                <input type="number" step="0.01" min="0" name="adelanto_bs"
+                                    id="cambiar_plan_adelanto_bs" class="form-control" placeholder="0.00"
+                                    value="0.00">
+                            </div>
+                            <small class="text-muted">Puede registrar un adelanto para esta pre-inscripción.</small>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="ri-information-line me-2"></i>
+                            Solo se pueden seleccionar planes de pago disponibles para esta oferta.
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnConfirmarCambioPlan">Confirmar Cambio</button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('script')
@@ -1894,6 +1990,7 @@
                 const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
                 const inscritosData = @json(array_column($inscripcionesPorMes, 'Inscrito'));
                 const preInscritosData = @json(array_column($inscripcionesPorMes, 'Pre-Inscrito'));
+                const conAdelantoData = @json(array_column($inscripcionesPorMes, 'Inscrito-Con-Adelanto'));
 
                 new Chart(ctx1, {
                     type: 'line',
@@ -1912,6 +2009,14 @@
                                 data: preInscritosData,
                                 borderColor: 'rgba(255, 193, 7, 1)',
                                 backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                                tension: 0.3,
+                                fill: true
+                            },
+                            {
+                                label: 'Inscritos con Adelanto',
+                                data: conAdelantoData,
+                                borderColor: 'rgba(13, 202, 240, 1)',
+                                backgroundColor: 'rgba(13, 202, 240, 0.1)',
                                 tension: 0.3,
                                 fill: true
                             }
@@ -1945,16 +2050,22 @@
                 new Chart(ctx2, {
                     type: 'doughnut',
                     data: {
-                        labels: ['Inscritos', 'Pre-Inscritos'],
+                        labels: ['Inscritos', 'Pre-Inscritos', 'Inscritos con Adelanto'],
                         datasets: [{
-                            data: [{{ $totalInscritos }}, {{ $totalPreInscritos }}],
+                            data: [
+                                {{ $totalInscritos }},
+                                {{ $totalPreInscritos }},
+                                {{ $totalInscritosConAdelanto }}
+                            ],
                             backgroundColor: [
                                 'rgba(40, 167, 69, 0.8)',
-                                'rgba(255, 193, 7, 0.8)'
+                                'rgba(255, 193, 7, 0.8)',
+                                'rgba(13, 202, 240, 0.8)'
                             ],
                             borderColor: [
                                 'rgba(40, 167, 69, 1)',
-                                'rgba(255, 193, 7, 1)'
+                                'rgba(255, 193, 7, 1)',
+                                'rgba(13, 202, 240, 1)'
                             ],
                             borderWidth: 1
                         }]
@@ -2704,6 +2815,221 @@
                 $('#confirmarTransferirBtn').prop('disabled', true);
                 inscripcionATransferir = null;
                 estudianteATransferir = null;
+            });
+        });
+    </script>
+
+    <script>
+        // Función para cargar planes disponibles para cambio
+        function cargarPlanesParaCambio(ofertaId, planActualId) {
+            // Mostrar loading
+            $('#nuevo_plan_pago_select').html('<option value="">Cargando planes...</option>');
+
+            $.ajax({
+                url: `/admin/ofertas/${ofertaId}/planes-inscripcion`,
+                method: 'GET',
+                success: function(res) {
+                    if (res.success && res.planes.length > 0) {
+                        let options = '<option value="">Seleccione un plan</option>';
+
+                        res.planes.forEach(plan => {
+                            // Agregar indicador si es promoción
+                            let promocionInfo = '';
+                            if (plan.es_promocion == 1) {
+                                const inicio = plan.fecha_inicio_promocion ?
+                                    new Date(plan.fecha_inicio_promocion).toLocaleDateString() : '';
+                                const fin = plan.fecha_fin_promocion ?
+                                    new Date(plan.fecha_fin_promocion).toLocaleDateString() : '';
+                                promocionInfo = ` 🏷️ (Promoción hasta ${fin})`;
+                            }
+
+                            const selected = (plan.id == planActualId) ? 'selected' : '';
+                            options +=
+                                `<option value="${plan.id}" ${selected}>${plan.nombre}${promocionInfo}</option>`;
+                        });
+
+                        $('#nuevo_plan_pago_select').html(options);
+                    } else {
+                        $('#nuevo_plan_pago_select').html(
+                            '<option value="">No hay planes disponibles</option>');
+                    }
+                },
+                error: function(xhr) {
+                    console.error('Error al cargar planes de pago:', xhr);
+                    $('#nuevo_plan_pago_select').html('<option value="">Error al cargar planes</option>');
+                }
+            });
+        }
+
+        // Cambiar Plan de Pago para Pre-Inscritos - MODIFICADO CON ADELANTO
+        $(document).on('click', '.cambiar-plan-pago-btn', function() {
+            const inscripcionId = $(this).data('inscripcion-id');
+            const ofertaId = $(this).data('oferta-id');
+            const planActualId = $(this).data('plan-actual-id');
+            const planActualNombre = $(this).data('plan-actual-nombre');
+            const adelantoActual = $(this).data('adelanto-actual') || 0; // Obtener adelanto actual si existe
+
+            // Setear valores en el modal
+            $('#cambiar_plan_inscripcion_id').val(inscripcionId);
+            $('#cambiar_plan_oferta_id').val(ofertaId);
+            $('#plan_actual_nombre').val(planActualNombre);
+            $('#cambiar_plan_adelanto_bs').val(adelantoActual); // Establecer valor del adelanto
+
+            // Cargar planes disponibles
+            cargarPlanesParaCambio(ofertaId, planActualId);
+
+            // Mostrar modal
+            $('#modalCambiarPlanPago').modal('show');
+        });
+
+        // Confirmar cambio de plan - MODIFICADO PARA INCLUIR ADELANTO
+        $('#btnConfirmarCambioPlan').on('click', function() {
+            const form = $('#formCambiarPlanPago');
+            const formData = form.serialize();
+
+            // Validar que el adelanto sea un número válido
+            const adelantoInput = $('#cambiar_plan_adelanto_bs');
+            const adelantoValor = parseFloat(adelantoInput.val());
+
+            if (adelantoInput.val() !== '' && (isNaN(adelantoValor) || adelantoValor < 0)) {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Por favor ingrese un valor válido para el adelanto.',
+                    icon: 'error'
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: '¿Confirmar Cambio?',
+                html: `¿Está seguro de cambiar el plan de pago de esta pre-inscripción?<br><br>
+              ${adelantoValor > 0 ? `Se registrará un adelanto de <strong>${adelantoValor.toFixed(2)} Bs</strong>.` : ''}`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, cambiar',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#28a745'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: "{{ route('admin.inscripciones.cambiar-plan-pago') }}",
+                        method: 'POST',
+                        data: formData,
+                        beforeSend: function() {
+                            Swal.showLoading();
+                        },
+                        success: function(response) {
+                            Swal.close();
+                            if (response.success) {
+                                Swal.fire({
+                                    title: '¡Éxito!',
+                                    text: response.msg,
+                                    icon: 'success',
+                                    confirmButtonColor: '#28a745'
+                                }).then(() => {
+                                    $('#modalCambiarPlanPago').modal('hide');
+                                    location.reload(); // Recargar para ver cambios
+                                });
+                            } else {
+                                Swal.fire({
+                                    title: 'Error',
+                                    text: response.msg,
+                                    icon: 'error',
+                                    confirmButtonColor: '#d33'
+                                });
+                            }
+                        },
+                        error: function(xhr) {
+                            Swal.close();
+                            Swal.fire({
+                                title: 'Error',
+                                text: xhr.responseJSON?.msg ||
+                                    'Error al cambiar el plan de pago',
+                                icon: 'error',
+                                confirmButtonColor: '#d33'
+                            });
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+
+
+
+    <script>
+        // Busca el script que maneja la conversión y actualízalo:
+        $(document).on('click', '.convertir-inscrito-btn', function() {
+            const btn = $(this);
+            const inscripcionId = btn.data('inscripcion-id');
+            const ofertaId = btn.data('oferta-id');
+            const planPagoId = btn.data('plan-pago-id');
+            const url = "{{ route('admin.inscripciones.convertir-pre-inscrito', ['inscripcion' => '__id__']) }}"
+                .replace('__id__', inscripcionId);
+            const estudianteNombre = btn.closest('tr').find('td:nth-child(2) .fw-medium').text() ||
+                btn.closest('tr').find('td:nth-child(2) span').text() ||
+                'el estudiante';
+
+            console.log('Datos para conversión:', {
+                inscripcionId,
+                ofertaId,
+                planPagoId,
+                url,
+                estudianteNombre
+            });
+
+            Swal.fire({
+                title: '¿Convertir a Inscrito?',
+                html: `<p>¿Está seguro de convertir a <strong>${estudianteNombre}</strong> de Pre-Inscrito a Inscrito?</p>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, convertir',
+                cancelButtonText: 'Cancelar',
+                confirmButtonColor: '#28a745',
+                showLoaderOnConfirm: true,
+                preConfirm: () => {
+                    return $.ajax({
+                        url: url,
+                        method: 'POST',
+                        data: {
+                            _token: "{{ csrf_token() }}",
+                            oferta_id: ofertaId,
+                            planes_pago_id: planPagoId
+                            // NOTA: inscripcion_id ya viene en la URL como parámetro de ruta
+                        }
+                    }).then(response => {
+                        if (!response.success) {
+                            throw new Error(response.msg || 'Error en la conversión');
+                        }
+                        return response;
+                    }).catch(error => {
+                        console.error('Error detallado:', error);
+                        let errorMsg = 'Error desconocido';
+
+                        if (error.responseJSON && error.responseJSON.msg) {
+                            errorMsg = error.responseJSON.msg;
+                        } else if (error.message) {
+                            errorMsg = error.message;
+                        }
+
+                        Swal.showValidationMessage(`Error: ${errorMsg}`);
+                        throw error;
+                    });
+                }
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    Swal.fire({
+                        title: '¡Éxito!',
+                        text: result.value.msg || 'Pre-inscripción convertida exitosamente.',
+                        icon: 'success',
+                        confirmButtonColor: '#28a745',
+                        timer: 3000
+                    }).then(() => {
+                        location.reload();
+                    });
+                }
+            }).catch(error => {
+                console.error('Error en el proceso:', error);
             });
         });
     </script>
