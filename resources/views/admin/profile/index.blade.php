@@ -336,6 +336,97 @@
         .progress-bar {
             transition: width 0.3s ease;
         }
+
+        /* Nuevos estilos para planes de pago */
+        .plan-card {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .plan-card:hover {
+            border-color: #4361ee;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(67, 97, 238, 0.1);
+        }
+
+        .plan-card.selected {
+            border-color: #4361ee;
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+
+        .plan-card .plan-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .plan-card .plan-price {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #4361ee;
+        }
+
+        .plan-feature-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .plan-feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .plan-feature-list li:last-child {
+            border-bottom: none;
+        }
+
+        /* Estilos para el modal de planes */
+        .plan-option {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .plan-option:hover {
+            background-color: #f8f9fa;
+            border-color: #4361ee;
+        }
+
+        .plan-option.selected {
+            background-color: rgba(67, 97, 238, 0.1);
+            border-color: #4361ee;
+        }
+
+        /* Botón especial para generar enlace con plan */
+        .btn-plan-generator {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-plan-generator:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Estilo para el enlace generado */
+        .generated-link {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            word-break: break-all;
+        }
     </style>
 
     <div class="container-fluid">
@@ -1321,6 +1412,98 @@
                                             </div>
                                         </div>
                                     </div>
+
+                                    <!-- Modal para enlace con plan de pago -->
+                                    <div class="modal fade" id="enlacePlanModal" tabindex="-1">
+                                        <div class="modal-dialog modal-lg">
+                                            <div class="modal-content">
+                                                <div class="modal-header bg-primary text-white">
+                                                    <h5 class="modal-title">
+                                                        <i class="ri-money-dollar-circle-line me-2"></i>
+                                                        Enlace con Plan de Pago
+                                                    </h5>
+                                                    <button type="button" class="btn-close btn-close-white"
+                                                        data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <!-- Información de la oferta -->
+                                                    <div class="alert alert-info mb-4">
+                                                        <div class="d-flex align-items-start">
+                                                            <div class="flex-shrink-0 me-3">
+                                                                <i class="ri-information-line fs-4"></i>
+                                                            </div>
+                                                            <div class="flex-grow-1">
+                                                                <h6 class="alert-heading" id="modalOfertaTitulo">Oferta
+                                                                    Académica</h6>
+                                                                <p class="mb-1"><strong>Código:</strong> <span
+                                                                        id="modalOfertaCodigo">-</span></p>
+                                                                <p class="mb-1"><strong>Programa:</strong> <span
+                                                                        id="modalOfertaPrograma">-</span></p>
+                                                                <p class="mb-0"><strong>Asesor:</strong> <span
+                                                                        id="modalOfertaAsesor">-</span></p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Selección de plan de pago -->
+                                                    <div class="mb-4">
+                                                        <h6 class="mb-3">
+                                                            <i class="ri-money-dollar-circle-line me-2"></i>
+                                                            Selecciona un Plan de Pago
+                                                        </h6>
+                                                        <div id="planesPagoContainer">
+                                                            <div class="text-center py-3">
+                                                                <div class="spinner-border text-primary" role="status">
+                                                                    <span class="visually-hidden">Cargando...</span>
+                                                                </div>
+                                                                <p class="mt-2 text-muted">Cargando planes de pago
+                                                                    disponibles...</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Enlace generado -->
+                                                    <div class="mb-4" id="enlaceGeneradoContainer"
+                                                        style="display: none;">
+                                                        <h6 class="mb-3">
+                                                            <i class="ri-link me-2"></i>
+                                                            Enlace Generado
+                                                        </h6>
+                                                        <div class="generated-link mb-3" id="generatedLink">
+                                                            <div class="d-flex justify-content-between align-items-center">
+                                                                <span id="linkText">-</span>
+                                                                <button class="btn btn-sm btn-outline-primary"
+                                                                    id="copyGeneratedLink">
+                                                                    <i class="ri-file-copy-line"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- QR Code -->
+                                                        <div class="text-center mt-3">
+                                                            <h6 class="mb-2">
+                                                                <i class="ri-qr-code-line me-2"></i>
+                                                                Código QR
+                                                            </h6>
+                                                            <div id="qrCodeContainer" class="mb-3">
+                                                                <!-- QR se insertará aquí -->
+                                                            </div>
+                                                            <small class="text-muted">Escanea el código para acceder al
+                                                                formulario con el plan de pago seleccionado</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary"
+                                                        data-bs-dismiss="modal">Cancelar</button>
+                                                    <a href="#" id="visitPlanLinkBtn" target="_blank"
+                                                        class="btn btn-primary" style="display: none;">
+                                                        <i class="ri-external-link-line me-1"></i> Visitar Enlace
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             @endif
 
@@ -1576,7 +1759,6 @@
 
 @push('script')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         $(document).ready(function() {
             // Variables globales
@@ -1756,23 +1938,26 @@
             }
 
             // Actualizar gráficos
+            // Actualizar gráficos
             function updateMarketingCharts(graficoData, programasData) {
                 // Gráfico de barras - Inscripciones por mes
                 const ctx = document.getElementById('marketingChart').getContext('2d');
                 if (marketingChart) marketingChart.destroy();
 
-                // Si el mes es "todos", mostrar todos los meses
-                let meses = graficoData.meses || ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-                    'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
-                ];
-                let inscritos = graficoData.inscritos || Array(12).fill(0);
-                let pre_inscritos = graficoData.pre_inscritos || Array(12).fill(0);
+                // Validar y preparar datos del gráfico de barras
+                let meses = [];
+                let inscritos = [];
+                let pre_inscritos = [];
 
-                // Si solo se muestra un mes, ajustar datos
-                if (filters.month !== 'todos' && meses.length === 1) {
-                    meses = [meses[0]];
-                    inscritos = [inscritos[0] || 0];
-                    pre_inscritos = [pre_inscritos[0] || 0];
+                if (graficoData && graficoData.meses) {
+                    meses = graficoData.meses;
+                    inscritos = graficoData.inscritos || Array(meses.length).fill(0);
+                    pre_inscritos = graficoData.pre_inscritos || Array(meses.length).fill(0);
+                } else {
+                    // Datos por defecto si no hay información
+                    meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                    inscritos = Array(12).fill(0);
+                    pre_inscritos = Array(12).fill(0);
                 }
 
                 marketingChart = new Chart(ctx, {
@@ -1821,7 +2006,10 @@
                                 beginAtZero: true,
                                 ticks: {
                                     stepSize: 1,
-                                    precision: 0
+                                    precision: 0,
+                                    callback: function(value) {
+                                        return Math.floor(value);
+                                    }
                                 },
                                 grid: {
                                     drawBorder: false
@@ -1840,16 +2028,18 @@
                 const ctx2 = document.getElementById('programasChart').getContext('2d');
                 if (programasChart) programasChart.destroy();
 
-                // Si no hay datos, mostrar mensaje
-                if (!programasData || programasData.length === 0) {
-                    programasData = [{
-                        programa_nombre: 'Sin datos',
-                        total: 1
-                    }];
-                }
+                // Validar datos del gráfico de dona
+                let labels = [];
+                let data = [];
 
-                const labels = programasData.map(p => p.programa_nombre);
-                const data = programasData.map(p => p.total);
+                if (programasData && programasData.length > 0) {
+                    labels = programasData.map(p => p.programa_nombre || 'Sin nombre');
+                    data = programasData.map(p => p.total || 0);
+                } else {
+                    // Mostrar mensaje en lugar de gráfico vacío
+                    labels = ['Sin datos disponibles'];
+                    data = [1];
+                }
 
                 // Colores para el gráfico
                 const backgroundColors = [
@@ -1863,7 +2053,9 @@
                         labels: labels,
                         datasets: [{
                             data: data,
-                            backgroundColor: backgroundColors.slice(0, data.length),
+                            backgroundColor: labels.length === 1 && labels[0] ===
+                                'Sin datos disponibles' ? ['#e9ecef'] : backgroundColors.slice(0,
+                                    data.length),
                             borderWidth: 1,
                             borderColor: '#fff'
                         }]
@@ -1878,12 +2070,18 @@
                                 labels: {
                                     boxWidth: 12,
                                     padding: 15,
-                                    usePointStyle: true
+                                    usePointStyle: true,
+                                    color: labels.length === 1 && labels[0] === 'Sin datos disponibles' ?
+                                        '#6c757d' : undefined
                                 }
                             },
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
+                                        if (labels.length === 1 && labels[0] ===
+                                            'Sin datos disponibles') {
+                                            return 'Sin datos disponibles';
+                                        }
                                         const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                         const value = context.raw;
                                         const percentage = Math.round((value / total) * 100);
@@ -1937,10 +2135,11 @@
                         <thead class="table-light">
                             <tr>
                                 <th width="5%">#</th>
-                                <th width="25%">Estudiante</th>
-                                <th width="20%">Programa</th>
-                                <th width="20%">Sede - Sucursal</th>
-                                <th width="10%">Estado</th>
+                                <th width="20%">Estudiante</th>
+                                <th width="15%">Programa</th>
+                                <th width="10%">Sede - Sucursal</th>
+                                <th width="12%">Plan de Pago</th>  <!-- NUEVA COLUMNA -->
+                                <th width="8%">Estado</th>
                                 <th width="10%">Fecha</th>
                                 <th width="10%" class="text-center">Acciones</th>
                             </tr>
@@ -1953,35 +2152,34 @@
                     const programa = inscripcion.oferta_academica?.programa;
                     const sucursal = inscripcion.oferta_academica?.sucursal;
                     const sede = sucursal?.sede;
+                    const planPago = inscripcion.planes_pago; // Obtener el plan de pago
                     const fecha = new Date(inscripcion.fecha_registro);
                     const rowNumber = (pagination.current_page - 1) * pagination.per_page + index + 1;
 
-                    // Generar botones de acción
+                    // Generar botones de acción (sin cambios)
                     let accionesHtml = `
-                    <div class="d-flex flex-wrap gap-1 justify-content-center">
-        <a href="/admin/profile/marketing/inscripcion/${inscripcion.id}/formulario-pdf" 
-           class="btn btn-sm btn-outline-primary" 
+    <div class="d-flex flex-wrap gap-1 justify-content-center">
+        <a href="/admin/profile/marketing/inscripcion/${inscripcion.id}/formulario-pdf"
+           class="btn btn-sm btn-outline-primary"
            data-bs-toggle="tooltip"
            title="Generar Formulario PDF"
            target="_blank">
             <i class="ri-file-text-line me-1"></i>PDF
         </a>
-        <a href="/admin/estudiantes/detalle/${inscripcion.estudiante_id}" 
-           class="btn btn-sm btn-outline-info" 
+        <a href="/admin/estudiantes/detalle/${inscripcion.estudiante_id}"
+           class="btn btn-sm btn-outline-info"
            data-bs-toggle="tooltip"
            title="Ver detalles del estudiante">
             <i class="ri-eye-line"></i>
         </a>
-                `;
+    `;
 
-                    // Para Pre-Inscritos, mantener el botón de convertir
                     // Para Pre-Inscritos, agregar el botón de conversión
-                    // En la sección de acciones de la tabla de marketing, alrededor de la línea 2120
                     if (inscripcion.estado === 'Pre-Inscrito') {
                         accionesHtml += `
-        <button class="btn btn-sm btn-success btn-convertir-inscrito" 
+        <button class="btn btn-sm btn-success btn-convertir-inscrito"
                 data-inscripcion-id="${inscripcion.id}"
-                data-oferta-id="${inscripcion.oferta_academica.id}"  // ¡AGREGAR ESTA LÍNEA!
+                data-oferta-id="${inscripcion.oferta_academica.id}"
                 data-estudiante-nombre="${estudiante?.nombres || 'N/A'} ${estudiante?.apellido_paterno || ''}"
                 data-estudiante-carnet="${estudiante?.carnet || 'N/A'}"
                 data-programa-nombre="${programa?.nombre || 'N/A'}"
@@ -1989,73 +2187,85 @@
                 title="Convertir a Inscrito">
             <i class="ri-user-add-line"></i>
         </button>
-    `;
+        `;
                     } else {
-                        // Para Inscritos, agregar botón para ver cuotas si quieres
+                        // Para Inscritos, agregar botón para ver cuotas
                         accionesHtml += `
-        <a href="/admin/inscripciones/${inscripcion.id}/cuotas" 
-           class="btn btn-sm btn-outline-info" 
+        <a href="/admin/inscripciones/${inscripcion.id}/cuotas"
+           class="btn btn-sm btn-outline-info"
            data-bs-toggle="tooltip"
            title="Ver cuotas de pago">
             <i class="ri-money-dollar-circle-line"></i>
         </a>
-    `;
+        `;
                     }
-
                     accionesHtml += `</div>`;
 
                     html += `
-                    <tr class="inscription-row">
-                        <td class="fw-semibold text-muted">${rowNumber}</td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="flex-shrink-0 me-2">
-                                    <div class="avatar-xs">
-                                        <div class="avatar-title bg-primary bg-opacity-10 text-primary rounded-circle">
-                                            <i class="ri-user-line"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-0">${estudiante?.nombres || 'N/A'} ${estudiante?.apellido_paterno || ''}</h6>
-                                    <p class="text-muted mb-0 small">
-                                        <i class="ri-id-card-line me-1"></i>
-                                        ${estudiante?.carnet || 'N/A'}
-                                    </p>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge programa-badge">
-                                <i class="ri-book-line me-1"></i>
-                                ${programa?.nombre || 'N/A'}
-                            </span>
-                        </td>
-                        <td>
-                            <div>
-                                <span class="badge sede-badge mb-1">
-                                    <i class="ri-building-line me-1"></i>
-                                    ${sede?.nombre || 'N/A'}
-                                </span>
-                                <br>
-                                <small class="text-muted">${sucursal?.nombre || 'N/A'}</small>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge ${inscripcion.estado === 'Inscrito' ? 'bg-success' : 'bg-warning'} badge-status">
-                                ${inscripcion.estado}
-                            </span>
-                        </td>
-                        <td>
-                            <small class="text-muted">${fecha.toLocaleDateString('es-ES')}</small>
-                            <br>
-                            <small class="text-muted">${fecha.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})}</small>
-                        </td>
-                        <td class="text-center">
-                            ${accionesHtml}
-                        </td>
-                    </tr>
-                `;
+    <tr class="inscription-row">
+        <td class="fw-semibold text-muted">${rowNumber}</td>
+        <td>
+            <div class="d-flex align-items-center">
+                <div class="flex-shrink-0 me-2">
+                    <div class="avatar-xs">
+                        <div class="avatar-title bg-primary bg-opacity-10 text-primary rounded-circle">
+                            <i class="ri-user-line"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-grow-1">
+                    <h6 class="mb-0">${estudiante?.nombres || 'N/A'} ${estudiante?.apellido_paterno || ''}</h6>
+                    <p class="text-muted mb-0 small">
+                        <i class="ri-id-card-line me-1"></i>
+                        ${estudiante?.carnet || 'N/A'}
+                    </p>
+                </div>
+            </div>
+        </td>
+        <td>
+            <span class="badge programa-badge">
+                <i class="ri-book-line me-1"></i>
+                ${programa?.nombre || 'N/A'}
+            </span>
+        </td>
+        <td>
+            <div>
+                <span class="badge sede-badge mb-1">
+                    <i class="ri-building-line me-1"></i>
+                    ${sede?.nombre || 'N/A'}
+                </span>
+                <br>
+                <small class="text-muted">${sucursal?.nombre || 'N/A'}</small>
+            </div>
+        </td>
+        <td>
+            ${planPago ? `
+                        <span class="badge bg-primary-subtle text-primary" data-bs-toggle="tooltip" title="Plan de pago seleccionado">
+                            <i class="ri-money-dollar-circle-line me-1"></i>
+                            ${planPago.nombre || 'Sin nombre'}
+                        </span>
+                    ` : `
+                        <span class="badge bg-secondary-subtle text-secondary">
+                            <i class="ri-information-line me-1"></i>
+                            No asignado
+                        </span>
+                    `}
+        </td>
+        <td>
+            <span class="badge ${inscripcion.estado === 'Inscrito' ? 'bg-success' : 'bg-warning'} badge-status">
+                ${inscripcion.estado}
+            </span>
+        </td>
+        <td>
+            <small class="text-muted">${fecha.toLocaleDateString('es-ES')}</small>
+            <br>
+            <small class="text-muted">${fecha.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})}</small>
+        </td>
+        <td class="text-center">
+            ${accionesHtml}
+        </td>
+    </tr>
+    `;
                 });
 
                 html += `
@@ -2155,261 +2365,6 @@
 
                 $('#marketingPagination').html(html);
             }
-
-            // ==============================
-            // MODAL PARA CONVERTIR PRE-INSCRITO
-            // ==============================
-
-            // Modal para convertir pre-inscrito a inscrito
-            // Evento para abrir el modal de conversión
-            // En la sección del modal para convertir Pre-Inscrito, alrededor de la línea 2240
-            $(document).on('click', '.btn-convertir-inscrito', function() {
-                const inscripcionId = $(this).data('inscripcion-id');
-                const ofertaId = $(this).data('oferta-id'); // Obtener el oferta-id
-                const estudianteNombre = $(this).data('estudiante-nombre');
-                const estudianteCarnet = $(this).data('estudiante-carnet');
-                const programaNombre = $(this).data('programa-nombre');
-
-                // Guardar datos en el modal
-                $('#convertirModal').data('inscripcion-id', inscripcionId);
-                $('#convertirModal').data('oferta-id', ofertaId); // Guardar oferta-id
-
-                // Mostrar información básica
-                $('#convertirEstudianteNombre').text(estudianteNombre);
-                $('#convertirEstudianteCarnet').text(estudianteCarnet);
-                $('#convertirProgramaNombre').text(programaNombre);
-
-                // Resetear estado del modal
-                $('#confirmarConversionBtn').prop('disabled', false)
-                    .html('<i class="ri-check-double-line me-1"></i> Confirmar Conversión');
-
-                // Cargar planes de pago usando el oferta-id
-                cargarPlanesPagoOferta(ofertaId);
-
-                // Mostrar modal
-                $('#convertirModal').modal('show');
-            });
-
-            // Función mejorada para cargar planes de pago
-            function cargarPlanesPagoOferta(ofertaId) {
-                $('#planesPagoContainer').html(`
-        <div class="text-center py-4">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Cargando...</span>
-            </div>
-            <p class="mt-2 text-muted">Cargando planes de pago disponibles...</p>
-        </div>
-    `);
-
-                $.ajax({
-                    url: '/admin/profile/marketing/oferta/' + ofertaId + '/planes-pago',
-                    method: 'GET',
-                    success: function(response) {
-                        if (response.success && response.planes.length > 0) {
-                            let html = '';
-
-                            response.planes.forEach((plan, index) => {
-                                let conceptosHtml = '';
-                                let totalMonto = 0;
-                                let totalCuotas = 0;
-
-                                // En la función cargarPlanesPagoOferta, actualiza cómo se muestran los montos:
-                                plan.conceptos.forEach(concepto => {
-                                    // Parsear montos como enteros para mostrar sin decimales
-                                    const totalConcepto = Math.round(parseFloat(concepto
-                                        .pago_bs));
-                                    const montoPorCuota = Math.round(parseFloat(concepto
-                                        .monto_por_cuota));
-
-                                    // Calcular cuotas reales (sin decimales)
-                                    const montoBase = Math.floor(totalConcepto /
-                                        concepto.n_cuotas);
-                                    const diferencia = totalConcepto - (montoBase * (
-                                        concepto.n_cuotas - 1));
-
-                                    conceptosHtml += `
-        <tr>
-            <td>${concepto.concepto_nombre}</td>
-            <td class="text-center">${concepto.n_cuotas}</td>
-            <td class="text-end">${totalConcepto.toLocaleString('es-BO')} Bs</td>
-            <td class="text-end">
-                ${concepto.n_cuotas === 1 ? 
-                    totalConcepto.toLocaleString('es-BO') : 
-                    `${montoBase.toLocaleString('es-BO')} Bs (primeras ${concepto.n_cuotas - 1} cuotas)<br>
-                                                                                <small class="text-info">Última cuota: ${(montoBase + diferencia).toLocaleString('es-BO')} Bs</small>`
-                }
-            </td>
-        </tr>
-    `;
-                                    totalMonto += totalConcepto;
-
-                                    // Verificar que no hay decimales
-                                    if (totalConcepto % 1 !== 0) {
-                                        console.warn(
-                                            `El concepto ${concepto.concepto_nombre} tiene decimales: ${totalConcepto}`
-                                        );
-                                    }
-                                });
-
-                                html += `
-                        <div class="card mb-3 plan-pago-card ${index === 0 ? 'border-primary' : ''}" data-plan-id="${plan.id}">
-                            <div class="card-body">
-                                <div class="form-check mb-2">
-                                    <input class="form-check-input plan-radio" 
-                                           type="radio" 
-                                           name="plan_pago" 
-                                           id="plan_${plan.id}" 
-                                           value="${plan.id}"
-                                           ${index === 0 ? 'checked' : ''}>
-                                    <label class="form-check-label fw-bold" for="plan_${plan.id}">
-                                        ${plan.nombre}
-                                    </label>
-                                    <span class="badge bg-primary float-end">
-                                        Total: ${totalMonto.toFixed(2)} Bs
-                                        ${totalCuotas > 1 ? `(${totalCuotas} cuotas)` : ''}
-                                    </span>
-                                </div>
-                                
-                                <div class="mt-3">
-                                    <h6 class="mb-2 text-muted">Detalles de Cuotas:</h6>
-                                    <div class="table-responsive">
-                                        <table class="table table-sm table-bordered">
-                                            <thead>
-                                                <tr>
-                                                    <th>Concepto</th>
-                                                    <th class="text-center">Cuotas</th>
-                                                    <th class="text-end">Total</th>
-                                                    <th class="text-end">Monto/Cuota</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                ${conceptosHtml}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                            });
-
-                            $('#planesPagoContainer').html(html);
-
-                            // Evento para cambiar estilo al seleccionar plan
-                            $('.plan-radio').on('change', function() {
-                                $('.plan-pago-card').removeClass('border-primary');
-                                $(this).closest('.plan-pago-card').addClass('border-primary');
-                            });
-                        } else {
-                            $('#planesPagoContainer').html(`
-                    <div class="alert alert-warning">
-                        <i class="ri-alert-line me-2"></i> 
-                        No hay planes de pago configurados para esta oferta.
-                        <div class="mt-2">
-                            <small>Contacte al administrador para configurar los planes de pago.</small>
-                        </div>
-                    </div>
-                `);
-
-                            // Deshabilitar botón de confirmación
-                            $('#confirmarConversionBtn').prop('disabled', true)
-                                .html('<i class="ri-forbid-line me-1"></i> No hay planes disponibles');
-                        }
-                    },
-                    error: function(xhr) {
-                        console.error('Error detallado:', xhr);
-                        let errorMsg = 'Error al cargar los planes de pago. ';
-
-                        if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMsg += xhr.responseJSON.message;
-                        } else if (xhr.status === 404) {
-                            errorMsg += 'Oferta académica no encontrada (ID: ' + ofertaId + ')';
-                        } else {
-                            errorMsg += 'Error de conexión.';
-                        }
-
-                        $('#planesPagoContainer').html(`
-                <div class="alert alert-danger">
-                    <i class="ri-error-warning-line me-2"></i> 
-                    ${errorMsg}
-                </div>
-            `);
-
-                        $('#confirmarConversionBtn').prop('disabled', true)
-                            .html('<i class="ri-forbid-line me-1"></i> Error al cargar planes');
-                    }
-                });
-            }
-
-            // Cambiar estilo al seleccionar plan
-            $(document).on('click', '.plan-radio', function() {
-                $('.plan-pago-card').removeClass('border-primary');
-                $(this).closest('.plan-pago-card').addClass('border-primary');
-            });
-
-            // Confirmar conversión con mejor manejo de errores
-            $('#confirmarConversionBtn').on('click', function() {
-                const btn = $(this);
-                const originalText = btn.html();
-                const inscripcionId = $('#convertirModal').data('inscripcion-id');
-                const planPagoId = $('input[name="plan_pago"]:checked').val();
-                const observacion = $('#observacionConversion').val();
-
-                if (!planPagoId) {
-                    showToast('error', 'Por favor selecciona un plan de pago para continuar');
-                    return;
-                }
-
-                // Deshabilitar botón y mostrar loading
-                btn.prop('disabled', true).html(`
-        <span class="spinner-border spinner-border-sm me-1"></span>
-        Generando inscripción, matriculaciones y cuotas...
-    `);
-
-                $.ajax({
-                    url: '/admin/profile/marketing/convertir-inscrito',
-                    method: 'POST',
-                    data: {
-                        _token: '{{ csrf_token() }}',
-                        inscripcion_id: inscripcionId,
-                        plan_pago_id: planPagoId,
-                        observacion: observacion
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            showToast('success', response.message);
-
-                            // Cerrar modal después de un breve retraso
-                            setTimeout(() => {
-                                $('#convertirModal').modal('hide');
-
-                                // Recargar la tabla de inscripciones
-                                loadMarketingData(currentPage);
-
-                                // Resetear formulario
-                                $('input[name="plan_pago"]').prop('checked', false);
-                                $('#observacionConversion').val('');
-                                $('.plan-pago-card').removeClass('border-primary');
-                            }, 1500);
-                        } else {
-                            showToast('error', response.message ||
-                                'Error al convertir la inscripción');
-                            btn.prop('disabled', false).html(originalText);
-                        }
-                    },
-                    error: function(xhr) {
-                        let errorMessage = 'Error al procesar la solicitud';
-                        if (xhr.responseJSON && xhr.responseJSON.errors) {
-                            errorMessage = Object.values(xhr.responseJSON.errors).flat().join(
-                                '<br>');
-                        } else if (xhr.responseJSON && xhr.responseJSON.message) {
-                            errorMessage = xhr.responseJSON.message;
-                        }
-                        showToast('error', errorMessage);
-                        btn.prop('disabled', false).html(originalText);
-                    }
-                });
-            });
 
             // ==============================
             // FUNCIONALIDADES DE OFERTAS ACTIVAS
@@ -2530,6 +2485,10 @@
                         <small>${oferta.fecha_inicio_formateada || 'Sin fecha'} - ${oferta.fecha_fin_formateada || 'Sin fecha'}</small>
                     `;
 
+                        // Obtener el ID del cargo principal para el enlace
+                        const cargoPrincipalId =
+                            '{{ auth()->user()->persona->trabajador->trabajadores_cargos->where('principal', 1)->where('estado', 'Vigente')->first()->id ?? 0 }}';
+
                         html += `
                         <tr class="oferta-card">
                             <td>
@@ -2571,6 +2530,13 @@
                                             data-qr="${oferta.enlace_qr || ''}">
                                         <i class="ri-link"></i>
                                     </button>
+                                    <button class="btn btn-sm btn-plan-generator btn-generar-con-plan"
+                                            data-oferta-id="${oferta.id}"
+                                            data-oferta-codigo="${oferta.codigo}"
+                                            data-programa="${oferta.programa_nombre}"
+                                            data-asesor-id="${cargoPrincipalId}">
+                                        <i class="ri-money-dollar-circle-line"></i>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -2586,6 +2552,161 @@
 
                 $('#ofertasContainer').html(html);
                 attachEnlaceEvents();
+                attachPlanEnlaceEvents();
+            }
+
+            // Adjuntar eventos a los botones de enlace con plan
+            function attachPlanEnlaceEvents() {
+                $('.btn-generar-con-plan').on('click', function() {
+                    const ofertaId = $(this).data('oferta-id');
+                    const asesorId = $(this).data('asesor-id');
+                    const ofertaCodigo = $(this).data('oferta-codigo');
+                    const programa = $(this).data('programa');
+
+                    // Cargar información en el modal
+                    $('#modalOfertaTitulo').text(`Oferta: ${ofertaCodigo}`);
+                    $('#modalOfertaCodigo').text(ofertaCodigo);
+                    $('#modalOfertaPrograma').text(programa);
+                    $('#modalOfertaAsesor').text('{{ auth()->user()->persona->nombres ?? 'Asesor' }}');
+
+                    // Guardar datos para uso posterior
+                    $('#enlacePlanModal').data('oferta-id', ofertaId);
+                    $('#enlacePlanModal').data('asesor-id', asesorId);
+
+                    // Cargar planes de pago
+                    cargarPlanesPagoParaEnlace(ofertaId);
+
+                    // Mostrar modal
+                    $('#enlacePlanModal').modal('show');
+                });
+            }
+
+            // Función para cargar planes de pago para el modal de enlace
+            function cargarPlanesPagoParaEnlace(ofertaId) {
+                $('#planesPagoContainer').html(`
+                    <div class="text-center py-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Cargando planes de pago disponibles...</p>
+                    </div>
+                `);
+
+                $('#enlaceGeneradoContainer').hide();
+                $('#visitPlanLinkBtn').hide();
+
+                $.ajax({
+                    url: '/admin/profile/marketing/oferta/' + ofertaId + '/planes-pago',
+                    method: 'GET',
+                    success: function(response) {
+                        if (response.success && response.planes.length > 0) {
+                            let html = '<div class="row">';
+
+                            response.planes.forEach((plan, index) => {
+                                // Calcular total del plan
+                                let totalPlan = 0;
+                                plan.conceptos.forEach(concepto => {
+                                    totalPlan += parseFloat(concepto.pago_bs);
+                                });
+
+                                html += `
+                                <div class="col-md-6 mb-3">
+                                    <div class="plan-card plan-option" data-plan-id="${plan.id}">
+                                        <div class="plan-header">
+                                            <h6 class="mb-0 text-white">${plan.nombre}</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="plan-price">${totalPlan.toFixed(2)} Bs</div>
+                                            <ul class="plan-feature-list mt-3">
+                                                ${plan.conceptos.map(concepto => 
+                                                    `<li>
+                                                                                <i class="ri-checkbox-circle-line text-success me-2"></i>
+                                                                                ${concepto.concepto_nombre}: ${concepto.n_cuotas} cuotas
+                                                                            </li>`
+                                                ).join('')}
+                                            </ul>
+                                            <div class="text-center mt-3">
+                                                <button class="btn btn-outline-primary btn-sm btn-seleccionar-plan" 
+                                                        data-plan-id="${plan.id}"
+                                                        data-plan-nombre="${plan.nombre}">
+                                                    Seleccionar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                `;
+                            });
+
+                            html += '</div>';
+                            $('#planesPagoContainer').html(html);
+
+                            // Agregar eventos a los botones de selección
+                            $('.btn-seleccionar-plan').on('click', function(e) {
+                                e.stopPropagation();
+                                const planId = $(this).data('plan-id');
+                                const planNombre = $(this).data('plan-nombre');
+
+                                // Remover selección anterior
+                                $('.plan-option').removeClass('selected');
+                                $(this).closest('.plan-option').addClass('selected');
+
+                                // Generar enlace
+                                generarEnlaceConPlan(planId, planNombre);
+                            });
+                        } else {
+                            $('#planesPagoContainer').html(`
+                                <div class="alert alert-warning">
+                                    <i class="ri-alert-line me-2"></i>
+                                    No hay planes de pago disponibles para esta oferta.
+                                </div>
+                            `);
+                        }
+                    },
+                    error: function(xhr) {
+                        console.error('Error al cargar planes de pago:', xhr);
+                        $('#planesPagoContainer').html(`
+                            <div class="alert alert-danger">
+                                <i class="ri-error-warning-line me-2"></i>
+                                Error al cargar los planes de pago. Intente nuevamente.
+                            </div>
+                        `);
+                    }
+                });
+            }
+
+            // Función para generar enlace con plan
+            function generarEnlaceConPlan(planId, planNombre) {
+                const ofertaId = $('#enlacePlanModal').data('oferta-id');
+                const asesorId = $('#enlacePlanModal').data('asesor-id');
+
+                // Construir el enlace
+                const baseUrl = window.location.origin;
+                const enlace = `${baseUrl}/oferta/${ofertaId}/asesor/${asesorId}?plan_pago=${planId}`;
+
+                // Mostrar el enlace
+                $('#linkText').text(enlace);
+                $('#enlaceGeneradoContainer').show();
+
+                // Generar QR
+                const qrUrl =
+                    `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(enlace)}`;
+                $('#qrCodeContainer').html(`<img src="${qrUrl}" alt="QR Code" class="img-fluid">`);
+
+                // Configurar botón de visitar
+                $('#visitPlanLinkBtn').attr('href', enlace).show();
+
+                // Configurar botón de copiar
+                $('#copyGeneratedLink').off('click').on('click', function() {
+                    navigator.clipboard.writeText(enlace).then(function() {
+                        const originalText = $(this).html();
+                        $(this).html('<i class="ri-check-line"></i>');
+                        setTimeout(() => {
+                            $(this).html(originalText);
+                        }, 2000);
+                        showToast('success', 'Enlace copiado al portapapeles');
+                    }.bind(this));
+                });
             }
 
             // Actualizar estadísticas de ofertas
@@ -2724,6 +2845,237 @@
                     showToast('success', 'Enlace copiado al portapapeles');
                 });
             }
+
+            // ==============================
+            // MODAL PARA CONVERTIR PRE-INSCRITO
+            // ==============================
+
+            // Evento para abrir el modal de conversión
+            $(document).on('click', '.btn-convertir-inscrito', function() {
+                const inscripcionId = $(this).data('inscripcion-id');
+                const ofertaId = $(this).data('oferta-id');
+                const estudianteNombre = $(this).data('estudiante-nombre');
+                const estudianteCarnet = $(this).data('estudiante-carnet');
+                const programaNombre = $(this).data('programa-nombre');
+
+                // Guardar datos en el modal
+                $('#convertirModal').data('inscripcion-id', inscripcionId);
+                $('#convertirModal').data('oferta-id', ofertaId);
+
+                // Mostrar información básica
+                $('#convertirEstudianteNombre').text(estudianteNombre);
+                $('#convertirEstudianteCarnet').text(estudianteCarnet);
+                $('#convertirProgramaNombre').text(programaNombre);
+
+                // Resetear estado del modal
+                $('#confirmarConversionBtn').prop('disabled', false)
+                    .html('<i class="ri-check-double-line me-1"></i> Confirmar Conversión');
+
+                // Cargar planes de pago usando el oferta-id
+                cargarPlanesPagoOferta(ofertaId);
+
+                // Mostrar modal
+                $('#convertirModal').modal('show');
+            });
+
+            // Función mejorada para cargar planes de pago
+            // Función mejorada para cargar planes de pago
+            function cargarPlanesPagoOferta(ofertaId) {
+                // Usar selector específico del modal de conversión
+                const container = $('#convertirModal').find('#planesPagoContainer');
+
+                container.html(`
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2 text-muted">Cargando planes de pago disponibles...</p>
+        </div>
+    `);
+
+                $.ajax({
+                    url: '/admin/profile/marketing/oferta/' + ofertaId + '/planes-pago',
+                    method: 'GET',
+                    success: function(response) {
+                        console.log('Respuesta planes de pago:', response);
+
+                        if (response.success && response.planes && response.planes.length > 0) {
+                            let html = '';
+                            response.planes.forEach((plan, index) => {
+                                let conceptosHtml = '';
+                                let totalMonto = 0;
+
+                                plan.conceptos.forEach(concepto => {
+                                    const totalConcepto = Math.round(parseFloat(concepto
+                                        .pago_bs));
+                                    conceptosHtml += `
+                            <tr>
+                                <td>${concepto.concepto_nombre}</td>
+                                <td class="text-center">${concepto.n_cuotas}</td>
+                                <td class="text-end">${totalConcepto.toLocaleString('es-BO')} Bs</td>
+                                <td class="text-end">${concepto.monto_por_cuota} Bs</td>
+                            </tr>
+                        `;
+                                    totalMonto += totalConcepto;
+                                });
+
+                                html += `
+                        <div class="card mb-3 plan-pago-card ${index === 0 ? 'border-primary' : ''}" data-plan-id="${plan.id}">
+                            <div class="card-body">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input plan-radio"
+                                           type="radio"
+                                           name="plan_pago"
+                                           id="plan_${plan.id}"
+                                           value="${plan.id}"
+                                           ${index === 0 ? 'checked' : ''}>
+                                    <label class="form-check-label fw-bold" for="plan_${plan.id}">
+                                        ${plan.nombre}
+                                    </label>
+                                    <span class="badge bg-primary float-end">
+                                        Total: ${totalMonto.toLocaleString('es-BO')} Bs
+                                    </span>
+                                </div>
+                                <div class="mt-3">
+                                    <h6 class="mb-2 text-muted">Detalles de Cuotas:</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th>Concepto</th>
+                                                    <th class="text-center">Cuotas</th>
+                                                    <th class="text-end">Total</th>
+                                                    <th class="text-end">Monto/Cuota</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${conceptosHtml}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                            });
+
+                            container.html(html);
+
+                            // Evento para cambiar estilo al seleccionar plan
+                            container.find('.plan-radio').on('change', function() {
+                                $('.plan-pago-card').removeClass('border-primary');
+                                $(this).closest('.plan-pago-card').addClass('border-primary');
+                            });
+
+                        } else {
+                            container.html(`
+                    <div class="alert alert-warning">
+                        <i class="ri-alert-line me-2"></i>
+                        No hay planes de pago configurados para esta oferta.
+                        <div class="mt-2">
+                            <small>Contacte al administrador para configurar los planes de pago.</small>
+                        </div>
+                    </div>
+                `);
+                            $('#confirmarConversionBtn').prop('disabled', true)
+                                .html('<i class="ri-forbid-line me-1"></i> No hay planes disponibles');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error al cargar planes de pago:', error);
+                        console.error('Response:', xhr.responseText);
+
+                        let errorMsg = 'Error al cargar los planes de pago. ';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMsg += xhr.responseJSON.message;
+                        } else if (xhr.status === 404) {
+                            errorMsg += 'Oferta académica no encontrada';
+                        } else {
+                            errorMsg += 'Error de conexión';
+                        }
+
+                        container.html(`
+                <div class="alert alert-danger">
+                    <i class="ri-error-warning-line me-2"></i>
+                    ${errorMsg}
+                </div>
+            `);
+
+                        $('#confirmarConversionBtn').prop('disabled', true)
+                            .html('<i class="ri-forbid-line me-1"></i> Error al cargar planes');
+                    }
+                });
+            }
+
+            // Cambiar estilo al seleccionar plan
+            $(document).on('click', '.plan-radio', function() {
+                $('.plan-pago-card').removeClass('border-primary');
+                $(this).closest('.plan-pago-card').addClass('border-primary');
+            });
+
+            // Confirmar conversión con mejor manejo de errores
+            $('#confirmarConversionBtn').on('click', function() {
+                const btn = $(this);
+                const originalText = btn.html();
+                const inscripcionId = $('#convertirModal').data('inscripcion-id');
+                const planPagoId = $('input[name="plan_pago"]:checked').val();
+                const observacion = $('#observacionConversion').val();
+
+                if (!planPagoId) {
+                    showToast('error', 'Por favor selecciona un plan de pago para continuar');
+                    return;
+                }
+
+                // Deshabilitar botón y mostrar loading
+                btn.prop('disabled', true).html(`
+        <span class="spinner-border spinner-border-sm me-1"></span>
+        Generando inscripción, matriculaciones y cuotas...
+    `);
+
+                $.ajax({
+                    url: '/admin/profile/marketing/convertir-inscrito',
+                    method: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        inscripcion_id: inscripcionId,
+                        plan_pago_id: planPagoId,
+                        observacion: observacion
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            showToast('success', response.message);
+
+                            // Cerrar modal después de un breve retraso
+                            setTimeout(() => {
+                                $('#convertirModal').modal('hide');
+
+                                // Recargar la tabla de inscripciones
+                                loadMarketingData(currentPage);
+
+                                // Resetear formulario
+                                $('input[name="plan_pago"]').prop('checked', false);
+                                $('#observacionConversion').val('');
+                                $('.plan-pago-card').removeClass('border-primary');
+                            }, 1500);
+                        } else {
+                            showToast('error', response.message ||
+                                'Error al convertir la inscripción');
+                            btn.prop('disabled', false).html(originalText);
+                        }
+                    },
+                    error: function(xhr) {
+                        let errorMessage = 'Error al procesar la solicitud';
+                        if (xhr.responseJSON && xhr.responseJSON.errors) {
+                            errorMessage = Object.values(xhr.responseJSON.errors).flat().join(
+                                '<br>');
+                        } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        showToast('error', errorMessage);
+                        btn.prop('disabled', false).html(originalText);
+                    }
+                });
+            });
 
             // ==============================
             // FUNCIONES AUXILIARES COMUNES

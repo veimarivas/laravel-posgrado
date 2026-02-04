@@ -20,6 +20,13 @@
                                     <div class="text-muted small mt-1">{{ $sucursal->direccion }}</div>
                                 </div>
                                 <div class="btn-group ms-2">
+                                    @if (Auth::guard('web')->user()->can('sucursales.ver'))
+                                        <a href="{{ route('admin.sucursales.ver', $sucursal->id) }}"
+                                            class="btn btn-sm btn-soft-info" title="Ver Sucursal"
+                                            data-bs-toggle="tooltip">
+                                            <i class="ri-eye-line"></i>
+                                        </a>
+                                    @endif
                                     @if (Auth::guard('web')->user()->can('sucursales.editar'))
                                         <button type="button" class="btn btn-sm btn-soft-primary editSucursalBtn"
                                             title="Editar Sucursal" data-bs-toggle="modal"

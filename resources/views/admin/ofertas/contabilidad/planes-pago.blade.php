@@ -1006,9 +1006,480 @@
             const URL_ACTUALIZAR_PLAN = "{{ route('admin.ofertas.actualizar-plan-pago') }}";
             const URL_ELIMINAR_PLAN = "{{ route('admin.ofertas.eliminar-plan-pago') }}";
             const URL_AGREGAR_PLAN = "{{ route('admin.ofertas.agregar-plan-pago') }}";
+            const URL_OBTENER_PRECIO_PRINCIPAL = "{{ route('admin.ofertas.obtener-precio-principal') }}";
+
+            // Variables globales para el modal
+            let conceptoIndexNuevo = 0;
+
+            // ============================================
+            // 1. CÓDIGO PARA EL MODAL DE NUEVO PLAN
+            // ============================================
 
             // Inicializar tooltips
             $('[data-bs-toggle="tooltip"]').tooltip();
+
+            // LIMPIAR COMPLETAMENTE el modal al abrir
+            $('#modalNuevoPlan').on('show.bs.modal', function() {
+                // Reiniciar el índice
+                conceptoIndexNuevo = 0;
+
+                // Limpiar cualquier concepto existente
+                $('#conceptos-nuevo-plan').empty();
+
+                // Limpiar formulario
+                $('#formNuevoPlan')[0].reset();
+
+                // Ocultar campos de promoción
+                $('#fechas_promocion_container').hide();
+                $('#info-plan-principal').hide();
+
+                // Quitar validación de fechas (se agregarán después si es promoción)
+                $('#fecha_inicio_promocion, #fecha_fin_promocion').prop('required', false);
+
+                // Verificar plan principal
+                verificarPlanPrincipal();
+            });
+
+            // Verificar si ya existe un plan principal registrado
+            function verificarPlanPrincipal() {
+                $.ajax({
+                    url: "{{ route('admin.ofertas.verificar-plan-principal') }}",
+                    type: 'POST',
+                    data: {
+                        _token: TOKEN,
+                        oferta_id: OFERTA_ID
+                    },
+                    success: function(res) {
+                        if (!res.existe) {
+                            $('#info-plan-principal').html(
+                                '<i class="ri-alert-line me-2"></i>' +
+                                '<strong>Advertencia:</strong> No se ha registrado un plan principal para esta oferta. ' +
+                                'Es recomendable registrar primero un plan principal para poder crear promociones.'
+                            ).removeClass('alert-info').addClass('alert-warning');
+                        }
+                    }
+                });
+            }
+
+            // Control para mostrar/ocultar campos de promoción en modal NUEVO
+            $('#es_promocion').on('change', function() {
+                const esPromocion = $(this).is(':checked');
+                const fechasContainer = $('#fechas_promocion_container');
+                const infoPrincipal = $('#info-plan-principal');
+
+                if (esPromocion) {
+                    fechasContainer.slideDown(300);
+                    infoPrincipal.slideDown(300);
+                    $('#fecha_inicio_promocion, #fecha_fin_promocion').prop('required', true);
+
+                    // Mostrar campos de promoción en todos los conceptos existentes
+                    $('.promo-fields-concepto').slideDown(300);
+                    $('.promo-calculo-resumen').slideDown(300);
+
+                    // Hacer que los campos de promoción sean requeridos
+                    $('.precio-regular-input, .descuento-bs-input').each(function() {
+                        $(this).prop('required', true);
+                    });
+                } else {
+                    fechasContainer.slideUp(300);
+                    infoPrincipal.slideUp(300);
+                    $('#fecha_inicio_promocion, #fecha_fin_promocion').prop('required', false);
+
+                    // Ocultar campos de promoción
+                    $('.promo-fields-concepto').slideUp(300);
+                    $('.promo-calculo-resumen').slideUp(300);
+
+                    // Quitar requerido de los campos de promoción
+                    $('.precio-regular-input, .descuento-bs-input').each(function() {
+                        $(this).prop('required', false);
+                    });
+                }
+            });
+
+            // Agregar un nuevo concepto en modal NUEVO
+            $(document).on('click', '#add-concepto-nuevo', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const template = $('#template-concepto').html();
+                const html = template
+                    .replace(/__INDEX__/g, conceptoIndexNuevo)
+                    .replace(/__NUM__/g, conceptoIndexNuevo + 1);
+
+                $('#conceptos-nuevo-plan').append(html);
+
+                // Si es promoción, mostrar campos de promoción
+                const esPromocion = $('#es_promocion').is(':checked');
+                const conceptoItem = $('#conceptos-nuevo-plan .concepto-item').last();
+
+                if (esPromocion) {
+                    conceptoItem.find('.promo-fields-concepto').slideDown(300);
+                    conceptoItem.find('.promo-calculo-resumen').slideDown(300);
+
+                    // Hacer que los campos de promoción sean requeridos
+                    conceptoItem.find('.precio-regular-input, .descuento-bs-input').prop('required', true);
+                } else {
+                    // Si no es promoción, quitar el atributo required
+                    conceptoItem.find('.precio-regular-input, .descuento-bs-input').prop('required', false);
+                }
+
+                conceptoIndexNuevo++;
+            });
+
+            // Eliminar un concepto en modal NUEVO
+            $(document).on('click', '.btn-remove-concepto', function() {
+                const card = $(this).closest('.concepto-item');
+                card.fadeOut(300, function() {
+                    $(this).remove();
+                    // Ajustar índices de los conceptos restantes
+                    reindexarConceptos();
+                });
+            });
+
+            // Función para reindexar conceptos después de eliminar
+            function reindexarConceptos() {
+                conceptoIndexNuevo = 0;
+                $('#conceptos-nuevo-plan .concepto-item').each(function(index) {
+                    const newIndex = index;
+                    const $this = $(this);
+
+                    // Actualizar atributos data-index
+                    $this.attr('data-index', newIndex);
+
+                    // Actualizar nombres de campos del formulario
+                    $this.find('[name*="conceptos["]').each(function() {
+                        const name = $(this).attr('name');
+                        const newName = name.replace(/conceptos\[\d+\]/, `conceptos[${newIndex}]`);
+                        $(this).attr('name', newName);
+                    });
+
+                    // Actualizar etiquetas
+                    $this.find('.card-header span').text(`Concepto #${newIndex + 1}`);
+
+                    conceptoIndexNuevo++;
+                });
+            }
+
+            // Cuando se selecciona un concepto, cargar precio del plan principal (solo para promociones)
+            $(document).on('change', '.concepto-select', function() {
+                const conceptoItem = $(this).closest('.concepto-item');
+                const conceptoId = $(this).val();
+                const esPromocion = $('#es_promocion').is(':checked');
+
+                if (esPromocion && conceptoId) {
+                    // Mostrar loader
+                    conceptoItem.find('.precio-regular-input').val('Cargando...');
+
+                    $.ajax({
+                        url: URL_OBTENER_PRECIO_PRINCIPAL,
+                        type: 'POST',
+                        data: {
+                            _token: TOKEN,
+                            oferta_id: OFERTA_ID,
+                            concepto_id: conceptoId
+                        },
+                        success: function(res) {
+                            if (res.success && res.precio_regular) {
+                                const precioRegular = parseFloat(res.precio_regular);
+                                conceptoItem.find('.precio-regular-input').val(precioRegular
+                                    .toFixed(2));
+                                conceptoItem.find('.precio-regular-display').text('Bs. ' +
+                                    precioRegular.toFixed(2));
+
+                                // Establecer el precio regular como base
+                                conceptoItem.find('.monto-input').val(precioRegular.toFixed(2));
+
+                                // Calcular precio final
+                                calcularPrecioFinal(conceptoItem);
+                            } else {
+                                conceptoItem.find('.precio-regular-input').val('0.00');
+                                conceptoItem.find('.precio-regular-display').text('Bs. 0.00');
+                                conceptoItem.find('.monto-input').val('0.00');
+                                calcularPrecioFinal(conceptoItem);
+                            }
+                        },
+                        error: function() {
+                            conceptoItem.find('.precio-regular-input').val('0.00');
+                            conceptoItem.find('.precio-regular-display').text('Bs. 0.00');
+                            conceptoItem.find('.monto-input').val('0.00');
+                            calcularPrecioFinal(conceptoItem);
+                        }
+                    });
+                }
+            });
+
+            // Calcular precio final cuando cambia el descuento
+            $(document).on('input', '.descuento-bs-input', function() {
+                const conceptoItem = $(this).closest('.concepto-item');
+                calcularPrecioFinal(conceptoItem);
+            });
+
+            // Calcular precio final cuando cambia el precio regular
+            $(document).on('input', '.precio-regular-input', function() {
+                const conceptoItem = $(this).closest('.concepto-item');
+                calcularPrecioFinal(conceptoItem);
+            });
+
+            // Función para calcular precio final
+            function calcularPrecioFinal(conceptoItem) {
+                const precioRegular = parseFloat(conceptoItem.find('.precio-regular-input').val()) || 0;
+                const descuentoBs = parseFloat(conceptoItem.find('.descuento-bs-input').val()) || 0;
+                const precioFinal = Math.max(0, precioRegular - descuentoBs);
+
+                // Actualizar displays
+                conceptoItem.find('.precio-regular-display').text('Bs. ' + precioRegular.toFixed(2));
+                conceptoItem.find('.descuento-display').text('-Bs. ' + descuentoBs.toFixed(2));
+                conceptoItem.find('.precio-final-display').text('Bs. ' + precioFinal.toFixed(2));
+
+                // Actualizar campo de precio final
+                conceptoItem.find('.monto-input').val(precioFinal.toFixed(2));
+            }
+
+            // Validar fechas de promoción
+            function validarFechasPromocion() {
+                if (!$('#es_promocion').is(':checked')) return true;
+
+                const inicio = $('#fecha_inicio_promocion').val();
+                const fin = $('#fecha_fin_promocion').val();
+
+                if (!inicio || !fin) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Fechas requeridas',
+                        text: 'Para una promoción debe especificar las fechas de inicio y fin',
+                        customClass: {
+                            confirmButton: 'btn btn-warning'
+                        }
+                    });
+                    return false;
+                }
+
+                if (new Date(fin) < new Date(inicio)) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Fechas inválidas',
+                        text: 'La fecha de fin debe ser posterior a la fecha de inicio',
+                        customClass: {
+                            confirmButton: 'btn btn-warning'
+                        }
+                    });
+                    return false;
+                }
+
+                return true;
+            }
+
+            // Validar formulario antes de enviar en modal NUEVO
+            $('#formNuevoPlan').on('submit', function(e) {
+                e.preventDefault();
+
+                const submitBtn = $('#btn-guardar-plan');
+                const originalText = submitBtn.html();
+
+                // Validar fechas si es promoción
+                if (!validarFechasPromocion()) {
+                    return;
+                }
+
+                // Validar que haya al menos un concepto
+                if ($('#conceptos-nuevo-plan .concepto-item').length === 0) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Conceptos requeridos',
+                        text: 'Debe agregar al menos un concepto al plan',
+                        customClass: {
+                            confirmButton: 'btn btn-warning'
+                        }
+                    });
+                    return;
+                }
+
+                const esPromocion = $('#es_promocion').is(':checked');
+                let conceptosValidos = true;
+                let mensajesError = [];
+
+                // Validar cada concepto
+                $('#conceptos-nuevo-plan .concepto-item').each(function(index) {
+                    const conceptoItem = $(this);
+                    const conceptoId = conceptoItem.find('.concepto-select').val();
+                    const nCuotas = conceptoItem.find('.n-cuotas-input').val();
+                    let monto = conceptoItem.find('.monto-input').val();
+
+                    // Quitar la clase de error primero
+                    conceptoItem.removeClass('border-danger');
+
+                    // Validaciones básicas (siempre requeridas)
+                    if (!conceptoId || !nCuotas || parseInt(nCuotas) < 1) {
+                        conceptosValidos = false;
+                        conceptoItem.addClass('border-danger');
+                        mensajesError.push(
+                            `Concepto ${index + 1}: Datos básicos incompletos (Concepto y N° Cuotas son requeridos)`
+                            );
+                    }
+
+                    // Validar monto según si es promoción o no
+                    if (esPromocion) {
+                        const precioRegular = parseFloat(conceptoItem.find('.precio-regular-input')
+                            .val()) || 0;
+                        const descuentoBs = parseFloat(conceptoItem.find('.descuento-bs-input')
+                        .val()) || 0;
+
+                        // Para promociones, validar precio regular y descuento
+                        if (precioRegular <= 0) {
+                            conceptosValidos = false;
+                            conceptoItem.addClass('border-danger');
+                            mensajesError.push(
+                                `Concepto ${index + 1}: El precio regular debe ser mayor a 0`);
+                        }
+
+                        if (descuentoBs < 0) {
+                            conceptosValidos = false;
+                            conceptoItem.addClass('border-danger');
+                            mensajesError.push(
+                                `Concepto ${index + 1}: El descuento no puede ser negativo`);
+                        }
+
+                        // Calcular el monto automáticamente para promociones
+                        monto = (precioRegular - descuentoBs).toFixed(2);
+                        conceptoItem.find('.monto-input').val(monto);
+
+                        // Validar que el precio final sea positivo
+                        if (parseFloat(monto) <= 0) {
+                            conceptosValidos = false;
+                            conceptoItem.addClass('border-danger');
+                            mensajesError.push(
+                                `Concepto ${index + 1}: El precio final debe ser mayor a 0 (Precio Regular - Descuento)`
+                                );
+                        }
+                    } else {
+                        // Para planes no promocionales, validar el monto directamente
+                        if (!monto || parseFloat(monto) <= 0) {
+                            conceptosValidos = false;
+                            conceptoItem.addClass('border-danger');
+                            mensajesError.push(
+                                `Concepto ${index + 1}: El monto total debe ser mayor a 0`);
+                        }
+                    }
+                });
+
+                if (!conceptosValidos) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Datos incompletos o inválidos',
+                        html: mensajesError.join('<br>'),
+                        customClass: {
+                            confirmButton: 'btn btn-warning'
+                        }
+                    });
+                    return;
+                }
+
+                // Si todo está bien, proceder a enviar el formulario
+                submitBtn.prop('disabled', true).html(
+                    '<i class="ri-loader-4-line spin me-2"></i> Guardando...');
+
+                const formData = new FormData(this);
+
+                // Añadir campos que puedan faltar
+                $('#conceptos-nuevo-plan .concepto-item').each(function(index) {
+                    const card = $(this);
+                    const esPromocion = $('#es_promocion').is(':checked');
+
+                    // Si es promoción, asegurar que los campos estén presentes
+                    if (esPromocion) {
+                        const precioRegular = card.find('.precio-regular-input').val() || '0';
+                        const descuentoBs = card.find('.descuento-bs-input').val() || '0';
+                        const montoFinal = (parseFloat(precioRegular) - parseFloat(descuentoBs))
+                            .toFixed(2);
+
+                        formData.set(`conceptos[${index}][precio_regular]`, precioRegular);
+                        formData.set(`conceptos[${index}][descuento_bs]`, descuentoBs);
+                        formData.set(`conceptos[${index}][pago_bs]`, montoFinal);
+                    } else {
+                        // Si no es promoción, enviar valores por defecto para campos de promoción
+                        formData.set(`conceptos[${index}][precio_regular]`, '0');
+                        formData.set(`conceptos[${index}][descuento_bs]`, '0');
+                        // El monto final ya está en el campo pago_bs
+                    }
+                });
+
+                // Enviar formulario
+                $.ajax({
+                    url: URL_AGREGAR_PLAN,
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(res) {
+                        if (res.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Éxito!',
+                                text: res.msg,
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => {
+                                $('#modalNuevoPlan').modal('hide');
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                html: res.msg,
+                                customClass: {
+                                    confirmButton: 'btn btn-danger'
+                                }
+                            });
+                        }
+                    },
+                    error: function(xhr) {
+                        let errorMsg = 'Error al guardar el plan.';
+                        if (xhr.responseJSON && xhr.responseJSON.msg) {
+                            errorMsg = xhr.responseJSON.msg;
+                        }
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: errorMsg,
+                            customClass: {
+                                confirmButton: 'btn btn-danger'
+                            }
+                        });
+                    },
+                    complete: function() {
+                        submitBtn.prop('disabled', false).html(originalText);
+                    }
+                });
+            });
+
+            // Validar que fecha fin sea mayor a fecha inicio
+            $('#fecha_inicio_promocion').on('change', function() {
+                const inicio = $(this).val();
+                const fin = $('#fecha_fin_promocion').val();
+
+                if (fin && new Date(fin) < new Date(inicio)) {
+                    $('#fecha_fin_promocion').val('');
+                }
+
+                $('#fecha_fin_promocion').attr('min', inicio);
+            });
+
+            // Limpiar completamente al cerrar el modal NUEVO
+            $('#modalNuevoPlan').on('hidden.bs.modal', function() {
+                $('#formNuevoPlan')[0].reset();
+                $('#conceptos-nuevo-plan').empty();
+                $('#fechas_promocion_container').hide();
+                $('#info-plan-principal').hide();
+                conceptoIndexNuevo = 0;
+
+                // Quitar todas las clases de error
+                $('.concepto-item').removeClass('border-danger');
+            });
+
+            // ============================================
+            // 2. CÓDIGO PARA LA EDICIÓN DE PLANES EXISTENTES
+            // ============================================
 
             // Mostrar/ocultar formulario de edición
             $(document).on('click', '.edit-plan-btn', function() {
@@ -1036,22 +1507,11 @@
                 }, 300);
             });
 
-            // Mostrar/ocultar campos de promoción
-            $(document).on('change', '.promo-checkbox', function() {
-                const promoFields = $(this).closest('.col-md-4').find('.promo-fields');
-                if ($(this).is(':checked')) {
-                    promoFields.slideDown(300);
-                    promoFields.find('input').prop('required', true);
-                } else {
-                    promoFields.slideUp(300);
-                    promoFields.find('input').prop('required', false).val('');
-                }
-            });
-
             // Agregar concepto a un plan existente
             $(document).on('click', '.add-concepto-btn', function(e) {
                 e.preventDefault();
                 const planId = $(this).data('plan-id');
+                const esPromocion = $(this).data('es-promocion') === 'true';
                 const container = $(this).closest('.plan-form').find('.conceptos-container');
                 const index = container.find('.card').length;
 
@@ -1059,7 +1519,7 @@
                 <div class="card mb-3 border">
                     <div class="card-body">
                         <div class="row align-items-center">
-                            <div class="col-md-3">
+                            <div class="col-md-${esPromocion ? '3' : '4'}">
                                 <label class="form-label fw-semibold">Concepto *</label>
                                 <select name="conceptos[${index}][concepto_id]" class="form-select" required>
                                     <option value="">Seleccione concepto</option>
@@ -1067,51 +1527,43 @@
                                 </select>
                             </div>
                             
-                            <div class="col-md-2">
+                            <div class="col-md-${esPromocion ? '2' : '3'}">
                                 <label class="form-label fw-semibold">N° Cuotas *</label>
                                 <input type="number" name="conceptos[${index}][n_cuotas]" 
                                        class="form-control" value="1" min="1" required>
                             </div>
                             
-                            <div class="col-md-2">
-                                <label class="form-label fw-semibold">Monto Total (Bs.) *</label>
-                                <input type="number" step="0.01" name="conceptos[${index}][pago_bs]" 
-                                       class="form-control" value="0" min="0" required>
-                            </div>
-                            
-                            <div class="col-md-4">
-                                <div class="form-check mb-2">
-                                    <input type="checkbox" class="form-check-input promo-checkbox" 
-                                           name="conceptos[${index}][es_promocion]" value="1" 
-                                           id="promo_new_${planId}_${index}">
-                                    <label class="form-check-label fw-semibold" for="promo_new_${planId}_${index}">
-                                        <i class="ri-flashlight-line me-1"></i> Es Promoción
-                                    </label>
-                                </div>
-                                
-                                <div class="promo-fields mt-2 p-3 bg-light rounded" style="display: none;">
-                                    <div class="row g-2">
-                                        <div class="col-12">
-                                            <label class="form-label fs-12">Fechas de Promoción</label>
-                                        </div>
-                                        <div class="col-6">
-                                            <input type="date" name="conceptos[${index}][fecha_inicio_promocion]" 
-                                                   class="form-control form-control-sm" placeholder="Inicio">
-                                        </div>
-                                        <div class="col-6">
-                                            <input type="date" name="conceptos[${index}][fecha_fin_promocion]" 
-                                                   class="form-control form-control-sm" placeholder="Fin">
-                                        </div>
-                                        <div class="col-6">
-                                            <input type="number" step="0.01" name="conceptos[${index}][precio_regular]" 
-                                                   class="form-control form-control-sm" value="0" placeholder="Precio regular">
-                                        </div>
-                                        <div class="col-6">
-                                            <input type="number" step="0.01" name="conceptos[${index}][descuento_porcentaje]" 
-                                                   class="form-control form-control-sm" value="0" placeholder="% Descuento">
-                                        </div>
+                            ${esPromocion ? `
+                                    <!-- Precio Regular -->
+                                    <div class="col-md-2">
+                                        <label class="form-label fw-semibold">Precio Regular (Bs.) *</label>
+                                        <input type="number" step="0.01" 
+                                            name="conceptos[${index}][precio_regular]" 
+                                            class="form-control precio-regular-input" 
+                                            value="0" min="0" required>
                                     </div>
-                                </div>
+                                    
+                                    <!-- Descuento en Bs. -->
+                                    <div class="col-md-2">
+                                        <label class="form-label fw-semibold">Descuento (Bs.)</label>
+                                        <input type="number" step="0.01" 
+                                            name="conceptos[${index}][descuento_bs]" 
+                                            class="form-control descuento-bs-input" 
+                                            value="0" min="0">
+                                    </div>
+                                ` : ''}
+                            
+                            <!-- Precio Final (Bs.) -->
+                            <div class="col-md-${esPromocion ? '2' : '3'}">
+                                <label class="form-label fw-semibold">Precio Final (Bs.) *</label>
+                                <input type="number" step="0.01" 
+                                    name="conceptos[${index}][pago_bs]" 
+                                    class="form-control pago-bs-input" 
+                                    value="0" min="0" required
+                                    ${esPromocion ? 'readonly' : ''}>
+                                <small class="text-muted">
+                                    ${esPromocion ? 'Calculado automáticamente (Precio Regular - Descuento)' : 'Monto total del concepto'}
+                                </small>
                             </div>
                             
                             <div class="col-md-1 text-center">
@@ -1157,7 +1609,6 @@
                     if (result.isConfirmed) {
                         conceptoItem.fadeOut(300, function() {
                             $(this).remove();
-                            // Mostrar mensaje de éxito
                             Swal.fire({
                                 icon: 'success',
                                 title: 'Concepto eliminado',
@@ -1170,17 +1621,17 @@
                 });
             });
 
-            // Validar formulario antes de enviar
+            // Validar formulario antes de enviar en edición
             function validarFormulario(form) {
                 let isValid = true;
                 let errorMessages = [];
 
-                // Validar cada concepto
                 form.find('.conceptos-container .card').each(function(index) {
                     const card = $(this);
-
-                    // Validar concepto seleccionado
                     const conceptoSelect = card.find('select[name*="concepto_id"]');
+                    const nCuotas = card.find('input[name*="n_cuotas"]');
+                    const monto = card.find('input[name*="pago_bs"]');
+
                     if (!conceptoSelect.val()) {
                         isValid = false;
                         conceptoSelect.addClass('is-invalid');
@@ -1189,8 +1640,6 @@
                         conceptoSelect.removeClass('is-invalid');
                     }
 
-                    // Validar número de cuotas
-                    const nCuotas = card.find('input[name*="n_cuotas"]');
                     if (!nCuotas.val() || parseInt(nCuotas.val()) < 1) {
                         isValid = false;
                         nCuotas.addClass('is-invalid');
@@ -1199,8 +1648,6 @@
                         nCuotas.removeClass('is-invalid');
                     }
 
-                    // Validar monto
-                    const monto = card.find('input[name*="pago_bs"]');
                     if (!monto.val() || parseFloat(monto.val()) <= 0) {
                         isValid = false;
                         monto.addClass('is-invalid');
@@ -1223,6 +1670,7 @@
                 const form = $(this);
                 const planId = form.data('plan-id');
                 const tieneInscripciones = form.data('tiene-inscripciones') === 'true';
+                const esPromocion = form.data('es-promocion') === 'true';
                 const submitBtn = form.find('.save-plan-btn');
                 const originalText = submitBtn.html();
 
@@ -1239,7 +1687,60 @@
                     return;
                 }
 
-                // Validar formulario
+                // Validación especial para promociones en edición
+                if (esPromocion) {
+                    let promocionValida = true;
+                    let mensajesPromo = [];
+
+                    form.find('.conceptos-container .card').each(function(index) {
+                        const card = $(this);
+                        const precioRegular = parseFloat(card.find('.precio-regular-input')
+                        .val()) || 0;
+                        const descuentoBs = parseFloat(card.find('.descuento-bs-input').val()) || 0;
+                        const montoFinal = parseFloat(card.find('.pago-bs-input').val()) || 0;
+
+                        if (precioRegular <= 0) {
+                            promocionValida = false;
+                            card.find('.precio-regular-input').addClass('is-invalid');
+                            mensajesPromo.push(
+                                `Concepto ${index + 1}: Precio regular debe ser mayor a 0`);
+                        } else {
+                            card.find('.precio-regular-input').removeClass('is-invalid');
+                        }
+
+                        if (descuentoBs < 0) {
+                            promocionValida = false;
+                            card.find('.descuento-bs-input').addClass('is-invalid');
+                            mensajesPromo.push(
+                                `Concepto ${index + 1}: Descuento no puede ser negativo`);
+                        } else {
+                            card.find('.descuento-bs-input').removeClass('is-invalid');
+                        }
+
+                        if (montoFinal <= 0) {
+                            promocionValida = false;
+                            card.find('.pago-bs-input').addClass('is-invalid');
+                            mensajesPromo.push(
+                                `Concepto ${index + 1}: Precio final debe ser mayor a 0`);
+                        } else {
+                            card.find('.pago-bs-input').removeClass('is-invalid');
+                        }
+                    });
+
+                    if (!promocionValida) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Errores en promoción',
+                            html: mensajesPromo.join('<br>'),
+                            customClass: {
+                                confirmButton: 'btn btn-warning'
+                            },
+                            buttonsStyling: false
+                        });
+                        return;
+                    }
+                }
+
                 const validacion = validarFormulario(form);
                 if (!validacion.isValid) {
                     Swal.fire({
@@ -1257,8 +1758,21 @@
                 submitBtn.prop('disabled', true).html(
                     '<i class="ri-loader-4-line spin me-2"></i> Guardando...');
 
-                // Preparar datos del formulario
                 const formData = new FormData(form[0]);
+
+                // Para promociones en edición, asegurar que los cálculos estén correctos
+                if (esPromocion) {
+                    form.find('.conceptos-container .card').each(function(index) {
+                        const card = $(this);
+                        const precioRegular = parseFloat(card.find('.precio-regular-input')
+                        .val()) || 0;
+                        const descuentoBs = parseFloat(card.find('.descuento-bs-input').val()) || 0;
+                        const montoFinal = Math.max(0, precioRegular - descuentoBs);
+
+                        // Actualizar el valor en el formData
+                        formData.set(`conceptos[${index}][pago_bs]`, montoFinal.toFixed(2));
+                    });
+                }
 
                 $.ajax({
                     url: URL_ACTUALIZAR_PLAN,
@@ -1385,672 +1899,16 @@
                 });
             });
 
-            // Agregar concepto en modal de nuevo plan
-            let conceptoIndexNuevo = 0;
-            $('#add-concepto-nuevo').on('click', function() {
-                const container = $('#conceptos-nuevo-plan');
-
-                const html = `
-                <div class="card mb-3 border">
-                    <div class="card-body">
-                        <div class="row align-items-center">
-                            <div class="col-md-3">
-                                <label class="form-label fw-semibold">Concepto *</label>
-                                <select name="conceptos[${conceptoIndexNuevo}][concepto_id]" class="form-select concepto-select" required>
-                                    <option value="">Seleccione concepto</option>
-                                    ${CONCEPTOS.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('')}
-                                </select>
-                            </div>
-                            
-                            <div class="col-md-2">
-                                <label class="form-label fw-semibold">N° Cuotas *</label>
-                                <input type="number" name="conceptos[${conceptoIndexNuevo}][n_cuotas]" 
-                                       class="form-control n-cuotas-input" value="1" min="1" required>
-                            </div>
-                            
-                            <div class="col-md-2">
-                                <label class="form-label fw-semibold">Monto Total (Bs.) *</label>
-                                <input type="number" step="0.01" name="conceptos[${conceptoIndexNuevo}][pago_bs]" 
-                                       class="form-control monto-input" value="0" min="0" required>
-                            </div>
-                            
-                            <div class="col-md-4">
-                                <div class="form-check mb-2">
-                                    <input type="checkbox" class="form-check-input promo-checkbox-nuevo" 
-                                           name="conceptos[${conceptoIndexNuevo}][es_promocion]" value="1" 
-                                           id="promo_nuevo_${conceptoIndexNuevo}">
-                                    <label class="form-check-label fw-semibold" for="promo_nuevo_${conceptoIndexNuevo}">
-                                        <i class="ri-flashlight-line me-1"></i> Es Promoción
-                                    </label>
-                                </div>
-                                
-                                <div class="promo-fields-nuevo mt-2 p-3 bg-light rounded" style="display: none;">
-                                    <div class="row g-2">
-                                        <div class="col-12">
-                                            <label class="form-label fs-12">Fechas de Promoción</label>
-                                        </div>
-                                        <div class="col-6">
-                                            <input type="date" name="conceptos[${conceptoIndexNuevo}][fecha_inicio_promocion]" 
-                                                   class="form-control form-control-sm" placeholder="Inicio">
-                                        </div>
-                                        <div class="col-6">
-                                            <input type="date" name="conceptos[${conceptoIndexNuevo}][fecha_fin_promocion]" 
-                                                   class="form-control form-control-sm" placeholder="Fin">
-                                        </div>
-                                        <div class="col-6">
-                                            <input type="number" step="0.01" name="conceptos[${conceptoIndexNuevo}][precio_regular]" 
-                                                   class="form-control form-control-sm" value="0" placeholder="Precio regular">
-                                        </div>
-                                        <div class="col-6">
-                                            <input type="number" step="0.01" name="conceptos[${conceptoIndexNuevo}][descuento_porcentaje]" 
-                                                   class="form-control form-control-sm" value="0" placeholder="% Descuento">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="col-md-1 text-center">
-                                <button type="button" class="btn btn-outline-danger btn-sm remove-concepto-nuevo">
-                                    <i class="ri-delete-bin-line"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-                container.append(html);
-                conceptoIndexNuevo++;
-            });
-
-            // Mostrar/ocultar campos de promoción en nuevo plan
-            $(document).on('change', '.promo-checkbox-nuevo', function() {
-                const promoFields = $(this).closest('.col-md-4').find('.promo-fields-nuevo');
-                if ($(this).is(':checked')) {
-                    promoFields.slideDown(300);
-                    promoFields.find('input').prop('required', true);
-                } else {
-                    promoFields.slideUp(300);
-                    promoFields.find('input').prop('required', false).val('');
-                }
-            });
-
-            // Eliminar concepto en modal de nuevo plan
-            $(document).on('click', '.remove-concepto-nuevo', function() {
-                $(this).closest('.card').fadeOut(300, function() {
-                    $(this).remove();
-                });
-            });
-
-            // Limpiar modal al cerrar
-            $('#modalNuevoPlan').on('hidden.bs.modal', function() {
-                $('#formNuevoPlan')[0].reset();
-                $('#conceptos-nuevo-plan').empty();
-                conceptoIndexNuevo = 0;
-            });
-
-            // Guardar nuevo plan
-            $('#formNuevoPlan').on('submit', function(e) {
-                e.preventDefault();
-
-                const submitBtn = $(this).find('button[type="submit"]');
-                const originalText = submitBtn.html();
-
-                submitBtn.prop('disabled', true).html(
-                    '<i class="ri-loader-4-line spin me-2"></i> Guardando...');
-
-                // Preparar datos del formulario
-                const formData = new FormData(this);
-
-                // Añadir campos que puedan faltar
-                $('#conceptos-nuevo-plan .card').each(function(index) {
-                    const card = $(this);
-                    const esPromocion = card.find('.promo-checkbox-nuevo').is(':checked') ? '1' :
-                        '0';
-                    formData.set(`conceptos[${index}][es_promocion]`, esPromocion);
-
-                    if (esPromocion === '0') {
-                        formData.set(`conceptos[${index}][fecha_inicio_promocion]`, '');
-                        formData.set(`conceptos[${index}][fecha_fin_promocion]`, '');
-                        formData.set(`conceptos[${index}][precio_regular]`, '0');
-                        formData.set(`conceptos[${index}][descuento_porcentaje]`, '0');
-                    }
-                });
-
-                $.ajax({
-                    url: URL_AGREGAR_PLAN,
-                    type: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    success: function(res) {
-                        if (res.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: '¡Éxito!',
-                                text: res.msg,
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(() => {
-                                $('#modalNuevoPlan').modal('hide');
-                                location.reload();
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: res.msg,
-                                customClass: {
-                                    confirmButton: 'btn btn-danger'
-                                },
-                                buttonsStyling: false
-                            });
-                        }
-                    },
-                    error: function(xhr) {
-                        let errorMsg = 'Error al guardar el plan.';
-                        if (xhr.responseJSON && xhr.responseJSON.msg) {
-                            errorMsg = xhr.responseJSON.msg;
-                        }
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: errorMsg,
-                            customClass: {
-                                confirmButton: 'btn btn-danger'
-                            },
-                            buttonsStyling: false
-                        });
-                    },
-                    complete: function() {
-                        submitBtn.prop('disabled', false).html(originalText);
-                    }
-                });
-            });
-
-            // Animación de carga
-            const style = document.createElement('style');
-            style.textContent = `
-                .spin {
-                    animation: spin 1s linear infinite;
-                }
-                @keyframes spin {
-                    from { transform: rotate(0deg); }
-                    to { transform: rotate(360deg); }
-                }
-            `;
-            document.head.appendChild(style);
-
-
-        });
-    </script>
-
-    <script>
-        $(document).ready(function() {
-            // Variables globales
-            let conceptoIndexNuevo = 0;
-            const TOKEN = "{{ csrf_token() }}";
-            const OFERTA_ID = {{ $oferta->id }};
-            const URL_OBTENER_PRECIO_PRINCIPAL = "{{ route('admin.ofertas.obtener-precio-principal') }}";
-            const URL_AGREGAR_PLAN = "{{ route('admin.ofertas.agregar-plan-pago') }}";
-
-            // Verificar si ya existe un plan principal registrado
-            function verificarPlanPrincipal() {
-                $.ajax({
-                    url: "{{ route('admin.ofertas.verificar-plan-principal') }}",
-                    type: 'POST',
-                    data: {
-                        _token: TOKEN,
-                        oferta_id: OFERTA_ID
-                    },
-                    success: function(res) {
-                        if (!res.existe) {
-                            $('#info-plan-principal').html(
-                                '<i class="ri-alert-line me-2"></i>' +
-                                '<strong>Advertencia:</strong> No se ha registrado un plan principal para esta oferta. ' +
-                                'Es recomendable registrar primero un plan principal para poder crear promociones.'
-                            ).removeClass('alert-info').addClass('alert-warning');
-                        }
-                    }
-                });
-            }
-
-            // Llamar a la verificación al cargar el modal
-            $('#modalNuevoPlan').on('shown.bs.modal', function() {
-                verificarPlanPrincipal();
-            });
-
-            // Control para mostrar/ocultar campos de promoción
-            $('#es_promocion').on('change', function() {
-                const esPromocion = $(this).is(':checked');
-                const fechasContainer = $('#fechas_promocion_container');
-                const infoPrincipal = $('#info-plan-principal');
-
-                if (esPromocion) {
-                    fechasContainer.slideDown(300);
-                    infoPrincipal.slideDown(300);
-
-                    // Marcar campos de fecha como requeridos
-                    $('#fecha_inicio_promocion, #fecha_fin_promocion').prop('required', true);
-
-                    // Mostrar campos de promoción en todos los conceptos existentes
-                    $('.promo-fields-concepto').slideDown(300);
-                    $('.promo-calculo-resumen').slideDown(300);
-                } else {
-                    fechasContainer.slideUp(300);
-                    infoPrincipal.slideUp(300);
-
-                    // Quitar requerimiento de fechas
-                    $('#fecha_inicio_promocion, #fecha_fin_promocion').prop('required', false);
-
-                    // Ocultar campos de promoción
-                    $('.promo-fields-concepto').slideUp(300);
-                    $('.promo-calculo-resumen').slideUp(300);
-                }
-            });
-
-            // Agregar un nuevo concepto
-            $('#add-concepto-nuevo').on('click', function() {
-                const template = $('#template-concepto').html();
-                const html = template
-                    .replace(/__INDEX__/g, conceptoIndexNuevo)
-                    .replace(/__NUM__/g, conceptoIndexNuevo + 1);
-
-                $('#conceptos-nuevo-plan').append(html);
-
-                // Si es promoción, mostrar campos de promoción
-                if ($('#es_promocion').is(':checked')) {
-                    const conceptoItem = $('.concepto-item').last();
-                    conceptoItem.find('.promo-fields-concepto').slideDown(300);
-                    conceptoItem.find('.promo-calculo-resumen').slideDown(300);
-                }
-
-                conceptoIndexNuevo++;
-            });
-
-            // Eliminar un concepto
-            $(document).on('click', '.btn-remove-concepto', function() {
-                const card = $(this).closest('.concepto-item');
-                card.fadeOut(300, function() {
-                    $(this).remove();
-                });
-            });
-
-            // Cuando se selecciona un concepto, cargar precio del plan principal
-            $(document).on('change', '.concepto-select', function() {
-                const conceptoItem = $(this).closest('.concepto-item');
-                const conceptoId = $(this).val();
-                const esPromocion = $('#es_promocion').is(':checked');
-
-                if (esPromocion && conceptoId) {
-                    // Mostrar loader
-                    conceptoItem.find('.precio-regular-input').val('Cargando...');
-
-                    $.ajax({
-                        url: URL_OBTENER_PRECIO_PRINCIPAL,
-                        type: 'POST',
-                        data: {
-                            _token: TOKEN,
-                            oferta_id: OFERTA_ID,
-                            concepto_id: conceptoId
-                        },
-                        success: function(res) {
-                            if (res.success && res.precio_regular) {
-                                const precioRegular = parseFloat(res.precio_regular);
-                                conceptoItem.find('.precio-regular-input').val(precioRegular
-                                    .toFixed(2));
-                                conceptoItem.find('.precio-regular-display').text('Bs. ' +
-                                    precioRegular.toFixed(2));
-
-                                // Establecer el precio regular como base
-                                conceptoItem.find('.monto-input').val(precioRegular.toFixed(2));
-
-                                // Calcular precio final
-                                calcularPrecioFinal(conceptoItem);
-                            } else {
-                                conceptoItem.find('.precio-regular-input').val('0.00');
-                                conceptoItem.find('.precio-regular-display').text('Bs. 0.00');
-                                conceptoItem.find('.monto-input').val('0.00');
-                                calcularPrecioFinal(conceptoItem);
-                            }
-                        },
-                        error: function() {
-                            conceptoItem.find('.precio-regular-input').val('0.00');
-                            conceptoItem.find('.precio-regular-display').text('Bs. 0.00');
-                            conceptoItem.find('.monto-input').val('0.00');
-                            calcularPrecioFinal(conceptoItem);
-                        }
-                    });
-                }
-            });
-
-            // Calcular precio final cuando cambia el descuento
-            $(document).on('input', '.descuento-bs-input', function() {
-                const conceptoItem = $(this).closest('.concepto-item');
-                calcularPrecioFinal(conceptoItem);
-            });
-
-            // Calcular precio final cuando cambia el precio regular
-            $(document).on('input', '.precio-regular-input', function() {
-                const conceptoItem = $(this).closest('.concepto-item');
-                calcularPrecioFinal(conceptoItem);
-            });
-
-            // Función para calcular precio final
-            function calcularPrecioFinal(conceptoItem) {
-                const precioRegular = parseFloat(conceptoItem.find('.precio-regular-input').val()) || 0;
-                const descuentoBs = parseFloat(conceptoItem.find('.descuento-bs-input').val()) || 0;
+            // Calcular precio final en formulario de edición
+            $(document).on('input', '.precio-regular-input, .descuento-bs-input', function() {
+                const row = $(this).closest('.row');
+                const precioRegular = parseFloat(row.find('.precio-regular-input').val()) || 0;
+                const descuentoBs = parseFloat(row.find('.descuento-bs-input').val()) || 0;
                 const precioFinal = Math.max(0, precioRegular - descuentoBs);
 
-                // Actualizar displays
-                conceptoItem.find('.precio-regular-display').text('Bs. ' + precioRegular.toFixed(2));
-                conceptoItem.find('.descuento-display').text('-Bs. ' + descuentoBs.toFixed(2));
-                conceptoItem.find('.precio-final-display').text('Bs. ' + precioFinal.toFixed(2));
-
-                // Actualizar campo oculto de precio final
-                conceptoItem.find('.monto-input').val(precioFinal.toFixed(2));
-            }
-
-            // Validar fechas de promoción
-            function validarFechasPromocion() {
-                if (!$('#es_promocion').is(':checked')) return true;
-
-                const inicio = $('#fecha_inicio_promocion').val();
-                const fin = $('#fecha_fin_promocion').val();
-
-                if (!inicio || !fin) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Fechas requeridas',
-                        text: 'Para una promoción debe especificar las fechas de inicio y fin',
-                        customClass: {
-                            confirmButton: 'btn btn-warning'
-                        }
-                    });
-                    return false;
-                }
-
-                if (new Date(fin) < new Date(inicio)) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Fechas inválidas',
-                        text: 'La fecha de fin debe ser posterior a la fecha de inicio',
-                        customClass: {
-                            confirmButton: 'btn btn-warning'
-                        }
-                    });
-                    return false;
-                }
-
-                return true;
-            }
-
-            // Validar formulario antes de enviar
-            $('#formNuevoPlan').on('submit', function(e) {
-                e.preventDefault();
-
-                const submitBtn = $('#btn-guardar-plan');
-                const originalText = submitBtn.html();
-
-                // Validar fechas si es promoción
-                if (!validarFechasPromocion()) {
-                    return;
-                }
-
-                // Validar que haya al menos un concepto
-                if ($('#conceptos-nuevo-plan .concepto-item').length === 0) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Conceptos requeridos',
-                        text: 'Debe agregar al menos un concepto al plan',
-                        customClass: {
-                            confirmButton: 'btn btn-warning'
-                        }
-                    });
-                    return;
-                }
-
-                // Validar que todos los conceptos tengan datos válidos
-                let conceptosValidos = true;
-                $('.concepto-item').each(function() {
-                    const conceptoId = $(this).find('.concepto-select').val();
-                    const nCuotas = $(this).find('.n-cuotas-input').val();
-                    const monto = $(this).find('.monto-input').val();
-
-                    if (!conceptoId || !nCuotas || nCuotas < 1 || !monto || monto <= 0) {
-                        conceptosValidos = false;
-                        $(this).addClass('border-danger');
-                    } else {
-                        $(this).removeClass('border-danger');
-                    }
-                });
-
-                if (!conceptosValidos) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Datos incompletos',
-                        text: 'Todos los conceptos deben tener datos válidos',
-                        customClass: {
-                            confirmButton: 'btn btn-warning'
-                        }
-                    });
-                    return;
-                }
-
-                // Preparar datos del formulario
-                submitBtn.prop('disabled', true).html(
-                    '<i class="ri-loader-4-line spin me-2"></i> Guardando...');
-
-                const formData = new FormData(this);
-
-                // Añadir campos que puedan faltar
-                $('#conceptos-nuevo-plan .concepto-item').each(function(index) {
-                    const card = $(this);
-
-                    // Si es promoción, asegurar que los campos estén presentes
-                    if ($('#es_promocion').is(':checked')) {
-                        formData.set(`conceptos[${index}][precio_regular]`,
-                            card.find('.precio-regular-input').val() || '0');
-                        formData.set(`conceptos[${index}][descuento_bs]`,
-                            card.find('.descuento-bs-input').val() || '0');
-                    } else {
-                        // Si no es promoción, enviar valores por defecto
-                        formData.set(`conceptos[${index}][precio_regular]`, '0');
-                        formData.set(`conceptos[${index}][descuento_bs]`, '0');
-                    }
-                });
-
-                // Enviar formulario
-                $.ajax({
-                    url: URL_AGREGAR_PLAN,
-                    type: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    success: function(res) {
-                        if (res.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: '¡Éxito!',
-                                text: res.msg,
-                                timer: 1500,
-                                showConfirmButton: false
-                            }).then(() => {
-                                $('#modalNuevoPlan').modal('hide');
-                                location.reload();
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                html: res.msg,
-                                customClass: {
-                                    confirmButton: 'btn btn-danger'
-                                }
-                            });
-                        }
-                    },
-                    error: function(xhr) {
-                        let errorMsg = 'Error al guardar el plan.';
-                        if (xhr.responseJSON && xhr.responseJSON.msg) {
-                            errorMsg = xhr.responseJSON.msg;
-                        }
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: errorMsg,
-                            customClass: {
-                                confirmButton: 'btn btn-danger'
-                            }
-                        });
-                    },
-                    complete: function() {
-                        submitBtn.prop('disabled', false).html(originalText);
-                    }
-                });
+                row.find('.pago-bs-input').val(precioFinal.toFixed(2));
             });
 
-            // Limpiar modal al cerrar
-            $('#modalNuevoPlan').on('hidden.bs.modal', function() {
-                $('#formNuevoPlan')[0].reset();
-                $('#conceptos-nuevo-plan').empty();
-                $('#fechas_promocion_container').hide();
-                $('#info-plan-principal').hide();
-                conceptoIndexNuevo = 0;
-            });
-
-            // Validar que fecha fin sea mayor a fecha inicio
-            $('#fecha_inicio_promocion').on('change', function() {
-                const inicio = $(this).val();
-                const fin = $('#fecha_fin_promocion').val();
-
-                if (fin && new Date(fin) < new Date(inicio)) {
-                    $('#fecha_fin_promocion').val('');
-                }
-
-                $('#fecha_fin_promocion').attr('min', inicio);
-            });
-
-            // Estilo para spinner de carga
-            const style = document.createElement('style');
-            style.textContent = `
-        .spin {
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        .concepto-item.border-danger {
-            border-color: #dc3545 !important;
-            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
-        }
-    `;
-            document.head.appendChild(style);
-        });
-    </script>
-    <script>
-        // Calcular precio final en formulario de edición
-        $(document).on('input', '.precio-regular-input, .descuento-bs-input', function() {
-            const row = $(this).closest('.row');
-            const precioRegular = parseFloat(row.find('.precio-regular-input').val()) || 0;
-            const descuentoBs = parseFloat(row.find('.descuento-bs-input').val()) || 0;
-            const precioFinal = Math.max(0, precioRegular - descuentoBs);
-
-            row.find('.pago-bs-input').val(precioFinal.toFixed(2));
-        });
-
-        // Modificar la función para agregar concepto en edición
-        $(document).on('click', '.add-concepto-btn', function(e) {
-            e.preventDefault();
-            const planId = $(this).data('plan-id');
-            const esPromocion = $(this).data('es-promocion') === 'true';
-            const container = $(this).closest('.plan-form').find('.conceptos-container');
-            const index = container.find('.card').length;
-
-            const html = `
-        <div class="card mb-3 border">
-            <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col-md-3">
-                        <label class="form-label fw-semibold">Concepto *</label>
-                        <select name="conceptos[${index}][concepto_id]" class="form-select" required>
-                            <option value="">Seleccione concepto</option>
-                            ${CONCEPTOS.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('')}
-                        </select>
-                    </div>
-                    
-                    <div class="col-md-2">
-                        <label class="form-label fw-semibold">N° Cuotas *</label>
-                        <input type="number" name="conceptos[${index}][n_cuotas]" 
-                               class="form-control" value="1" min="1" required>
-                    </div>
-                    
-                    <div class="col-md-2">
-                        <label class="form-label fw-semibold">Precio Regular (Bs.) *</label>
-                        <input type="number" step="0.01" 
-                               name="conceptos[${index}][precio_regular]" 
-                               class="form-control precio-regular-input" 
-                               value="0" min="0" required>
-                    </div>
-                    
-                    <div class="col-md-2">
-                        <label class="form-label fw-semibold">Descuento (Bs.)</label>
-                        <input type="number" step="0.01" 
-                               name="conceptos[${index}][descuento_bs]" 
-                               class="form-control descuento-bs-input" 
-                               value="0" min="0">
-                    </div>
-                    
-                    <div class="col-md-2">
-                        <label class="form-label fw-semibold">Precio Final (Bs.) *</label>
-                        <input type="number" step="0.01" 
-                               name="conceptos[${index}][pago_bs]" 
-                               class="form-control pago-bs-input" 
-                               value="0" min="0" required readonly>
-                        <small class="text-muted">Calculado automáticamente</small>
-                    </div>
-                    
-                    <div class="col-md-1 text-center">
-                        <button type="button" class="btn btn-outline-danger btn-sm remove-concepto-form-btn"
-                                data-index="${index}" data-plan-id="${planId}">
-                            <i class="ri-delete-bin-line"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
-            container.append(html);
-
-            // Si es promoción, hacer que al seleccionar concepto cargue el precio del plan principal
-            if (esPromocion) {
-                const conceptoSelect = container.find('.card').last().find('.concepto-select');
-                conceptoSelect.on('change', function() {
-                    const conceptoId = $(this).val();
-                    if (conceptoId) {
-                        $.ajax({
-                            url: URL_OBTENER_PRECIO_PRINCIPAL,
-                            type: 'POST',
-                            data: {
-                                _token: TOKEN,
-                                oferta_id: OFERTA_ID,
-                                concepto_id: conceptoId
-                            },
-                            success: function(res) {
-                                if (res.success && res.precio_regular) {
-                                    const precioRegular = parseFloat(res.precio_regular);
-                                    const card = conceptoSelect.closest('.card');
-                                    card.find('.precio-regular-input').val(precioRegular
-                                        .toFixed(2));
-                                    card.find('.pago-bs-input').val(precioRegular.toFixed(2));
-                                }
-                            }
-                        });
-                    }
-                });
-            }
             // Inicializar tooltips para badges de promoción
             $(document).on('mouseenter', '.badge[data-bs-toggle="tooltip"]', function() {
                 const tooltip = new bootstrap.Tooltip(this);
@@ -2066,6 +1924,27 @@
                     }
                 });
             });
+
+            // Estilo para spinner de carga
+            const style = document.createElement('style');
+            style.textContent = `
+                .spin {
+                    animation: spin 1s linear infinite;
+                }
+                @keyframes spin {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+                .concepto-item.border-danger {
+                    border-color: #dc3545 !important;
+                    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+                }
+                .is-invalid {
+                    border-color: #dc3545 !important;
+                    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+                }
+            `;
+            document.head.appendChild(style);
         });
     </script>
 @endpush

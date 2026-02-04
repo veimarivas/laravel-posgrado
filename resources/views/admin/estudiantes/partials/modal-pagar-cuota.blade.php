@@ -58,7 +58,8 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="tipo_pago" class="form-label">Tipo de Pago *</label>
-                                <select class="form-select" id="tipo_pago" name="tipo_pago" required>
+                                <select class="form-select" id="tipo_pago" name="tipo_pago" required
+                                    onchange="togglePaymentFields()">
                                     <option value="">Seleccionar...</option>
                                     <option value="Efectivo">Efectivo</option>
                                     <option value="Transferencia">Transferencia</option>
@@ -73,6 +74,59 @@
                                 <label for="fecha_pago" class="form-label">Fecha de Pago *</label>
                                 <input type="date" class="form-control" id="fecha_pago" name="fecha_pago"
                                     value="{{ date('Y-m-d') }}" required>
+                            </div>
+                        </div>
+
+                        <!-- Campo para Caja (solo visible para Efectivo) -->
+                        <div class="col-md-6" id="campo_caja" style="display: none;">
+                            <div class="mb-3">
+                                <label for="caja_id" class="form-label">Caja *</label>
+                                <select class="form-select" id="caja_id" name="caja_id">
+                                    <option value="">Seleccionar caja...</option>
+                                    @php
+                                        // Obtener cajas activas (esto debería venir del controlador)
+                                        $cajasActivas = \App\Models\Caja::where('activa', true)
+                                            ->with('sucursal')
+                                            ->get();
+                                    @endphp
+                                    @foreach ($cajasActivas as $caja)
+                                        <option value="{{ $caja->id }}">
+                                            {{ $caja->nombre }} - {{ $caja->sucursal->nombre ?? 'Sin sucursal' }}
+                                            (Saldo: {{ number_format($caja->saldo_actual, 2) }} Bs)
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Campo para Cuenta Bancaria (visible para Transferencia, Depósito, Tarjeta) -->
+                        <div class="col-md-6" id="campo_cuenta_bancaria" style="display: none;">
+                            <div class="mb-3">
+                                <label for="cuenta_bancaria_id" class="form-label">Cuenta Bancaria *</label>
+                                <select class="form-select" id="cuenta_bancaria_id" name="cuenta_bancaria_id">
+                                    <option value="">Seleccionar cuenta...</option>
+                                    @php
+                                        // Obtener cuentas activas (esto debería venir del controlador)
+                                        $cuentasActivas = \App\Models\CuentasBancarias::where('activa', true)
+                                            ->with(['banco', 'sucursal'])
+                                            ->get();
+                                    @endphp
+                                    @foreach ($cuentasActivas as $cuenta)
+                                        <option value="{{ $cuenta->id }}">
+                                            {{ $cuenta->banco->nombre ?? 'Sin banco' }} - {{ $cuenta->numero_cuenta }}
+                                            ({{ $cuenta->moneda }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Campo para Número de Comprobante (visible para Transferencia, Depósito, Tarjeta) -->
+                        <div class="col-md-6" id="campo_comprobante" style="display: none;">
+                            <div class="mb-3">
+                                <label for="n_comprobante" class="form-label">N° Comprobante *</label>
+                                <input type="text" class="form-control" id="n_comprobante" name="n_comprobante"
+                                    placeholder="Ej: TRF-0012345">
                             </div>
                         </div>
 
@@ -128,3 +182,33 @@
         </div>
     </div>
 </div>
+
+<script>
+    function togglePaymentFields() {
+        const tipoPago = document.getElementById('tipo_pago').value;
+        const campoCaja = document.getElementById('campo_caja');
+        const campoCuenta = document.getElementById('campo_cuenta_bancaria');
+        const campoComprobante = document.getElementById('campo_comprobante');
+
+        // Resetear campos
+        campoCaja.style.display = 'none';
+        campoCuenta.style.display = 'none';
+        campoComprobante.style.display = 'none';
+
+        // Remover required de todos los campos
+        document.getElementById('caja_id').removeAttribute('required');
+        document.getElementById('cuenta_bancaria_id').removeAttribute('required');
+        document.getElementById('n_comprobante').removeAttribute('required');
+
+        // Mostrar campos según tipo de pago
+        if (tipoPago === 'Efectivo') {
+            campoCaja.style.display = 'block';
+            document.getElementById('caja_id').setAttribute('required', 'required');
+        } else if (['Transferencia', 'Depósito', 'Tarjeta'].includes(tipoPago)) {
+            campoCuenta.style.display = 'block';
+            campoComprobante.style.display = 'block';
+            document.getElementById('cuenta_bancaria_id').setAttribute('required', 'required');
+            document.getElementById('n_comprobante').setAttribute('required', 'required');
+        }
+    }
+</script>

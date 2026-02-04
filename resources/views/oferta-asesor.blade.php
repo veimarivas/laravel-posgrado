@@ -597,197 +597,6 @@
             font-size: 1.2rem;
         }
 
-        /* Estilos para la sección de asesor */
-        .asesor-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 80px 0;
-            border-radius: 20px;
-            margin: 60px 0;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .asesor-section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0,0 L100,0 L100,100 Z" fill="rgba(255,255,255,0.1)"/></svg>');
-            background-size: cover;
-        }
-
-        .asesor-content {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            align-items: center;
-            gap: 50px;
-            flex-wrap: wrap;
-        }
-
-        .asesor-info {
-            flex: 1;
-            min-width: 300px;
-        }
-
-        .asesor-form {
-            flex: 1;
-            min-width: 300px;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-        }
-
-        .asesor-section h2 {
-            font-size: 2.8rem;
-            margin-bottom: 20px;
-            color: white;
-        }
-
-        .asesor-section h2 span {
-            color: #ffd700;
-        }
-
-        .asesor-section p {
-            font-size: 1.2rem;
-            margin-bottom: 30px;
-            opacity: 0.9;
-        }
-
-        .asesor-card {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 25px;
-            border-radius: 15px;
-            backdrop-filter: blur(10px);
-            margin-bottom: 30px;
-        }
-
-        .asesor-card img {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 4px solid white;
-        }
-
-        .asesor-card-info h4 {
-            margin: 0 0 10px;
-            font-size: 1.5rem;
-        }
-
-        .asesor-card-info p {
-            margin: 0;
-            font-size: 1rem;
-            opacity: 0.9;
-        }
-
-        .form-group {
-            margin-bottom: 25px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            border-color: var(--accent);
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(94, 201, 177, 0.2);
-        }
-
-        .checkbox-group {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-        }
-
-        .checkbox-group input {
-            width: auto;
-            margin-top: 5px;
-        }
-
-        .checkbox-group label {
-            font-size: 0.9rem;
-            color: #666;
-            line-height: 1.5;
-        }
-
-        .btn-asesor {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 18px 40px;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 1.1rem;
-            cursor: pointer;
-            width: 100%;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .btn-asesor:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
-        }
-
-        @media (max-width: 768px) {
-            .oferta-hero .container {
-                flex-direction: column;
-            }
-
-            .oferta-hero-content {
-                padding-right: 0;
-                margin-bottom: 40px;
-            }
-
-            .oferta-hero h1 {
-                font-size: 2.5rem;
-            }
-
-            .hero-actions {
-                justify-content: center;
-            }
-
-            .asesor-content {
-                flex-direction: column;
-            }
-
-            .asesor-form {
-                padding: 30px;
-            }
-
-            .asesor-section h2 {
-                font-size: 2.2rem;
-            }
-        }
-
         /* Estilos para la sección de asesor - ACTUALIZADO CON PALETA DE COLORES */
         .asesor-section {
             background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
@@ -1195,6 +1004,345 @@
         select:valid {
             border-color: #28a745;
         }
+
+        /* Estilos para la sección de plan asignado */
+        .plan-asignado-section {
+            margin-top: 30px;
+        }
+
+        .plan-asignado-card {
+            background: rgba(94, 201, 177, 0.1);
+            border: 2px solid #5EC9B1;
+            border-radius: 15px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .plan-asignado-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(94, 201, 177, 0.3);
+        }
+
+        .plan-asignado-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #5EC9B1, #4BB39C);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .plan-asignado-title h4 {
+            color: #032A4A;
+            margin: 0 0 5px 0;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .plan-asignado-title p {
+            color: #666;
+            margin: 0;
+            font-size: 0.9rem;
+        }
+
+        .plan-asignado-nombre {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .plan-asignado-nombre h5 {
+            color: #032A4A;
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .badge-promocion {
+            background: linear-gradient(135deg, #FF6B6B, #FF8E8E);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .plan-asignado-info {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .plan-asignado-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .plan-asignado-item:last-child {
+            border-bottom: none;
+        }
+
+        .plan-asignado-item .label {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .plan-asignado-item .value {
+            color: #032A4A;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .plan-asignado-item.ahorro {
+            background: rgba(40, 167, 69, 0.1);
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-top: 10px;
+        }
+
+        .plan-asignado-conceptos {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .concepto-title {
+            color: #666;
+            font-size: 0.9rem;
+            margin: 0 0 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .concepto-nombre {
+            color: #032A4A;
+            font-weight: 500;
+            margin: 0;
+            padding: 8px 12px;
+            background: rgba(94, 201, 177, 0.1);
+            border-radius: 6px;
+            border-left: 3px solid #5EC9B1;
+        }
+
+        .plan-asignado-nota {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px 15px;
+            background: rgba(94, 201, 177, 0.05);
+            border-radius: 8px;
+            border-left: 4px solid #5EC9B1;
+        }
+
+        .plan-asignado-nota i {
+            color: #5EC9B1;
+            font-size: 1rem;
+            margin-top: 2px;
+        }
+
+        .plan-asignado-nota p {
+            color: #666;
+            margin: 0;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .text-success {
+            color: #28a745 !important;
+        }
+
+        /* Estilos para el desglose de conceptos */
+        .conceptos-desglose {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(94, 201, 177, 0.2);
+        }
+
+        .conceptos-desglose h6 {
+            color: #032A4A;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(94, 201, 177, 0.3);
+        }
+
+        .conceptos-lista {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .concepto-item-detalle {
+            padding: 15px;
+            background: rgba(94, 201, 177, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid #5EC9B1;
+        }
+
+        .concepto-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .concepto-nombre {
+            font-weight: 600;
+            color: #032A4A;
+            font-size: 1rem;
+        }
+
+        .concepto-cuotas {
+            font-size: 0.85rem;
+            background: rgba(94, 201, 177, 0.2);
+            color: #032A4A;
+            padding: 3px 8px;
+            border-radius: 12px;
+        }
+
+        .concepto-detalle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .detalle-label {
+            color: #666;
+        }
+
+        .detalle-valor {
+            color: #032A4A;
+            font-weight: 500;
+        }
+
+        .concepto-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-top: 1px solid rgba(94, 201, 177, 0.1);
+            margin-top: 5px;
+        }
+
+        .total-label {
+            color: #032A4A;
+            font-weight: 600;
+        }
+
+        .total-valor {
+            color: #032A4A;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .concepto-ahorro {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            padding: 6px 10px;
+            background: rgba(40, 167, 69, 0.1);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: #28a745;
+        }
+
+        .concepto-ahorro i {
+            font-size: 0.8rem;
+        }
+
+        .concepto-separador {
+            height: 1px;
+            background: rgba(94, 201, 177, 0.2);
+            margin: 5px 0;
+        }
+
+        /* Estilos para totales */
+        .plan-totales {
+            background: linear-gradient(135deg, rgba(3, 42, 74, 0.05), rgba(94, 201, 177, 0.05));
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid rgba(94, 201, 177, 0.2);
+        }
+
+        .total-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+        }
+
+        .total-item:not(:last-child) {
+            border-bottom: 1px dashed rgba(94, 201, 177, 0.3);
+        }
+
+        .total-item .label {
+            color: #032A4A;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        .total-item .value {
+            color: #032A4A;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .total-item.ahorro-total {
+            background: rgba(40, 167, 69, 0.1);
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin: 10px -15px;
+        }
+
+        .total-item.ahorro-total .label {
+            color: #28a745;
+        }
+
+        .total-item.ahorro-total .value {
+            color: #28a745;
+            font-weight: 700;
+        }
+
+        .total-item.total-final {
+            background: linear-gradient(135deg, #032A4A, #1a4a6e);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .total-item.total-final .label {
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .total-item.total-final .value.total-monto {
+            color: white;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
     </style>
 </head>
 
@@ -1252,7 +1400,6 @@
     </section>
 
     <!-- Inscripción con Asesor Personal - MEJORADO -->
-    <!-- Inscripción con Asesor Personal - MEJORADO -->
     <section class="asesor-section" id="asesorForm">
         <div class="container">
             <div class="asesor-content">
@@ -1296,14 +1443,126 @@
                             <li><i class="fas fa-check-circle"></i> Seguimiento continuo durante tu formación</li>
                         </ul>
                     </div>
+
+                    <!-- Plan de Pago Asignado (si existe) -->
+                    <!-- Dentro del asesor-info, después de la sección asesor-beneficios -->
+                    @if ($planPagoSeleccionado && $conceptosDetalle->isNotEmpty())
+                        <!-- Plan de Pago Asignado - DESGLOSE POR CONCEPTO -->
+                        <div class="plan-asignado-section">
+                            <div class="plan-asignado-card">
+                                <div class="plan-asignado-header">
+                                    <div class="plan-asignado-icon">
+                                        <i class="fas fa-gift"></i>
+                                    </div>
+                                    <div class="plan-asignado-title">
+                                        <h4><i class="fas fa-credit-card"></i> Plan de Pago Asignado</h4>
+                                        <p>Se te ha asignado un plan de pago especial para esta pre-inscripción</p>
+                                    </div>
+                                </div>
+
+                                <div class="plan-asignado-detalle">
+                                    <div class="plan-asignado-nombre">
+                                        <h5>{{ $planPagoSeleccionado->nombre }}</h5>
+                                        @if ($planPagoSeleccionado->es_promocion)
+                                            <span class="badge-promocion">PROMOCIÓN</span>
+                                        @endif
+                                    </div>
+
+                                    <div class="plan-asignado-info">
+                                        <!-- Desglose de conceptos -->
+                                        <div class="conceptos-desglose">
+                                            <h6><i class="fas fa-list-alt"></i> Desglose de conceptos</h6>
+                                            <div class="conceptos-lista">
+                                                @foreach ($conceptosDetalle as $concepto)
+                                                    <div class="concepto-item-detalle">
+                                                        <div class="concepto-header">
+                                                            <span
+                                                                class="concepto-nombre">{{ $concepto->concepto_nombre }}</span>
+                                                        </div>
+
+                                                        @if ($concepto->n_cuotas > 1 && stripos($concepto->concepto_nombre, 'colegiatura') !== false)
+                                                            <div class="concepto-detalle">
+                                                                <span class="detalle-label">Total
+                                                                    {{ $concepto->concepto_nombre }}
+                                                                    ({{ $concepto->n_cuotas }} cuotas):</span>
+                                                                <span class="detalle-valor">Bs.
+                                                                    {{ number_format($concepto->pago_bs, 0, ',', '.') }}</span>
+                                                            </div>
+                                                        @else
+                                                            <div class="concepto-detalle">
+                                                                <span class="detalle-label">Total
+                                                                    {{ $concepto->concepto_nombre }}:</span>
+                                                                <span class="detalle-valor">Bs.
+                                                                    {{ number_format($concepto->pago_bs, 0, ',', '.') }}</span>
+                                                            </div>
+                                                        @endif
+
+                                                        @if ($concepto->descuento_bs > 0)
+                                                            <div class="concepto-ahorro">
+                                                                <i class="fas fa-tag"></i>
+                                                                <span>Ahorro: Bs.
+                                                                    {{ number_format($concepto->descuento_bs, 0, ',', '.') }}</span>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+
+                                                    @if (!$loop->last)
+                                                        <div class="concepto-separador"></div>
+                                                    @endif
+                                                @endforeach
+                                            </div>
+                                        </div>
+
+                                        <!-- Totales -->
+                                        @php
+                                            $totalPagar = $conceptosDetalle->sum('pago_bs');
+                                            $totalRegular = $conceptosDetalle->sum('precio_regular');
+                                            $totalDescuento = $conceptosDetalle->sum('descuento_bs');
+                                        @endphp
+
+                                        <div class="plan-totales">
+                                            @if ($totalDescuento > 0 && $totalRegular > 0)
+                                                <div class="total-item subtotal">
+                                                    <span class="label">Valor regular:</span>
+                                                    <span class="value" style="text-decoration: line-through;">Bs.
+                                                        {{ number_format($totalRegular, 0, ',', '.') }}</span>
+                                                </div>
+
+                                                <div class="total-item ahorro-total">
+                                                    <span class="label">Descuento total:</span>
+                                                    <span class="value text-success">- Bs.
+                                                        {{ number_format($totalDescuento, 0, ',', '.') }}</span>
+                                                </div>
+                                            @endif
+
+                                            <div class="total-item total-final">
+                                                <span class="label">TOTAL A PAGAR:</span>
+                                                <span class="value total-monto">Bs.
+                                                    {{ number_format($totalPagar, 0, ',', '.') }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="plan-asignado-nota">
+                                        <i class="fas fa-info-circle"></i>
+                                        <p>Este plan de pago será asignado automáticamente cuando completes tu
+                                            pre-inscripción.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 </div>
 
-                <!-- FORMULARIO REORGANIZADO (SOLO ESTA SECCIÓN SE MODIFICA) -->
+                <!-- FORMULARIO REORGANIZADO -->
                 <div class="asesor-form">
                     <form id="formInscripcionAsesor" method="POST" action="{{ route('api.inscripcion.asesor') }}">
                         @csrf
                         <input type="hidden" name="oferta_id" value="{{ $oferta->id }}">
                         <input type="hidden" name="asesor_id" value="{{ $asesor->id }}">
+                        @if ($planPagoSeleccionado)
+                            <input type="hidden" name="plan_pago_id" value="{{ $planPagoSeleccionado->id }}">
+                        @endif
 
                         <!-- Información Personal -->
                         <div class="form-section">
@@ -1804,8 +2063,6 @@
         </section>
     @endif
 
-
-
     <!-- Footer -->
     <footer id="contacto">
         <div class="container">
@@ -2032,10 +2289,7 @@
 
                     if (response.ok) {
                         // ÉXITO: Mostrar mensaje de éxito con SweetAlert2
-                        Swal.fire({
-                            icon: 'success',
-                            title: '¡Pre-inscripción Exitosa!',
-                            html: `
+                        let html = `
                             <div class="text-left" style="font-size: 1rem;">
                                 <p style="margin-bottom: 15px;">${result.message}</p>
                                 <hr style="margin: 15px 0;">
@@ -2044,13 +2298,40 @@
                                 <p><strong>Programa:</strong> ${result.data?.programa?.nombre || 'No disponible'}</p>
                                 <p><strong>Código:</strong> ${result.data?.programa?.codigo || 'No disponible'}</p>
                                 <p><strong>Sucursal:</strong> ${result.data?.programa?.sucursal || 'No disponible'}</p>
+                        `;
+
+                        // Agregar información del plan de pago si existe
+                        if (result.data?.plan_pago) {
+                            html += `
+                                <hr style="margin: 15px 0;">
+                                <h5 style="color: #032A4A; margin-bottom: 10px;">
+                                    <i class="fas fa-credit-card"></i> Plan de Pago Asignado
+                                </h5>
+                                <p><strong>Plan:</strong> ${result.data.plan_pago.nombre}</p>
+                                <p><strong>Cuota mensual:</strong> Bs. ${result.data.plan_pago.cuota_mensual.toLocaleString()}</p>
+                                <p><strong>Duración:</strong> ${result.data.plan_pago.n_cuotas} meses</p>
+                                <p><strong>Inversión total:</strong> Bs. ${result.data.plan_pago.inversion_total.toLocaleString()}</p>
+                            `;
+
+                            if (result.data.plan_pago.es_promocion) {
+                                html +=
+                                    `<p><span class="badge" style="background: #FF6B6B; color: white; padding: 2px 8px; border-radius: 4px;">Promoción especial</span></p>`;
+                            }
+                        }
+
+                        html += `
                                 <hr style="margin: 15px 0;">
                                 <p><strong>Asesor asignado:</strong> ${result.data?.asesor?.nombre || 'No disponible'}</p>
                                 <p><strong>Teléfono del asesor:</strong> ${result.data?.asesor?.celular || 'No disponible'}</p>
                                 <p><strong>Estado:</strong> <span style="background-color: #032A4A; color: white; padding: 2px 8px; border-radius: 4px;">${result.data?.estado || 'Pre-Inscrito'}</span></p>
                                 <p><strong>Fecha y hora:</strong> ${result.data?.fecha_registro || 'No disponible'}</p>
                             </div>
-                        `,
+                        `;
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Pre-inscripción Exitosa!',
+                            html: html,
                             confirmButtonText: 'Aceptar',
                             confirmButtonColor: '#5EC9B1',
                             width: '600px',

@@ -3,6 +3,99 @@
         let saldoPendiente = 0;
         let montoMaximo = 0;
 
+        // Función para cargar cajas y cuentas bancarias
+        function cargarCajasYCuentas() {
+            // Cargar cajas activas
+            $.ajax({
+                url: '{{ route('admin.cajas.listar-activas') }}',
+                type: 'GET',
+                beforeSend: function() {
+                    // Mostrar indicador de carga en el select de cajas
+                    $('#caja_id').html('<option value="">Cargando cajas...</option>');
+                },
+                success: function(response) {
+                    if (response.success && response.cajas) {
+                        let options = '<option value="">Seleccionar caja...</option>';
+                        response.cajas.forEach(caja => {
+                            options +=
+                                `<option value="${caja.id}">${caja.nombre} - ${caja.sucursal_nombre || 'Sin sucursal'} (Saldo: ${parseFloat(caja.saldo_actual).toFixed(2)} ${caja.moneda})</option>`;
+                        });
+                        $('#caja_id').html(options);
+                    } else {
+                        $('#caja_id').html('<option value="">No hay cajas disponibles</option>');
+                    }
+                },
+                error: function() {
+                    $('#caja_id').html('<option value="">Error al cargar cajas</option>');
+                }
+            });
+
+            // Cargar cuentas bancarias activas
+            $.ajax({
+                url: '{{ route('admin.cuentas-bancarias.listar-activas') }}',
+                type: 'GET',
+                beforeSend: function() {
+                    // Mostrar indicador de carga en el select de cuentas
+                    $('#cuenta_bancaria_id').html('<option value="">Cargando cuentas...</option>');
+                },
+                success: function(response) {
+                    if (response.success && response.cuentas) {
+                        let options = '<option value="">Seleccionar cuenta...</option>';
+                        response.cuentas.forEach(cuenta => {
+                            options +=
+                                `<option value="${cuenta.id}">${cuenta.banco_nombre || 'Sin banco'} - ${cuenta.numero_cuenta} (${cuenta.moneda}) - Saldo: ${parseFloat(cuenta.saldo_actual).toFixed(2)}</option>`;
+                        });
+                        $('#cuenta_bancaria_id').html(options);
+                    } else {
+                        $('#cuenta_bancaria_id').html(
+                            '<option value="">No hay cuentas disponibles</option>');
+                    }
+                },
+                error: function() {
+                    $('#cuenta_bancaria_id').html(
+                        '<option value="">Error al cargar cuentas</option>');
+                }
+            });
+        }
+
+        // Función para mostrar/ocultar campos según tipo de pago
+        function togglePaymentFields() {
+            const tipoPago = $('#tipo_pago').val();
+            const campoCaja = $('#campo_caja');
+            const campoCuenta = $('#campo_cuenta_bancaria');
+            const campoComprobante = $('#campo_comprobante');
+
+            // Ocultar todos los campos primero
+            campoCaja.hide();
+            campoCuenta.hide();
+            campoComprobante.hide();
+
+            // Remover atributos required de todos los campos
+            $('#caja_id').removeAttr('required');
+            $('#cuenta_bancaria_id').removeAttr('required');
+            $('#n_comprobante').removeAttr('required');
+
+            // Limpiar valores
+            if (tipoPago !== 'Efectivo') {
+                $('#caja_id').val('');
+            }
+            if (!['Transferencia', 'Depósito', 'Tarjeta'].includes(tipoPago)) {
+                $('#cuenta_bancaria_id').val('');
+                $('#n_comprobante').val('');
+            }
+
+            // Mostrar campos según el tipo de pago
+            if (tipoPago === 'Efectivo') {
+                campoCaja.show();
+                $('#caja_id').attr('required', 'required');
+            } else if (['Transferencia', 'Depósito', 'Tarjeta'].includes(tipoPago)) {
+                campoCuenta.show();
+                campoComprobante.show();
+                $('#cuenta_bancaria_id').attr('required', 'required');
+                $('#n_comprobante').attr('required', 'required');
+            }
+        }
+
         // Abrir modal para pagar cuota
         $(document).on('click', '.btn-pagar-cuota', function() {
             console.log('Botón pagar clickeado');
@@ -15,6 +108,9 @@
             $('#formPagarCuota')[0].reset();
             $('#cuota_id').val(cuotaId);
             $('#estudiante_id').val(estudianteId);
+
+            // Resetear campos de pago
+            togglePaymentFields();
 
             // Obtener datos de la cuota
             $.ajax({
@@ -32,7 +128,6 @@
                         </div>
                     `);
                 },
-                // En la función success del AJAX, convierte los valores a números:
                 success: function(response) {
                     if (response.success) {
                         const cuota = response.cuota;
@@ -45,121 +140,144 @@
                         saldoPendiente = pagoPendiente;
                         montoMaximo = saldoPendiente;
 
-                        // Actualizar información de la cuota (usando números)
-                        $('#info-cuota-nombre').text(cuota.nombre + ' (Cuota ' + cuota
-                            .n_cuota + ')');
-                        $('#info-cuota-programa').text(cuota.programa);
-                        $('#info-cuota-total').text(pagoTotal.toFixed(2));
-                        $('#info-cuota-pendiente').text(pagoPendiente.toFixed(2));
-                        $('#info-cuota-pagado').text(saldoPagado.toFixed(2));
-                        $('#maximo_pago').text(pagoPendiente.toFixed(2));
+                        // Cargar cajas y cuentas bancarias
+                        cargarCajasYCuentas();
 
-                        // Configurar monto máximo
-                        $('#monto_pago').attr('max', pagoPendiente);
-                        $('#monto_pago').attr('min', 0.01);
-
-                        // Restaurar formulario
+                        // Restaurar formulario completo
                         $('#modalPagarCuota .modal-body').html(`
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="alert alert-info">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p class="mb-1"><strong>Cuota:</strong> <span id="info-cuota-nombre">${cuota.nombre} (Cuota ${cuota.n_cuota})</span></p>
-                                <p class="mb-1"><strong>Programa:</strong> <span id="info-cuota-programa">${cuota.programa}</span></p>
-                            </div>
-                            <div class="col-md-6">
-                                <p class="mb-1"><strong>Total Cuota:</strong> <span id="info-cuota-total" class="text-primary">${pagoTotal.toFixed(2)}</span> Bs</p>
-                                <p class="mb-1"><strong>Saldo Pendiente:</strong> <span id="info-cuota-pendiente" class="text-danger">${pagoPendiente.toFixed(2)}</span> Bs</p>
-                                <p class="mb-0"><strong>Saldo Pagado:</strong> <span id="info-cuota-pagado" class="text-success">${saldoPagado.toFixed(2)}</span> Bs</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="monto_pago" class="form-label">Monto a Pagar (Bs) *</label>
-                        <input type="number" step="0.01" class="form-control" id="monto_pago" name="monto_pago" required min="0.01" max="${pagoPendiente}">
-                        <div class="form-text">Máximo: <span id="maximo_pago" class="text-danger fw-bold">${pagoPendiente.toFixed(2)}</span> Bs</div>
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="descuento" class="form-label">Descuento (Bs)</label>
-                        <input type="number" step="0.01" class="form-control" id="descuento" name="descuento" value="0" min="0">
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="tipo_pago" class="form-label">Tipo de Pago *</label>
-                        <select class="form-select" id="tipo_pago" name="tipo_pago" required>
-                            <option value="">Seleccionar...</option>
-                            <option value="Efectivo">Efectivo</option>
-                            <option value="Transferencia">Transferencia</option>
-                            <option value="Depósito">Depósito</option>
-                            <option value="Tarjeta">Tarjeta</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="mb-3">
-                        <label for="fecha_pago" class="form-label">Fecha de Pago *</label>
-                        <input type="date" class="form-control" id="fecha_pago" name="fecha_pago" value="${new Date().toISOString().split('T')[0]}" required>
-                    </div>
-                </div>
-
-                <div class="col-12">
-                    <div class="mb-3">
-                        <label for="observaciones" class="form-label">Observaciones</label>
-                        <textarea class="form-control" id="observaciones" name="observaciones" rows="2"></textarea>
-                    </div>
-                </div>
-
-                <!-- Resumen del pago en tiempo real -->
-                <div class="col-12">
-                    <div class="card border-primary">
-                        <div class="card-header bg-primary text-white">
-                            <h6 class="mb-0">Resumen del Pago</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row text-center">
-                                <div class="col-md-4">
-                                    <p class="mb-1 text-muted">Monto a Pagar</p>
-                                    <h5 class="text-primary" id="resumen-monto">0.00 Bs</h5>
-                                </div>
-                                <div class="col-md-4">
-                                    <p class="mb-1 text-muted">Descuento</p>
-                                    <h5 class="text-warning" id="resumen-descuento">0.00 Bs</h5>
-                                </div>
-                                <div class="col-md-4">
-                                    <p class="mb-1 text-muted">Total a Pagar</p>
-                                    <h5 class="text-success" id="resumen-total">0.00 Bs</h5>
-                                </div>
-                            </div>
-                            <div class="row mt-3">
+                            <div class="row mb-4">
                                 <div class="col-12">
-                                    <div class="progress" style="height: 20px;">
-                                        <div class="progress-bar bg-success" id="progreso-pago" role="progressbar" style="width: 0%"></div>
+                                    <div class="alert alert-info">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <p class="mb-1"><strong>Cuota:</strong> <span id="info-cuota-nombre">${cuota.nombre} (Cuota ${cuota.n_cuota})</span></p>
+                                                <p class="mb-1"><strong>Programa:</strong> <span id="info-cuota-programa">${cuota.programa}</span></p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p class="mb-1"><strong>Total Cuota:</strong> <span id="info-cuota-total" class="text-primary">${pagoTotal.toFixed(2)}</span> Bs</p>
+                                                <p class="mb-1"><strong>Saldo Pendiente:</strong> <span id="info-cuota-pendiente" class="text-danger">${pagoPendiente.toFixed(2)}</span> Bs</p>
+                                                <p class="mb-0"><strong>Saldo Pagado:</strong> <span id="info-cuota-pagado" class="text-success">${saldoPagado.toFixed(2)}</span> Bs</p>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <small class="text-muted mt-1 d-block text-center">
-                                        <span id="texto-progreso">0% del saldo pendiente</span>
-                                    </small>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `);
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="monto_pago" class="form-label">Monto a Pagar (Bs) *</label>
+                                        <input type="number" step="0.01" class="form-control" id="monto_pago" name="monto_pago" required min="0.01" max="${pagoPendiente}" value="${pagoPendiente}">
+                                        <div class="form-text">Máximo: <span id="maximo_pago" class="text-danger fw-bold">${pagoPendiente.toFixed(2)}</span> Bs</div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="descuento" class="form-label">Descuento (Bs)</label>
+                                        <input type="number" step="0.01" class="form-control" id="descuento" name="descuento" value="0" min="0">
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="tipo_pago" class="form-label">Tipo de Pago *</label>
+                                        <select class="form-select" id="tipo_pago" name="tipo_pago" required>
+                                            <option value="">Seleccionar...</option>
+                                            <option value="Efectivo">Efectivo</option>
+                                            <option value="Transferencia">Transferencia</option>
+                                            <option value="Depósito">Depósito</option>
+                                            <option value="Tarjeta">Tarjeta</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="fecha_pago" class="form-label">Fecha de Pago *</label>
+                                        <input type="date" class="form-control" id="fecha_pago" name="fecha_pago" value="${new Date().toISOString().split('T')[0]}" required>
+                                    </div>
+                                </div>
+
+                                <!-- Campo para Caja (solo visible para Efectivo) -->
+                                <div class="col-md-6" id="campo_caja" style="display: none;">
+                                    <div class="mb-3">
+                                        <label for="caja_id" class="form-label">Caja *</label>
+                                        <select class="form-select" id="caja_id" name="caja_id">
+                                            <option value="">Seleccionar caja...</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Campo para Cuenta Bancaria (visible para Transferencia, Depósito, Tarjeta) -->
+                                <div class="col-md-6" id="campo_cuenta_bancaria" style="display: none;">
+                                    <div class="mb-3">
+                                        <label for="cuenta_bancaria_id" class="form-label">Cuenta Bancaria *</label>
+                                        <select class="form-select" id="cuenta_bancaria_id" name="cuenta_bancaria_id">
+                                            <option value="">Seleccionar cuenta...</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Campo para Número de Comprobante (visible para Transferencia, Depósito, Tarjeta) -->
+                                <div class="col-md-6" id="campo_comprobante" style="display: none;">
+                                    <div class="mb-3">
+                                        <label for="n_comprobante" class="form-label">N° Comprobante *</label>
+                                        <input type="text" class="form-control" id="n_comprobante" name="n_comprobante" placeholder="Ej: TRF-0012345, DEP-20240001, TC-4587XXXXXX1234">
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="mb-3">
+                                        <label for="observaciones" class="form-label">Observaciones</label>
+                                        <textarea class="form-control" id="observaciones" name="observaciones" rows="2"></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- Resumen del pago en tiempo real -->
+                                <div class="col-12">
+                                    <div class="card border-primary">
+                                        <div class="card-header bg-primary text-white">
+                                            <h6 class="mb-0">Resumen del Pago</h6>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row text-center">
+                                                <div class="col-md-4">
+                                                    <p class="mb-1 text-muted">Monto a Pagar</p>
+                                                    <h5 class="text-primary" id="resumen-monto">${pagoPendiente.toFixed(2)} Bs</h5>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <p class="mb-1 text-muted">Descuento</p>
+                                                    <h5 class="text-warning" id="resumen-descuento">0.00 Bs</h5>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <p class="mb-1 text-muted">Total a Pagar</p>
+                                                    <h5 class="text-success" id="resumen-total">${pagoPendiente.toFixed(2)} Bs</h5>
+                                                </div>
+                                            </div>
+                                            <div class="row mt-3">
+                                                <div class="col-12">
+                                                    <div class="progress" style="height: 20px;">
+                                                        <div class="progress-bar bg-success" id="progreso-pago" role="progressbar" style="width: 100%"></div>
+                                                    </div>
+                                                    <small class="text-muted mt-1 d-block text-center">
+                                                        <span id="texto-progreso">100% del saldo pendiente</span>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `);
 
                         // Inicializar eventos para el nuevo contenido
                         $('#monto_pago, #descuento').on('input', function() {
                             actualizarResumenPago();
+                        });
+
+                        // Evento para cambiar tipo de pago
+                        $('#tipo_pago').on('change', function() {
+                            togglePaymentFields();
                         });
 
                         // Actualizar resumen inicial
@@ -183,7 +301,6 @@
                 }
             });
         });
-
 
         // Ver recibos de una cuota
         $(document).on('click', '.btn-ver-recibos', function() {
@@ -269,6 +386,7 @@
                                             minute: '2-digit'
                                         })}</p>
                                         <p><strong>Tipo de Pago:</strong> <span class="badge bg-secondary">${pago.tipo_pago}</span></p>
+                                        ${pago.n_comprobante ? `<p><strong>Comprobante:</strong> ${pago.n_comprobante}</p>` : ''}
                                     </div>
                                 </div>
                             </div>
@@ -301,7 +419,7 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                    `;
+                        `;
 
                         cuotas.forEach(cuota => {
                             html += `
@@ -401,6 +519,13 @@
                 return;
             }
 
+            // Validar que el descuento no exceda el monto
+            if (descuento > monto) {
+                $('#descuento').val(monto);
+                actualizarResumenPago();
+                return;
+            }
+
             // Calcular total
             const total = monto - descuento;
             const totalFinal = total > 0 ? total : 0;
@@ -422,6 +547,36 @@
 
             const formData = $(this).serialize();
             const estudianteId = $('#estudiante_id').val();
+            const tipoPago = $('#tipo_pago').val();
+
+            // Validar campos según tipo de pago
+            if (tipoPago === 'Efectivo') {
+                if (!$('#caja_id').val()) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Debe seleccionar una caja para pagos en efectivo.'
+                    });
+                    return false;
+                }
+            } else if (['Transferencia', 'Depósito', 'Tarjeta'].includes(tipoPago)) {
+                if (!$('#cuenta_bancaria_id').val()) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Debe seleccionar una cuenta bancaria.'
+                    });
+                    return false;
+                }
+                if (!$('#n_comprobante').val()) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Debe ingresar el número de comprobante.'
+                    });
+                    return false;
+                }
+            }
 
             $.ajax({
                 url: `/admin/estudiantes/${estudianteId}/pagar-cuota`,
@@ -439,8 +594,14 @@
                         // Mostrar modal con recibo generado
                         $('#recibo-numero').text(response.recibo);
                         $('#recibo-monto').text(parseFloat($('#monto_pago').val()).toFixed(
-                            2));
+                            2) + ' Bs');
                         $('#recibo-fecha').text($('#fecha_pago').val());
+
+                        // Mostrar tipo de pago en el recibo
+                        let tipoPagoInfo = $('#tipo_pago option:selected').text();
+                        $('#recibo-tipo-pago').text(tipoPagoInfo);
+
+                        // Configurar enlace de descarga
                         $('#descargar-recibo').attr('href', response.pdf_url);
 
                         $('#modalReciboGenerado').modal('show');
@@ -474,7 +635,10 @@
         });
 
         // Descargar recibo
-        $(document).on('click', '#descargar-recibo', function() {
+        $(document).on('click', '#descargar-recibo', function(e) {
+            e.preventDefault();
+            const url = $(this).attr('href');
+            window.open(url, '_blank');
             $('#modalReciboGenerado').modal('hide');
         });
 
@@ -484,7 +648,5 @@
                 location.reload();
             }, 500);
         });
-
-
     });
 </script>

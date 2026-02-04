@@ -36,4 +36,15 @@ class Sucursale extends Model
     {
         return $this->hasMany(TrabajadoresCargo::class, 'trabajadores_cargo_id');
     }
+
+    public function cuentas_bancarias()
+    {
+        return $this->hasMany(CuentasBancarias::class, 'sucursale_id');
+    }
+
+    // Agregar relación con cajas
+    public function cajas()
+    {
+        return $this->hasMany(Caja::class, 'sucursale_id');
+    }
 }

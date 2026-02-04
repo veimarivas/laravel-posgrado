@@ -778,8 +778,8 @@
 
                             if (response.total !== undefined) {
                                 $('.results-count').html(
-                                    `Mostrando <span class="fw-medium">${response.from || 0}</span> a 
-                                 <span class="fw-medium">${response.to || 0}</span> de 
+                                    `Mostrando <span class="fw-medium">${response.from || 0}</span> a
+                                 <span class="fw-medium">${response.to || 0}</span> de
                                  <span class="fw-medium">${response.total}</span> resultados`
                                 );
 
@@ -866,8 +866,8 @@
 
                             if (response.total !== undefined) {
                                 $('.results-count').html(
-                                    `Mostrando <span class="fw-medium">${response.from || 0}</span> a 
-                                 <span class="fw-medium">${response.to || 0}</span> de 
+                                    `Mostrando <span class="fw-medium">${response.from || 0}</span> a
+                                 <span class="fw-medium">${response.to || 0}</span> de
                                  <span class="fw-medium">${response.total}</span> resultados`
                                 );
 

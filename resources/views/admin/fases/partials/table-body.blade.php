@@ -13,7 +13,6 @@
                 </div>
                 <div class="flex-grow-1">
                     <h6 class="mb-0">{{ $fase->nombre }}</h6>
-                    <p class="text-muted mb-0 small">ID: {{ $fase->id }}</p>
                 </div>
             </div>
         </td>

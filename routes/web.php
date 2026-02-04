@@ -2,11 +2,14 @@
 
 use App\Http\Controllers\Backend\AdminController;
 use App\Http\Controllers\Backend\AreasController;
+use App\Http\Controllers\Backend\BancosController;
 use App\Http\Controllers\Backend\BienvenidosController;
+use App\Http\Controllers\Backend\CajasController;
 use App\Http\Controllers\Backend\CargosController;
 use App\Http\Controllers\Backend\CiudadesController;
 use App\Http\Controllers\Backend\ConceptosController;
 use App\Http\Controllers\Backend\ConveniosController;
+use App\Http\Controllers\Backend\CuentasBancariasController;
 use App\Http\Controllers\Backend\CuentasController;
 use App\Http\Controllers\Backend\DepartamentosController;
 use App\Http\Controllers\Backend\DocentesController;
@@ -42,6 +45,13 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [BienvenidosController::class, 'principal'])->name('principal');
 Route::get('/oferta/{id}', [OfertasAcademicasController::class, 'detallePublico'])
     ->name('oferta.detalle');
+Route::get('/oferta/{id}/asesor/{asesorId}', [OfertasAcademicasController::class, 'ofertaConAsesor'])
+    ->name('oferta.asesor');
+// Ruta para pre-inscripción pública con asesor y plan de pago específico
+Route::get('/oferta/{id}/asesor/{asesorId}/plan', [OfertasAcademicasController::class, 'ofertaConAsesorYPlan'])
+    ->name('oferta.asesor.plan');
+
+// Modificar la ruta existente para que también acepte parámetro plan_pago
 Route::get('/oferta/{id}/asesor/{asesorId}', [OfertasAcademicasController::class, 'ofertaConAsesor'])
     ->name('oferta.asesor');
 // Pre-inscripción pública con asesor
@@ -100,6 +110,15 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
         Route::post('/admin/sucursales/registrar', 'registrar')->name('admin.sucursales.registrar');
         Route::post('/admin/sucursales/verificar', 'verificarNombre')->name('admin.sucursales.verificar');
         Route::get('/sucursales/por-sede', 'porSede')->name('admin.sucursales.por-sede');
+
+        // Nueva ruta para ver detalle de sucursal
+        Route::get('/admin/sucursales/{id}', 'verDetalle')->name('admin.sucursales.ver');
+
+        // Nueva ruta para registrar caja desde detalle de sucursal
+        Route::post('/admin/sucursales/{id}/registrar-caja', 'registrarCaja')->name('admin.sucursales.registrar-caja');
+
+        // Obtener trabajadores disponibles para caja
+        Route::get('/admin/sucursales/{id}/trabajadores-disponibles', 'trabajadoresDisponibles')->name('admin.sucursales.trabajadores-disponibles');
     });
 
     //PROGRAMAS
@@ -227,6 +246,9 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
 
         Route::post('/admin/profile/change-password', 'changePassword')->name('admin.profile.change-password');
         Route::post('/admin/users/reset-password', 'resetPassword')->name('admin.users.reset-password');
+
+        // En el grupo de UserProfileController
+        Route::get('/admin/profile/marketing/enlace-con-plan', 'generarEnlaceConPlan')->name('admin.profile.marketing.enlace-con-plan');
     });
 
     //AREAS
@@ -536,6 +558,58 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
         Route::post('/admin/users/verificar-email', 'verificarEmail')->name('admin.users.verificar-email');
         Route::post('/admin/users/actualizar', 'actualizar')->name('admin.users.actualizar');
         Route::post('/admin/users/obtener-data', 'obtenerUserData')->name('admin.users.obtener-data');
+    });
+
+    // web.php - Agregar dentro del grupo de rutas admin
+
+    // BANCOS
+    Route::controller(BancosController::class)->group(function () {
+        Route::get('/admin/bancos/listar', 'listar')->name('admin.bancos.listar');
+        Route::post('/admin/bancos/registrar', 'registrar')->name('admin.bancos.registrar');
+        Route::post('/admin/bancos/verificar', 'verificarNombre')->name('admin.bancos.verificar');
+        Route::post('/admin/bancos/verificaredicion', 'verificarNombreEdicion')->name('admin.bancos.verificaredicion');
+        Route::put('/admin/bancos/modificar', 'modificar')->name('admin.bancos.modificar');
+        Route::delete('/admin/bancos/eliminar', 'eliminar')->name('admin.bancos.eliminar');
+        Route::get('/admin/bancos/ver/{id}', 'ver')->name('admin.bancos.ver');
+        Route::get('/admin/bancos/detalle/{id}', 'detalle')->name('admin.bancos.detalle');
+    });
+
+    // CAJAS
+    Route::controller(CajasController::class)->group(function () {
+        Route::get('/admin/cajas/listar-activas', [CajasController::class, 'listarActivas'])->name('admin.cajas.listar-activas');
+
+        // Nueva ruta para ver detalle de caja
+        Route::get('/admin/cajas/{id}', 'ver')->name('admin.cajas.ver');
+
+        // Nueva ruta para registrar caja
+        Route::post('/admin/cajas/registrar', 'registrar')->name('admin.cajas.registrar');
+
+        // Obtener trabajadores por sucursal para caja
+        Route::get('/admin/cajas/{sucursalId}/trabajadores', 'trabajadoresPorSucursal')->name('admin.cajas.trabajadores');
+    });
+
+    // En el grupo de CUENTAS BANCARIAS
+    Route::controller(CuentasBancariasController::class)->group(function () {
+        Route::get('/admin/cuentas-bancarias/listar', 'listar')->name('admin.cuentas-bancarias.listar');
+        Route::get('/admin/cuentas-bancarias/ver/{id}', 'ver')->name('admin.cuentas-bancarias.ver');
+        Route::post('/admin/cuentas-bancarias/registrar', 'registrar')->name('admin.cuentas-bancarias.registrar');
+        Route::post('/admin/cuentas-bancarias/verificar', 'verificarCuenta')->name('admin.cuentas-bancarias.verificar');
+        Route::post('/admin/cuentas-bancarias/verificaredicion', 'verificarEdicion')->name('admin.cuentas-bancarias.verificaredicion');
+        Route::put('/admin/cuentas-bancarias/modificar', 'modificar')->name('admin.cuentas-bancarias.modificar');
+        Route::post('/admin/cuentas-bancarias/eliminar', 'eliminar')->name('admin.cuentas-bancarias.eliminar');
+        Route::get('/admin/cuentas-bancarias/obtener-bancos', 'obtenerBancos')->name('admin.cuentas-bancarias.obtener-bancos');
+        Route::get('/admin/cuentas-bancarias/obtener-sucursales', 'obtenerSucursales')->name('admin.cuentas-bancarias.obtener-sucursales');
+        Route::get('/admin/cuentas-bancarias/por-banco', 'porBanco')->name('admin.cuentas-bancarias.por-banco');
+        Route::get('/admin/cuentas-bancarias/por-sucursal', 'porSucursal')->name('admin.cuentas-bancarias.por-sucursal');
+
+        // Nuevas rutas para el sistema contable
+        Route::get('/admin/cuentas-bancarias/por-banco-sucursal', 'porBancoSucursal')->name('admin.cuentas-bancarias.por-banco-sucursal');
+        Route::post('/admin/cuentas-bancarias/transferir', 'transferir')->name('admin.cuentas-bancarias.transferir');
+        Route::post('/admin/cuentas-bancarias/conciliar', 'conciliar')->name('admin.cuentas-bancarias.conciliar');
+        Route::get('/admin/transferencias/{id}/detalle', 'detalleTransferencia')->name('admin.transferencias.detalle');
+        Route::get('/admin/conciliaciones/{id}/detalle', 'detalleConciliacion')->name('admin.conciliaciones.detalle');
+
+        Route::get('/admin/cuentas-bancarias/listar-activas', [CuentasBancariasController::class, 'listarActivas'])->name('admin.cuentas-bancarias.listar-activas');
     });
 });
 

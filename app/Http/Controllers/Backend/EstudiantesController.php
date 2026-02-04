@@ -3,12 +3,16 @@
 namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
+use App\Models\Caja;
 use App\Models\Ciudade;
+use App\Models\CuentasBancarias;
 use App\Models\Cuota;
 use App\Models\Departamento;
 use App\Models\Detalle;
 use App\Models\Estudiante;
 use App\Models\GradosAcademico;
+use App\Models\MovimientosBancarios;
+use App\Models\MovimientosCaja;
 use App\Models\Pago;
 use App\Models\PagosCuota;
 use App\Models\Persona;
@@ -21,6 +25,7 @@ use Illuminate\Support\Facades\Validator;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
+
 
 class EstudiantesController extends Controller
 {
@@ -207,6 +212,7 @@ class EstudiantesController extends Controller
     public function registrarPago(Request $request, $id)
     {
         try {
+            // Validación base
             $request->validate([
                 'cuota_id' => 'required|exists:cuotas,id',
                 'monto_pago' => 'required|numeric|min:0.01',
@@ -215,6 +221,31 @@ class EstudiantesController extends Controller
                 'fecha_pago' => 'required|date',
                 'observaciones' => 'nullable|string|max:500',
             ]);
+
+            // Obtener el usuario autenticado
+            $user = auth()->user();
+
+            // Obtener el trabajadore_cargo_id a través de la cadena de relaciones
+            $trabajadoreCargoId = $this->obtenerTrabajadorCargoId($user);
+
+            if (!$trabajadoreCargoId) {
+                return response()->json([
+                    'success' => false,
+                    'msg' => 'No se pudo identificar al trabajador responsable. Verifique que el usuario esté asignado como trabajador con un cargo principal y vigente.'
+                ], 422);
+            }
+
+            // Validaciones condicionales según tipo de pago
+            if ($request->tipo_pago == 'Efectivo') {
+                $request->validate([
+                    'caja_id' => 'required|exists:cajas,id',
+                ]);
+            } else {
+                $request->validate([
+                    'cuenta_bancaria_id' => 'required|exists:cuentas_bancarias,id',
+                    'n_comprobante' => 'required|string|max:100',
+                ]);
+            }
 
             // Obtener la cuota
             $cuota = Cuota::findOrFail($request->cuota_id);
@@ -247,30 +278,93 @@ class EstudiantesController extends Controller
                 $numeroRecibo = 'UPI-' . str_pad($numero, 9, '0', STR_PAD_LEFT);
             }
 
-            // Crear el pago
-            $pago = Pago::create([
+            // Preparar datos del pago según tipo
+            $datosPago = [
                 'recibo' => $numeroRecibo,
                 'pago_bs' => $request->monto_pago,
                 'descuento_bs' => $request->descuento ?? 0,
                 'fecha_pago' => $request->fecha_pago,
-                'tipo_pago' => $request->tipo_pago,
-            ]);
+                'tipo_pago' => strtolower($request->tipo_pago),
+                'estado' => 'registrado',
+                'trabajadore_cargo_id' => $trabajadoreCargoId,
+            ];
 
-            // Crear el detalle del pago
+            // Asignar caja o cuenta según tipo de pago
+            if ($request->tipo_pago == 'Efectivo') {
+                $datosPago['caja_id'] = $request->caja_id;
+                $datosPago['cuenta_bancaria_id'] = null;
+
+                // Para efectivo, usar un número de comprobante interno
+                $datosPago['n_comprobante'] = 'EF-' . str_pad(rand(1000, 9999), 6, '0', STR_PAD_LEFT);
+            } else {
+                $datosPago['cuenta_bancaria_id'] = $request->cuenta_bancaria_id;
+                $datosPago['n_comprobante'] = $request->n_comprobante;
+                $datosPago['caja_id'] = null;
+            }
+
+            // 1. Crear el pago primero para obtener su ID
+            $pago = Pago::create($datosPago);
+
+            // 2. Registrar movimiento según tipo de pago
+            if ($request->tipo_pago == 'Efectivo') {
+                // Registrar movimiento en caja
+                $caja = Caja::findOrFail($request->caja_id);
+                $saldoAnterior = $caja->saldo_actual;
+                $saldoPosterior = $saldoAnterior + $request->monto_pago;
+
+                MovimientosCaja::create([
+                    'caja_id' => $request->caja_id,
+                    'tipo_movimiento' => 'ingreso',
+                    'monto' => $request->monto_pago,
+                    'saldo_anterior' => $saldoAnterior,
+                    'saldo_posterior' => $saldoPosterior,
+                    'descripcion' => "Pago en efectivo recibo #{$numeroRecibo}",
+                    'referencia_id' => $pago->id,
+                    'referencia_type' => Pago::class,
+                    'trabajadore_cargo_id' => $trabajadoreCargoId
+                ]);
+
+                // Actualizar saldo de caja
+                $caja->saldo_actual = $saldoPosterior;
+                $caja->save();
+            } else {
+                // Registrar movimiento bancario
+                $cuenta = CuentasBancarias::findOrFail($request->cuenta_bancaria_id);
+                $saldoAnterior = $cuenta->saldo_actual;
+                $saldoPosterior = $saldoAnterior + $request->monto_pago;
+
+                MovimientosBancarios::create([
+                    'cuenta_bancaria_id' => $request->cuenta_bancaria_id,
+                    'tipo_movimiento' => 'pago',
+                    'monto' => $request->monto_pago,
+                    'saldo_anterior' => $saldoAnterior,
+                    'saldo_posterior' => $saldoPosterior,
+                    'descripcion' => "Pago recibo #{$numeroRecibo}",
+                    'referencia_id' => $pago->id,
+                    'referencia_type' => Pago::class,
+                    'trabajadore_cargo_id' => $trabajadoreCargoId
+                ]);
+
+                // Actualizar saldo de cuenta bancaria
+                $cuenta->saldo_actual = $saldoPosterior;
+                $cuenta->save();
+            }
+
+            // 3. Crear el detalle del pago
             Detalle::create([
                 'pago_id' => $pago->id,
                 'pago_bs' => $request->monto_pago,
                 'tipo_pago' => $request->tipo_pago,
             ]);
 
-            // Registrar el pago en la cuota
+            // 4. Registrar el pago en la cuota
             PagosCuota::create([
                 'cuota_id' => $cuota->id,
                 'pago_id' => $pago->id,
                 'pago_bs' => $request->monto_pago,
             ]);
 
-            // Actualizar el saldo pendiente de la cuota
+            // 5. Actualizar el saldo pendiente de la cuota
             $cuota->pago_pendiente_bs = $cuota->pago_pendiente_bs - $request->monto_pago;
 
             // Si el saldo pendiente es 0, marcar como pagada
@@ -299,6 +393,38 @@ class EstudiantesController extends Controller
                 'success' => false,
                 'msg' => 'Error al registrar el pago: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Obtener el trabajadore_cargo_id del usuario autenticado
+     * Navega a través de la cadena: User -> Persona -> Trabajadore -> TrabajadoresCargo
+     */
+    private function obtenerTrabajadorCargoId($user)
+    {
+        try {
+            // Consulta directa para obtener el trabajadore_cargo_id
+            $trabajadorCargoId = DB::table('users')
+                ->join('personas', 'users.persona_id', '=', 'personas.id')
+                ->join('trabajadores', 'personas.id', '=', 'trabajadores.persona_id')
+                ->join('trabajadores_cargos', 'trabajadores.id', '=', 'trabajadores_cargos.trabajadore_id')
+                ->where('users.id', $user->id)
+                ->where('trabajadores_cargos.principal', 1)
+                ->where('trabajadores_cargos.estado', 'Vigente')
+                ->value('trabajadores_cargos.id');
+
+            if (!$trabajadorCargoId) {
+                Log::warning('No se encontró trabajadore_cargo_id para el usuario', [
+                    'user_id' => $user->id,
+                    'persona_id' => $user->persona_id
+                ]);
+                return null;
+            }
+
+            return $trabajadorCargoId;
+        } catch (\Exception $e) {
+            Log::error('Error al obtener trabajadore_cargo_id: ' . $e->getMessage());
+            return null;
         }
     }
 

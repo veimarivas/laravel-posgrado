@@ -13,6 +13,9 @@ use App\Models\Cargo;
 use App\Models\Sucursale;
 use App\Models\TrabajadoresCargo;
 use App\Models\Inscripcione;
+use App\Models\OfertasAcademica;
+use App\Models\PlanesConcepto;
+use App\Models\PlanesPago;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -50,6 +53,94 @@ class UserProfileController extends Controller
             'sucursales'
         ));
     }
+
+    /**
+     * Generar enlace de pre-inscripción con plan de pago específico
+     */
+    public function generarEnlaceConPlan(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $persona = $user->persona;
+
+            if (!$persona->trabajador) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tiene permisos para realizar esta acción'
+                ], 403);
+            }
+
+            // Obtener el cargo principal del trabajador
+            $cargoPrincipal = $persona->trabajador->trabajadores_cargos()
+                ->where('principal', 1)
+                ->where('estado', 'Vigente')
+                ->first();
+
+            if (!$cargoPrincipal) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tiene un cargo principal vigente'
+                ], 404);
+            }
+
+            $request->validate([
+                'oferta_id' => 'required|exists:ofertas_academicas,id',
+                'plan_pago_id' => 'required|exists:planes_pagos,id',
+            ]);
+
+            $oferta = OfertasAcademica::findOrFail($request->oferta_id);
+            $planPago = PlanesPago::findOrFail($request->plan_pago_id);
+
+            // Verificar que el plan pertenezca a la oferta
+            $planExisteEnOferta = PlanesConcepto::where('ofertas_academica_id', $oferta->id)
+                ->where('planes_pago_id', $planPago->id)
+                ->exists();
+
+            if (!$planExisteEnOferta) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El plan de pago seleccionado no pertenece a esta oferta académica'
+                ], 422);
+            }
+
+            // Generar enlace personalizado con parámetros
+            $enlacePersonalizado = route('oferta.asesor', [
+                'id' => $oferta->id,
+                'asesorId' => $cargoPrincipal->id
+            ]) . '?plan_pago=' . $planPago->id;
+
+            // Generar QR
+            $qrCode = "https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=" .
+                urlencode($enlacePersonalizado);
+
+            return response()->json([
+                'success' => true,
+                'enlace' => $enlacePersonalizado,
+                'qr_code' => $qrCode,
+                'oferta' => [
+                    'id' => $oferta->id,
+                    'codigo' => $oferta->codigo,
+                    'programa_nombre' => $oferta->programa->nombre ?? 'Sin programa'
+                ],
+                'plan_pago' => [
+                    'id' => $planPago->id,
+                    'nombre' => $planPago->nombre
+                ],
+                'asesor' => [
+                    'id' => $cargoPrincipal->id,
+                    'nombre' => optional($cargoPrincipal->trabajador->persona)->nombres ?? 'Asesor'
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error al generar enlace con plan: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al generar el enlace: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
 
     /**
      * Obtener planes de pago de una oferta para el modal de conversión
@@ -948,128 +1039,172 @@ class UserProfileController extends Controller
      */
     public function getEstadisticasMarketing(Request $request)
     {
-        $user = Auth::user();
-        $persona = $user->persona;
+        try {
+            $user = Auth::user();
+            $persona = $user->persona;
 
-        if (!$persona->trabajador) {
-            return response()->json(['error' => 'No es trabajador'], 403);
-        }
-
-        // Obtener IDs de cargos de marketing
-        $cargosMarketingIds = $persona->trabajador->trabajadores_cargos()
-            ->whereIn('cargo_id', [2, 3, 6])
-            ->where('estado', 'Vigente')
-            ->pluck('id');
-
-        if ($cargosMarketingIds->isEmpty()) {
-            return response()->json(['error' => 'No tiene cargos de marketing'], 403);
-        }
-
-        // Parámetros de filtro
-        $year = $request->input('year', Carbon::now()->year);
-        $month = $request->input('month', null);
-        $programaId = $request->input('programa_id', null);
-
-        // Asegurar que year sea un entero
-        $year = (int)$year;
-
-        // Consulta base
-        $query = Inscripcione::whereIn('trabajadores_cargo_id', $cargosMarketingIds)
-            ->whereIn('estado', ['Inscrito', 'Pre-Inscrito'])
-            ->whereYear('fecha_registro', $year);
-
-        if ($month && $month !== 'todos') {
-            $query->whereMonth('fecha_registro', (int)$month);
-        }
-
-        if ($programaId) {
-            $query->whereHas('ofertaAcademica', function ($q) use ($programaId) {
-                $q->where('programa_id', $programaId);
-            });
-        }
-
-        // Estadísticas por mes (para el año seleccionado)
-        $estadisticasPorMes = Inscripcione::selectRaw("
-        YEAR(fecha_registro) as year,
-        MONTH(fecha_registro) as month,
-        DATE_FORMAT(fecha_registro, '%Y-%m') as mes_key,
-        DATE_FORMAT(fecha_registro, '%b') as mes_nombre,
-        SUM(CASE WHEN estado = 'Inscrito' THEN 1 ELSE 0 END) as inscritos,
-        SUM(CASE WHEN estado = 'Pre-Inscrito' THEN 1 ELSE 0 END) as pre_inscritos,
-        COUNT(*) as total
-    ")
-            ->whereIn('trabajadores_cargo_id', $cargosMarketingIds)
-            ->whereIn('estado', ['Inscrito', 'Pre-Inscrito'])
-            ->whereYear('fecha_registro', $year)
-            ->groupBy('year', 'month', 'mes_key', 'mes_nombre')
-            ->orderBy('year')
-            ->orderBy('month')
-            ->get()
-            ->keyBy('mes_key');
-
-        // Construir datos para gráfico
-        $meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-        $datosGrafico = [
-            'meses' => [],
-            'inscritos' => [],
-            'pre_inscritos' => [],
-            'totales' => []
-        ];
-
-        for ($m = 1; $m <= 12; $m++) {
-            $mesKey = $year . '-' . str_pad($m, 2, '0', STR_PAD_LEFT);
-            $datosGrafico['meses'][] = $meses[$m - 1];
-
-            if (isset($estadisticasPorMes[$mesKey])) {
-                $datosGrafico['inscritos'][] = (int)$estadisticasPorMes[$mesKey]->inscritos;
-                $datosGrafico['pre_inscritos'][] = (int)$estadisticasPorMes[$mesKey]->pre_inscritos;
-                $datosGrafico['totales'][] = (int)$estadisticasPorMes[$mesKey]->total;
-            } else {
-                $datosGrafico['inscritos'][] = 0;
-                $datosGrafico['pre_inscritos'][] = 0;
-                $datosGrafico['totales'][] = 0;
+            if (!$persona->trabajador) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'No es trabajador'
+                ], 403);
             }
+
+            // Obtener IDs de cargos de marketing (2, 3, 6)
+            $cargosMarketingIds = $persona->trabajador->trabajadores_cargos()
+                ->whereIn('cargo_id', [2, 3, 6])
+                ->where('estado', 'Vigente')
+                ->pluck('id');
+
+            if ($cargosMarketingIds->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'No tiene cargos de marketing'
+                ], 403);
+            }
+
+            // Parámetros de filtro con valores por defecto
+            $year = $request->input('year', Carbon::now()->year);
+            $month = $request->input('month', null);
+            $programaId = $request->input('programa_id', null);
+
+            // Asegurar que year sea un entero válido
+            $year = is_numeric($year) ? (int)$year : Carbon::now()->year;
+
+            // Estadísticas por mes (para el año seleccionado) - SIEMPRE devolver los 12 meses
+            $estadisticasPorMes = Inscripcione::selectRaw("
+            MONTH(fecha_registro) as month,
+            DATE_FORMAT(fecha_registro, '%b') as mes_nombre,
+            SUM(CASE WHEN estado = 'Inscrito' THEN 1 ELSE 0 END) as inscritos,
+            SUM(CASE WHEN estado = 'Pre-Inscrito' THEN 1 ELSE 0 END) as pre_inscritos,
+            COUNT(*) as total
+        ")
+                ->whereIn('trabajadores_cargo_id', $cargosMarketingIds)
+                ->whereIn('estado', ['Inscrito', 'Pre-Inscrito'])
+                ->whereYear('fecha_registro', $year)
+                ->groupBy('month', 'mes_nombre')
+                ->orderBy('month')
+                ->get()
+                ->keyBy('month');
+
+            // Definir los 12 meses
+            $mesesNombres = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+            // Construir datos para gráfico - SIEMPRE 12 meses
+            $datosGrafico = [
+                'meses' => [],
+                'inscritos' => [],
+                'pre_inscritos' => [],
+                'totales' => []
+            ];
+
+            for ($m = 1; $m <= 12; $m++) {
+                $datosGrafico['meses'][] = $mesesNombres[$m - 1];
+
+                if (isset($estadisticasPorMes[$m])) {
+                    $datosGrafico['inscritos'][] = (int)$estadisticasPorMes[$m]->inscritos;
+                    $datosGrafico['pre_inscritos'][] = (int)$estadisticasPorMes[$m]->pre_inscritos;
+                    $datosGrafico['totales'][] = (int)$estadisticasPorMes[$m]->total;
+                } else {
+                    $datosGrafico['inscritos'][] = 0;
+                    $datosGrafico['pre_inscritos'][] = 0;
+                    $datosGrafico['totales'][] = 0;
+                }
+            }
+
+            // Estadísticas por programa
+            $queryProgramas = Inscripcione::selectRaw("
+            programas.id as programa_id,
+            programas.nombre as programa_nombre,
+            COUNT(*) as total,
+            SUM(CASE WHEN inscripciones.estado = 'Inscrito' THEN 1 ELSE 0 END) as inscritos,
+            SUM(CASE WHEN inscripciones.estado = 'Pre-Inscrito' THEN 1 ELSE 0 END) as pre_inscritos
+        ")
+                ->join('ofertas_academicas', 'inscripciones.ofertas_academica_id', '=', 'ofertas_academicas.id')
+                ->join('programas', 'ofertas_academicas.programa_id', '=', 'programas.id')
+                ->whereIn('inscripciones.trabajadores_cargo_id', $cargosMarketingIds)
+                ->whereIn('inscripciones.estado', ['Inscrito', 'Pre-Inscrito'])
+                ->whereYear('inscripciones.fecha_registro', $year);
+
+            // Aplicar filtro de mes si existe y no es "todos"
+            if ($month && $month !== 'todos') {
+                $queryProgramas->whereMonth('inscripciones.fecha_registro', (int)$month);
+            }
+
+            // Aplicar filtro de programa si existe
+            if ($programaId) {
+                $queryProgramas->where('programas.id', $programaId);
+            }
+
+            $estadisticasPorPrograma = $queryProgramas
+                ->groupBy('programas.id', 'programas.nombre')
+                ->orderByDesc('total')
+                ->limit(10)
+                ->get();
+
+            // Resumen general
+            $queryResumen = Inscripcione::whereIn('trabajadores_cargo_id', $cargosMarketingIds)
+                ->whereIn('estado', ['Inscrito', 'Pre-Inscrito'])
+                ->whereYear('fecha_registro', $year);
+
+            if ($month && $month !== 'todos') {
+                $queryResumen->whereMonth('fecha_registro', (int)$month);
+            }
+
+            if ($programaId) {
+                $queryResumen->whereHas('ofertaAcademica', function ($q) use ($programaId) {
+                    $q->where('programa_id', $programaId);
+                });
+            }
+
+            $totalGeneral = $queryResumen->count();
+            $totalInscritos = $queryResumen->clone()->where('estado', 'Inscrito')->count();
+            $totalPreInscritos = $queryResumen->clone()->where('estado', 'Pre-Inscrito')->count();
+
+            // Determinar texto del mes seleccionado
+            $mesSeleccionado = 'Todos los meses';
+            if ($month && $month !== 'todos') {
+                $mesIndex = (int)$month - 1;
+                $mesSeleccionado = $mesesNombres[$mesIndex];
+            }
+
+            $resumen = [
+                'total' => $totalGeneral,
+                'inscritos' => $totalInscritos,
+                'pre_inscritos' => $totalPreInscritos,
+                'mes_seleccionado' => $mesSeleccionado,
+                'anio_seleccionado' => $year
+            ];
+
+            // Retornar respuesta con estructura clara
+            return response()->json([
+                'success' => true,
+                'grafico' => $datosGrafico,
+                'programas' => $estadisticasPorPrograma,
+                'resumen' => $resumen,
+                'debug' => [
+                    'year' => $year,
+                    'month' => $month,
+                    'programa_id' => $programaId,
+                    'cargos_ids' => $cargosMarketingIds->toArray()
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error en getEstadisticasMarketing: ' . $e->getMessage());
+            \Log::error('Trace: ' . $e->getTraceAsString());
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Error interno del servidor',
+                'message' => $e->getMessage(),
+                'debug' => [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine()
+                ]
+            ], 500);
         }
-
-        // Estadísticas por programa
-        $estadisticasPorPrograma = Inscripcione::selectRaw("
-        programas.nombre as programa_nombre,
-        COUNT(*) as total,
-        SUM(CASE WHEN inscripciones.estado = 'Inscrito' THEN 1 ELSE 0 END) as inscritos,
-        SUM(CASE WHEN inscripciones.estado = 'Pre-Inscrito' THEN 1 ELSE 0 END) as pre_inscritos
-    ")
-            ->join('ofertas_academicas', 'inscripciones.ofertas_academica_id', '=', 'ofertas_academicas.id')
-            ->join('programas', 'ofertas_academicas.programa_id', '=', 'programas.id')
-            ->whereIn('inscripciones.trabajadores_cargo_id', $cargosMarketingIds)
-            ->whereIn('inscripciones.estado', ['Inscrito', 'Pre-Inscrito'])
-            ->whereYear('inscripciones.fecha_registro', $year);
-
-        if ($month && $month !== 'todos') {
-            $estadisticasPorPrograma->whereMonth('inscripciones.fecha_registro', (int)$month);
-        }
-
-        $estadisticasPorPrograma = $estadisticasPorPrograma
-            ->groupBy('programas.nombre')
-            ->orderByDesc('total')
-            ->limit(10)
-            ->get();
-
-        // Resumen general
-        $resumen = [
-            'total' => $query->count(),
-            'inscritos' => $query->where('estado', 'Inscrito')->count(),
-            'pre_inscritos' => $query->where('estado', 'Pre-Inscrito')->count(),
-            'mes_seleccionado' => $month ? $meses[(int)$month - 1] : 'Todos los meses',
-            'anio_seleccionado' => $year
-        ];
-
-        return response()->json([
-            'success' => true,
-            'grafico' => $datosGrafico,
-            'programas' => $estadisticasPorPrograma,
-            'resumen' => $resumen
-        ]);
     }
+
 
     /**
      * Obtener inscripciones filtradas

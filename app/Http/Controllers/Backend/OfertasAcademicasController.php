@@ -39,6 +39,70 @@ use Maatwebsite\Excel\Facades\Excel;
 class OfertasAcademicasController extends Controller
 {
     // En OfertasAcademicasController.php
+    /**
+     * Obtener oferta con asesor y plan de pago específico
+     */
+    public function ofertaConAsesorYPlan($id, $asesorId, Request $request)
+    {
+        try {
+            $oferta = OfertasAcademica::with([
+                'programa',
+                'sucursal.sede',
+                'modalidad',
+                'posgrado.tipo',
+                'fase'
+            ])->findOrFail($id);
+
+            $asesor = TrabajadoresCargo::with([
+                'trabajador.persona',
+                'cargo',
+                'sucursal'
+            ])->findOrFail($asesorId);
+
+            // Verificar si el asesor pertenece a marketing (cargos 2,3,6)
+            if (!in_array($asesor->cargo_id, [2, 3, 6])) {
+                abort(403, 'Este asesor no tiene permisos de marketing');
+            }
+
+            // Obtener plan de pago si se especifica
+            $planPagoSeleccionado = null;
+            if ($request->has('plan_pago')) {
+                $planPagoId = $request->plan_pago;
+                $planPagoSeleccionado = PlanesPago::find($planPagoId);
+
+                // Verificar que el plan pertenezca a la oferta
+                if ($planPagoSeleccionado) {
+                    $planExiste = PlanesConcepto::where('ofertas_academica_id', $oferta->id)
+                        ->where('planes_pago_id', $planPagoId)
+                        ->exists();
+
+                    if (!$planExiste) {
+                        $planPagoSeleccionado = null;
+                    }
+                }
+            }
+
+            // Obtener planes de pago disponibles para esta oferta
+            $planesPago = PlanesPago::whereHas('plan_concepto', function ($query) use ($id) {
+                $query->where('ofertas_academica_id', $id);
+            })
+                ->with(['plan_concepto' => function ($query) use ($id) {
+                    $query->where('ofertas_academicas_id', $id)
+                        ->with('concepto');
+                }])
+                ->get();
+
+            return view('frontend.oferta-con-asesor-plan', compact(
+                'oferta',
+                'asesor',
+                'planPagoSeleccionado',
+                'planesPago'
+            ));
+        } catch (\Exception $e) {
+            \Log::error('Error en ofertaConAsesorYPlan: ' . $e->getMessage());
+            abort(404, 'Página no encontrada');
+        }
+    }
 
     public function listar(Request $request)
     {
@@ -303,7 +367,7 @@ class OfertasAcademicasController extends Controller
     }
 
 
-    public function ofertaConAsesor($id, $asesorId)
+    public function ofertaConAsesor($id, $asesorId, Request $request)
     {
         // Obtener la oferta académica
         $oferta = OfertasAcademica::with([
@@ -330,6 +394,47 @@ class OfertasAcademicasController extends Controller
             ->where('id', $asesorId)
             ->where('estado', 'Vigente')
             ->firstOrFail();
+
+        // Verificar si hay un plan de pago en la URL
+        $planPagoId = $request->get('plan_pago');
+        $planPagoSeleccionado = null;
+        $conceptosDetalle = collect(); // Cambiamos a colección
+
+        if ($planPagoId) {
+            // Obtener el plan de pago específico
+            $planPagoSeleccionado = PlanesPago::find($planPagoId);
+
+            // Si no existe el plan de pago, mostrar error
+            if (!$planPagoSeleccionado) {
+                abort(404, 'Plan de pago no encontrado');
+            }
+
+            // Obtener TODOS los conceptos del plan para esta oferta
+            $conceptosDetalle = PlanesConcepto::where('planes_pago_id', $planPagoId)
+                ->where('ofertas_academica_id', $id)
+                ->with('concepto')
+                ->get();
+
+            if ($conceptosDetalle->isEmpty()) {
+                abort(404, 'Este plan de pago no está disponible para esta oferta');
+            }
+
+            // OJO: pago_bs ya es el TOTAL del concepto, NO la cuota mensual
+            // Por ejemplo: 
+            // - Matrícula: pago_bs = 200 (total)
+            // - Colegiatura: pago_bs = 1200 (total de las 6 cuotas)
+            // - Certificación: pago_bs = 350 (total)
+            $conceptosDetalle = $conceptosDetalle->map(function ($concepto) {
+                return (object) [
+                    'id' => $concepto->id,
+                    'concepto_nombre' => $concepto->concepto->nombre ?? 'Concepto',
+                    'pago_bs' => $concepto->pago_bs, // TOTAL del concepto
+                    'n_cuotas' => $concepto->n_cuotas, // Solo para mostrar información
+                    'precio_regular' => $concepto->precio_regular, // Precio regular TOTAL
+                    'descuento_bs' => $concepto->descuento_bs, // Descuento en Bs
+                ];
+            });
+        }
 
         // Filtrar planes de pago para mostrar solo "Al Credito"
         $planesCredito = $oferta->plan_concepto->filter(function ($planConcepto) {
@@ -389,7 +494,9 @@ class OfertasAcademicasController extends Controller
             'responsableMarketing',
             'responsableAcademico',
             'departamentos',
-            'ciudadesPorDepartamento' // Nueva variable para JavaScript
+            'ciudadesPorDepartamento',
+            'planPagoSeleccionado',
+            'conceptosDetalle' // Cambiamos a conceptosDetalle
         ));
     }
 
@@ -1572,26 +1679,23 @@ class OfertasAcademicasController extends Controller
         return response()->json($query->get()); // El campo `color` ya viene incluido
     }
 
-
-
-
     // === NUEVO: Cambiar fase ===
-    // En OfertasAcademicasController.php - método cambiarFase
     public function cambiarFase(Request $request, OfertasAcademica $oferta)
     {
         $request->validate(['direction' => 'required|in:-1,1']);
-        $totalFases = Fase::max('n_fase') ?: 3;
-        $nuevaFase = $oferta->fase_id + (int) $request->direction;
+        $totalFases = Fase::max('n_fase') ?: 4;
 
-        if ($nuevaFase < 1 || $nuevaFase > $totalFases) {
+        $faseActual = Fase::find($oferta->fase_id);
+        $nuevaFaseNumero = $faseActual->n_fase + (int) $request->direction;
+        $nuevaFase = Fase::where('n_fase', $nuevaFaseNumero)->first();
+
+        if (!$nuevaFase || $nuevaFaseNumero < 1 || $nuevaFaseNumero > $totalFases) {
             return response()->json(['success' => false, 'msg' => 'Fase inválida.'], 422);
         }
 
-        // VALIDACIÓN: Si está en fase 2 y quiere pasar a fase 3
-        if ($oferta->fase_id == 2 && $nuevaFase == 3) {
-            // Verificar si tiene planes de pago registrados
+        // Validación para fase 2 → 3 (planes de pago)
+        if ($faseActual->n_fase == 2 && $nuevaFaseNumero == 3) {
             $tienePlanesPago = $oferta->plan_concepto()->exists();
-
             if (!$tienePlanesPago) {
                 return response()->json([
                     'success' => false,
@@ -1606,28 +1710,47 @@ class OfertasAcademicasController extends Controller
             }
         }
 
-        $oferta->fase_id = $nuevaFase;
+        // Actualizar fase
+        $oferta->fase_id = $nuevaFase->id;
         $oferta->save();
 
+        // Recargar relaciones actualizadas
+        $oferta->refresh();
         $oferta->load([
             'fase',
             'posgrado.convenio',
             'sucursal.sede',
             'modalidad',
-            'programa'
+            'programa',
+            'modulos',
+            'plan_concepto'
         ]);
 
+        // Generar HTML actualizado para toda la fila
+        $filaHtml = view('admin.ofertas.partials.fila-oferta', [
+            'oferta' => $oferta,
+            'loop' => (object) ['iteration' => 1] // Solo para estructura
+        ])->render();
+
+        // Obtener solo las acciones si solo necesitas eso
         $accionesHtml = view('admin.ofertas.partials.acciones-celda', compact('oferta'))->render();
 
         return response()->json([
             'success' => true,
-            'msg' => 'Fase cambiada exitosamente.',
-            'fase_id' => $nuevaFase,
-            'fase_nombre' => $oferta->fase?->nombre ?? "Fase {$nuevaFase}",
-            'fase_color' => $oferta->fase?->color ?? '#cccccc',
-            'bg_color' => $this->hexToRgb($oferta->fase?->color ?? '#cccccc', 0.12),
-            'total_fases' => $totalFases,
-            'acciones_html' => $accionesHtml,
+            'msg' => 'Fase cambiada exitosamente a ' . $nuevaFase->nombre . '.',
+            'oferta_id' => $oferta->id,
+            'fase' => [
+                'id' => $nuevaFase->id,
+                'nombre' => $nuevaFase->nombre,
+                'n_fase' => $nuevaFase->n_fase,
+                'color' => $nuevaFase->color,
+            ],
+            'bg_color' => $this->hexToRgb($nuevaFase->color, 0.12),
+            'total_inscritos' => $oferta->totalInscritos(),
+            'total_preinscritos' => $oferta->totalPreInscritos(),
+            'fila_html' => $filaHtml, // HTML completo de la fila
+            'acciones_html' => $accionesHtml, // HTML solo de acciones
+            'update_type' => 'fila_completa' // Indicador para el JS
         ]);
     }
 

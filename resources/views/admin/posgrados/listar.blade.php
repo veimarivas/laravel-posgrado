@@ -197,19 +197,19 @@
             <!-- Resultados -->
             <div id="results-container">
                 <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr class="text-center">
-                                <th>N°</th>
-                                <th>Nombre</th>
-                                <th>Convenio</th>
-                                <th>Área</th>
-                                <th>Tipo</th>
-                                <th>Duración</th>
-                                <th>Carga Horaria</th>
-                                <th>Créditos</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                    <table class="table table-bordered table-hover table-striped align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-center" style="width: 4%;">N°</th>
+                                <th class="text-start" style="width: 25%; min-width: 150px;">Nombre del Posgrado</th>
+                                <th class="text-center" style="width: 10%;">Convenio</th>
+                                <th class="text-center" style="width: 8%;">Área</th>
+                                <th class="text-center" style="width: 8%;">Tipo</th>
+                                <th class="text-center" style="width: 8%;">Duración</th>
+                                <th class="text-center" style="width: 8%;">Horas</th>
+                                <th class="text-center" style="width: 5%;">Créditos</th>
+                                <th class="text-center" style="width: 6%;">Estado</th>
+                                <th class="text-center" style="width: 18%;">Acciones</th>
                             </tr>
                         </thead>
                         @include('admin.posgrados.partials.table-body')

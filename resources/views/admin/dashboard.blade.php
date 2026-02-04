@@ -1,11 +1,8 @@
 <!doctype html>
-<html lang="es" data-layout="twocolumn" data-topbar="light" data-sidebar="gradient" data-sidebar-size="lg"
-    data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="green" data-bs-theme="light"
-    data-layout-width="fluid" data-layout-position="fixed" data-layout-style="default" data-body-image="none"
-    data-sidebar-visibility="show">
+<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg"
+    data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="green">
 
 <head>
-
     <meta charset="utf-8" />
     <title>Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -32,6 +29,177 @@
     <!-- custom Css-->
     <link href="{{ asset('backend/assets/css/custom.min.css') }}" rel="stylesheet" type="text/css" />
 
+    <style>
+        /* Mejoras para la navegación */
+        #scrollbar {
+            padding: 0 0 20px;
+        }
+
+        .menu-title {
+            padding: 20px 24px 12px;
+            margin-bottom: 8px;
+        }
+
+        .menu-title-text {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            color: #878a99 !important;
+            text-transform: uppercase;
+        }
+
+        .navbar-nav .nav-link.menu-link {
+            padding: 12px 24px;
+            margin: 2px 0;
+            border-radius: 0;
+            transition: all 0.2s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar-nav .nav-link.menu-link:hover {
+            background-color: rgba(10, 179, 156, 0.08);
+            padding-left: 28px;
+        }
+
+        .navbar-nav .nav-link.menu-link.active {
+            background-color: rgba(10, 179, 156, 0.12);
+            color: #0ab39c;
+            font-weight: 500;
+        }
+
+        .navbar-nav .nav-link.menu-link.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background-color: #0ab39c;
+            border-radius: 0 3px 3px 0;
+        }
+
+        .menu-item-text {
+            flex: 1;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .menu-arrow {
+            transition: transform 0.2s ease;
+            font-size: 16px;
+            color: #878a99;
+        }
+
+        .nav-link[aria-expanded="true"] .menu-arrow {
+            transform: rotate(90deg);
+        }
+
+        /* Submenús */
+        .menu-dropdown {
+            background: rgba(10, 179, 156, 0.03);
+            margin: 0;
+            border-left: 2px solid rgba(10, 179, 156, 0.1);
+        }
+
+        .menu-dropdown .nav-link {
+            padding: 10px 24px 10px 48px;
+            font-size: 13.5px;
+            color: #495057;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .menu-dropdown .nav-link:hover {
+            background-color: rgba(10, 179, 156, 0.05);
+            padding-left: 52px;
+            color: #0ab39c;
+        }
+
+        .menu-dropdown .nav-link.active {
+            background-color: rgba(10, 179, 156, 0.08);
+            color: #0ab39c;
+            font-weight: 500;
+        }
+
+        .menu-dropdown .menu-dropdown .nav-link {
+            padding-left: 60px;
+        }
+
+        .menu-dropdown .menu-dropdown .nav-link:hover {
+            padding-left: 64px;
+        }
+
+        .submenu-arrow {
+            font-size: 14px;
+            color: #adb5bd;
+            transition: transform 0.2s ease;
+        }
+
+        .nav-link[aria-expanded="true"] .submenu-arrow {
+            transform: rotate(90deg);
+        }
+
+        /* Iconos */
+        .navbar-nav .nav-link.menu-link i {
+            font-size: 18px;
+            width: 24px;
+            margin-right: 12px;
+        }
+
+        .menu-dropdown .nav-link i {
+            font-size: 14px;
+            width: 20px;
+            margin-right: 8px;
+        }
+
+        /* Badges */
+        .navbar-nav .badge {
+            font-size: 10px;
+            padding: 3px 6px;
+            font-weight: 500;
+        }
+
+        /* Scrollbar personalizada */
+        #scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        #scrollbar::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        #scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* Responsive */
+        @media (max-width: 1199.98px) {
+            .navbar-nav .nav-link.menu-link {
+                padding: 10px 16px;
+            }
+
+            .menu-dropdown .nav-link {
+                padding-left: 40px;
+            }
+        }
+
+        /* Estilos para los logos */
+        .logo-sm img {
+            transition: all 0.3s ease;
+        }
+
+        .logo-lg img {
+            transition: all 0.3s ease;
+        }
+    </style>
 </head>
 
 <body>
@@ -41,55 +209,36 @@
 
         @include('admin.body.header')
 
-        <!-- removeNotificationModal -->
-        <div id="removeNotificationModal" class="modal fade zoomIn" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
-                            id="NotificationModalbtn-close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="mt-2 text-center">
-                            <lord-icon src="https://cdn.lordicon.com/gsqxdxog.json" trigger="loop"
-                                colors="primary:#f7b84b,secondary:#f06548" style="width:100px;height:100px"></lord-icon>
-                            <div class="mt-4 pt-2 fs-15 mx-4 mx-sm-5">
-                                <h4>Are you sure ?</h4>
-                                <p class="text-muted mx-4 mb-0">Are you sure you want to remove this Notification ?</p>
-                            </div>
-                        </div>
-                        <div class="d-flex gap-2 justify-content-center mt-4 mb-2">
-                            <button type="button" class="btn w-sm btn-light" data-bs-dismiss="modal">Close</button>
-                            <button type="button" class="btn w-sm btn-danger" id="delete-notification">Yes, Delete
-                                It!</button>
-                        </div>
-                    </div>
-
-                </div><!-- /.modal-content -->
-            </div><!-- /.modal-dialog -->
-        </div><!-- /.modal -->
         <!-- ========== App Menu ========== -->
         <div class="app-menu navbar-menu">
             <!-- LOGO -->
             <div class="navbar-brand-box">
-                <!-- Dark Logo-->
-                <a href="index.html" class="logo logo-dark">
+                <!-- Dark Logo (para sidebar comprimido y expandido en modo dark) -->
+                <a href="{{ url('/admin/dashboard') }}" class="logo logo-dark">
+                    <!-- Logo pequeño (sidebar comprimido) -->
                     <span class="logo-sm">
-                        <img src="{{ asset('backend/assets/images/faq-img.png') }}" alt="" height="22">
+                        <img src="{{ asset('backend/assets/images/logo.png') }}" alt="UNIP" height="22">
                     </span>
+                    <!-- Logo grande (sidebar expandido) -->
                     <span class="logo-lg">
-                        <img src="{{ asset('backend/assets/images/faq-img.png') }}" alt="" height="17">
+                        <img src="{{ asset('backend/assets/images/logo_principal.png') }}" alt="UNIP"
+                            height="30">
                     </span>
                 </a>
-                <!-- Light Logo-->
-                <a href="index.html" class="logo logo-light">
+
+                <!-- Light Logo (para sidebar comprimido y expandido en modo light) -->
+                <a href="{{ url('/admin/dashboard') }}" class="logo logo-light">
+                    <!-- Logo pequeño (sidebar comprimido) -->
                     <span class="logo-sm">
-                        <img src="{{ asset('backend/assets/images/faq-img.png') }}" alt="" height="22">
+                        <img src="{{ asset('backend/assets/images/logo.png') }}" alt="UNIP" height="22">
                     </span>
+                    <!-- Logo grande (sidebar expandido) -->
                     <span class="logo-lg">
-                        <img src="{{ asset('backend/assets/images/faq-img.png') }}" alt="" height="17">
+                        <img src="{{ asset('backend/assets/images/logo_principal.png') }}" alt="UNIP"
+                            height="30">
                     </span>
                 </a>
+
                 <button type="button" class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover"
                     id="vertical-hover">
                     <i class="ri-record-circle-line"></i>
@@ -97,55 +246,15 @@
             </div>
 
             <div class="dropdown sidebar-user m-1 rounded">
-                <button type="button" class="btn material-shadow-none" id="page-header-user-dropdown"
-                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <span class="d-flex align-items-center gap-2">
-                        <img class="rounded header-profile-user" src="assets/images/users/avatar-1.jpg"
-                            alt="Header Avatar">
-                        <span class="text-start">
-                            <span class="d-block fw-medium sidebar-user-name-text">Anna Adame</span>
-                            <span class="d-block fs-14 sidebar-user-name-sub-text"><i
-                                    class="ri ri-circle-fill fs-10 text-success align-baseline"></i> <span
-                                    class="align-middle">Online</span></span>
-                        </span>
-                    </span>
-                </button>
-                <div class="dropdown-menu dropdown-menu-end">
-                    <!-- item-->
-                    <h6 class="dropdown-header">Welcome Anna!</h6>
-                    <a class="dropdown-item" href="pages-profile.html"><i
-                            class="mdi mdi-account-circle text-muted fs-16 align-middle me-1"></i> <span
-                            class="align-middle">Profile</span></a>
-                    <a class="dropdown-item" href="apps-chat.html"><i
-                            class="mdi mdi-message-text-outline text-muted fs-16 align-middle me-1"></i> <span
-                            class="align-middle">Messages</span></a>
-                    <a class="dropdown-item" href="apps-tasks-kanban.html"><i
-                            class="mdi mdi-calendar-check-outline text-muted fs-16 align-middle me-1"></i> <span
-                            class="align-middle">Taskboard</span></a>
-                    <a class="dropdown-item" href="pages-faqs.html"><i
-                            class="mdi mdi-lifebuoy text-muted fs-16 align-middle me-1"></i> <span
-                            class="align-middle">Help</span></a>
-                    <div class="dropdown-divider"></div>
-                    <a class="dropdown-item" href="pages-profile.html"><i
-                            class="mdi mdi-wallet text-muted fs-16 align-middle me-1"></i> <span
-                            class="align-middle">Balance : <b>$5971.67</b></span></a>
-                    <a class="dropdown-item" href="pages-profile-settings.html"><span
-                            class="badge bg-success-subtle text-success mt-1 float-end">New</span><i
-                            class="mdi mdi-cog-outline text-muted fs-16 align-middle me-1"></i> <span
-                            class="align-middle">Settings</span></a>
-                    <a class="dropdown-item" href="auth-lockscreen-basic.html"><i
-                            class="mdi mdi-lock text-muted fs-16 align-middle me-1"></i> <span
-                            class="align-middle">Lock screen</span></a>
-                    <a class="dropdown-item" href="auth-logout-basic.html"><i
-                            class="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> <span class="align-middle"
-                            data-key="t-logout">Logout</span></a>
-                </div>
+                <!-- Aquí puedes agregar información del usuario si es necesario -->
             </div>
+
             @include('admin.body.sidebar')
 
             <div class="sidebar-background"></div>
         </div>
         <!-- Left Sidebar End -->
+
         <!-- Vertical Overlay-->
         <div class="vertical-overlay"></div>
 
@@ -159,7 +268,6 @@
 
                     @yield('admin')
 
-
                 </div>
                 <!-- container-fluid -->
             </div>
@@ -172,15 +280,13 @@
     </div>
     <!-- END layout-wrapper -->
 
-
-
     <!--start back-to-top-->
     <button onclick="topFunction()" class="btn btn-danger btn-icon" id="back-to-top">
         <i class="ri-arrow-up-line"></i>
     </button>
     <!--end back-to-top-->
 
-    <!-- jQuery (necesario para tu código AJAX y eventos) -->
+    <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"
         integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
 
@@ -210,17 +316,70 @@
 
     <!-- App js -->
     <script src="{{ asset('backend/assets/js/app.js') }}"></script>
-    <!-- Inicialización global (opcional, pero útil) -->
-    <script>
-        window.feather = feather; // Asegura que esté en el scope global
-        feather.replace();
-    </script>
 
+    <!-- Script para manejar el cambio de logos -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Obtener el botón que controla el sidebar
+            const verticalHoverBtn = document.getElementById('vertical-hover');
+            const appMenu = document.querySelector('.app-menu');
+            const logoSm = document.querySelector('.logo-sm img');
+            const logoLg = document.querySelector('.logo-lg img');
+
+            // Función para actualizar los logos según el estado del sidebar
+            function updateLogos() {
+                // Verificar si el sidebar está comprimido (tiene la clase 'hover')
+                if (appMenu.classList.contains('hover')) {
+                    // Sidebar comprimido - mostrar logo.jpeg en ambos
+                    if (logoSm) {
+                        logoSm.src = "{{ asset('backend/assets/images/logo.png') }}";
+                    }
+                    if (logoLg) {
+                        logoLg.src = "{{ asset('backend/assets/images/logo.png') }}";
+                    }
+                } else {
+                    // Sidebar expandido - mostrar diferentes logos
+                    if (logoSm) {
+                        logoSm.src = "{{ asset('backend/assets/images/logo.png') }}";
+                    }
+                    if (logoLg) {
+                        logoLg.src = "{{ asset('backend/assets/images/logo_principal.png') }}";
+                    }
+                }
+            }
+
+            // Actualizar logos al cargar la página
+            updateLogos();
+
+            // Actualizar logos cuando se cambie el tamaño del sidebar
+            if (verticalHoverBtn) {
+                verticalHoverBtn.addEventListener('click', function() {
+                    // Esperar un momento para que se aplique la clase
+                    setTimeout(updateLogos, 100);
+                });
+            }
+
+            // También actualizar cuando se redimensione la ventana
+            window.addEventListener('resize', updateLogos);
+
+            // Observar cambios en las clases del sidebar para detectar cambios
+            const observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.attributeName === 'class') {
+                        updateLogos();
+                    }
+                });
+            });
+
+            if (appMenu) {
+                observer.observe(appMenu, {
+                    attributes: true
+                });
+            }
+        });
+    </script>
 
     @stack('script')
 </body>
-
-
-<!-- Mirrored from themesbrand.com/velzon/html/master/index.html by HTTrack Website Copier/3.x [XR&CO'2014], Mon, 12 Aug 2024 07:45:33 GMT -->
 
 </html>

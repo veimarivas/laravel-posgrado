@@ -900,7 +900,7 @@ class InscripcionesController extends Controller
         return response()->json($cuotas);
     }
 
-    public function registrarConAsesor(Request $request)
+    /*public function registrarConAsesor(Request $request)
     {
         // Validar los datos del formulario
         $validated = $request->validate([
@@ -1016,6 +1016,221 @@ class InscripcionesController extends Controller
                         'cargo' => $asesor->cargo->nombre ?? 'Asesor',
                         'celular' => $asesor->trabajador->persona->celular ?? 'No disponible',
                     ],
+                    'fecha_registro' => $inscripcion->fecha_registro->format('d/m/Y H:i'),
+                    'estado' => $inscripcion->estado,
+                ]
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Capturar errores de validación
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('Error al registrar pre-inscripción con asesor: ' . $e->getMessage());
+            \Log::error('Datos recibidos: ' . json_encode($request->all()));
+            \Log::error('Trace: ' . $e->getTraceAsString());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al registrar la pre-inscripción. Por favor, inténtalo nuevamente o contacta con soporte.',
+                'error' => config('app.debug') ? $e->getMessage() : 'Error interno del servidor'
+            ], 500);
+        }
+    }*/
+
+    public function registrarConAsesor(Request $request)
+    {
+        // Validar los datos del formulario
+        $validated = $request->validate([
+            'oferta_id' => 'required|exists:ofertas_academicas,id',
+            'asesor_id' => 'required|exists:trabajadores_cargos,id',
+            'plan_pago_id' => 'nullable|exists:planes_pagos,id',
+            'carnet' => 'required|string|max:20',
+            'expedido' => 'nullable|string|max:10',
+            'nombres' => 'required|string|max:255',
+            'apellido_paterno' => 'required|string|max:255',
+            'apellido_materno' => 'nullable|string|max:255',
+            'sexo' => 'nullable|string|in:Hombre,Mujer',
+            'estado_civil' => 'nullable|string|max:50',
+            'fecha_nacimiento' => 'nullable|date',
+            'correo' => 'required|email|max:255',
+            'celular' => 'required|string|max:20',
+            'telefono' => 'nullable|string|max:20',
+            'direccion' => 'nullable|string|max:500',
+            'ciudade_id' => 'required|exists:ciudades,id',
+            'terminos' => 'required|accepted',
+        ]);
+
+        try {
+            // 1. Verificar si la persona existe por carnet
+            $persona = Persona::where('carnet', $request->carnet)->first();
+
+            if (!$persona) {
+                // La persona no existe, crear nueva persona
+                $persona = Persona::create([
+                    'carnet' => $request->carnet,
+                    'expedido' => $request->expedido,
+                    'nombres' => $request->nombres,
+                    'apellido_paterno' => $request->apellido_paterno,
+                    'apellido_materno' => $request->apellido_materno,
+                    'sexo' => $request->sexo,
+                    'estado_civil' => $request->estado_civil,
+                    'fecha_nacimiento' => $request->fecha_nacimiento,
+                    'correo' => $request->correo,
+                    'celular' => $request->celular,
+                    'telefono' => $request->telefono,
+                    'direccion' => $request->direccion,
+                    'ciudade_id' => $request->ciudade_id,
+                ]);
+            } else {
+                // La persona existe, actualizar datos si es necesario
+                $persona->update([
+                    'nombres' => $request->nombres,
+                    'apellido_paterno' => $request->apellido_paterno,
+                    'apellido_materno' => $request->apellido_materno,
+                    'correo' => $request->correo,
+                    'celular' => $request->celular,
+                    'ciudade_id' => $request->ciudade_id,
+                ]);
+            }
+
+            // 2. Verificar si la persona existe como estudiante
+            $estudiante = Estudiante::where('persona_id', $persona->id)->first();
+
+            if (!$estudiante) {
+                // La persona no es estudiante, crear nuevo estudiante
+                $estudiante = Estudiante::create([
+                    'persona_id' => $persona->id,
+                ]);
+            }
+
+            // 3. Verificar si el estudiante ya está inscrito en la oferta académica
+            $inscripcionExistente = Inscripcione::where('estudiante_id', $estudiante->id)
+                ->where('ofertas_academica_id', $request->oferta_id)
+                ->whereIn('estado', ['Pre-Inscrito', 'Inscrito'])
+                ->first();
+
+            if ($inscripcionExistente) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ya se tiene registro en el programa, el asesor se comunicará con usted.',
+                    'estado' => $inscripcionExistente->estado,
+                    'fecha_registro' => $inscripcionExistente->fecha_registro,
+                ], 422);
+            }
+
+            // 4. Validar el plan de pago si se proporciona
+            $planPagoId = $request->plan_pago_id;
+
+            if ($planPagoId) {
+                // Verificar que el plan de pago exista
+                $planPago = PlanesPago::find($planPagoId);
+
+                if (!$planPago) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'El plan de pago seleccionado no existe.'
+                    ], 422);
+                }
+
+                // Verificar que el plan de pago esté disponible para esta oferta
+                $planConcepto = PlanesConcepto::where('planes_pago_id', $planPagoId)
+                    ->where('ofertas_academica_id', $request->oferta_id)
+                    ->first();
+
+                if (!$planConcepto) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'El plan de pago seleccionado no está disponible para esta oferta.'
+                    ], 422);
+                }
+
+                // Verificar si el plan está habilitado
+                if (!$planPago->habilitado) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'El plan de pago seleccionado no está habilitado.'
+                    ], 422);
+                }
+
+                // Verificar si es una promoción y si está vigente
+                if ($planPago->es_promocion) {
+                    $now = now();
+                    $inicio = $planPago->fecha_inicio_promocion;
+                    $fin = $planPago->fecha_fin_promocion;
+
+                    if (!$inicio || !$fin || !$now->between($inicio, $fin)) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'La promoción del plan de pago no está vigente.'
+                        ], 422);
+                    }
+                }
+            }
+
+            // 5. Crear la inscripción con estado "Pre-Inscrito"
+            $inscripcionData = [
+                'estudiante_id' => $estudiante->id,
+                'ofertas_academica_id' => $request->oferta_id,
+                'trabajadores_cargo_id' => $request->asesor_id,
+                'estado' => 'Pre-Inscrito',
+                'fecha_registro' => now(),
+                'observacion' => 'Pre-inscripción realizada desde formulario público con asesor'
+            ];
+
+            // Asignar plan de pago si se proporcionó
+            if ($planPagoId) {
+                $inscripcionData['planes_pago_id'] = $planPagoId;
+            }
+
+            $inscripcion = Inscripcione::create($inscripcionData);
+
+            // 6. Obtener datos para la respuesta
+            $oferta = OfertasAcademica::with(['programa', 'sucursal'])->find($request->oferta_id);
+            $asesor = TrabajadoresCargo::with(['trabajador.persona', 'cargo'])->find($request->asesor_id);
+
+            // Obtener información del plan de pago si existe
+            $planPagoInfo = null;
+            if ($planPagoId) {
+                $planPago = PlanesPago::find($planPagoId);
+                $planConcepto = PlanesConcepto::where('planes_pago_id', $planPagoId)
+                    ->where('ofertas_academica_id', $request->oferta_id)
+                    ->first();
+
+                $planPagoInfo = [
+                    'id' => $planPago->id,
+                    'nombre' => $planPago->nombre,
+                    'cuota_mensual' => $planConcepto ? $planConcepto->pago_bs : 0,
+                    'n_cuotas' => $planConcepto ? $planConcepto->n_cuotas : 0,
+                    'inversion_total' => $planConcepto ? $planConcepto->pago_bs * $planConcepto->n_cuotas : 0,
+                    'es_promocion' => $planPago->es_promocion
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pre-inscripción registrada exitosamente. Nuestro asesor se pondrá en contacto contigo pronto.',
+                'data' => [
+                    'inscripcion_id' => $inscripcion->id,
+                    'estudiante' => [
+                        'nombre_completo' => trim($persona->nombres . ' ' . $persona->apellido_paterno . ' ' . $persona->apellido_materno),
+                        'carnet' => $persona->carnet,
+                        'celular' => $persona->celular,
+                        'correo' => $persona->correo,
+                    ],
+                    'programa' => [
+                        'nombre' => $oferta->programa->nombre ?? 'Programa no disponible',
+                        'codigo' => $oferta->codigo,
+                        'sucursal' => $oferta->sucursal->nombre ?? 'Sede no disponible',
+                    ],
+                    'asesor' => [
+                        'nombre' => $asesor->trabajador->persona->nombres . ' ' . $asesor->trabajador->persona->apellido_paterno,
+                        'cargo' => $asesor->cargo->nombre ?? 'Asesor',
+                        'celular' => $asesor->trabajador->persona->celular ?? 'No disponible',
+                    ],
+                    'plan_pago' => $planPagoInfo,
                     'fecha_registro' => $inscripcion->fecha_registro->format('d/m/Y H:i'),
                     'estado' => $inscripcion->estado,
                 ]
