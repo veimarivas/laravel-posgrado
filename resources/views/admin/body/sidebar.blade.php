@@ -214,12 +214,14 @@
                                             </a>
                                         </li>
                                     @endif
-                                    <li class="nav-item">
-                                        <a href="{{ route('admin.vendedores.listar') }}"
-                                            class="nav-link {{ request()->routeIs('admin.vendedores.*') ? 'active' : '' }}">
-                                            Asesores
-                                        </a>
-                                    </li>
+                                    @if (Auth::guard('web')->user()->can('asesores.listar'))
+                                        <li class="nav-item">
+                                            <a href="{{ route('admin.vendedores.listar') }}"
+                                                class="nav-link {{ request()->routeIs('admin.vendedores.*') ? 'active' : '' }}">
+                                                Asesores
+                                            </a>
+                                        </li>
+                                    @endif
                                 </ul>
                             </div>
                         </li>
@@ -267,6 +269,7 @@
                     </ul>
                 </div>
             </li>
+
 
             <!-- Área Académica -->
             <li class="nav-item">
@@ -334,64 +337,66 @@
                 </div>
             </li>
 
-            <!-- Área Contable -->
-            <li class="nav-item">
-                <a class="nav-link menu-link collapsed {{ request()->routeIs('admin.planes.*', 'admin.conceptos.*', 'admin.recibos.*', 'admin.contabilidad.*') ? 'active' : '' }}"
-                    href="#sidebarContable" data-bs-toggle="collapse" role="button"
-                    aria-expanded="{{ request()->routeIs('admin.planes.*', 'admin.conceptos.*', 'admin.recibos.*', 'admin.contabilidad.*') ? 'true' : 'false' }}"
-                    aria-controls="sidebarContable">
-                    <i class="ri-money-dollar-circle-line"></i>
-                    <span>Área Contable</span>
+            @if (Auth::guard('web')->user()->can('contabilidad.gestion'))
+                <!-- Área Contable -->
+                <li class="nav-item">
+                    <a class="nav-link menu-link collapsed {{ request()->routeIs('admin.planes.*', 'admin.conceptos.*', 'admin.recibos.*', 'admin.contabilidad.*') ? 'active' : '' }}"
+                        href="#sidebarContable" data-bs-toggle="collapse" role="button"
+                        aria-expanded="{{ request()->routeIs('admin.planes.*', 'admin.conceptos.*', 'admin.recibos.*', 'admin.contabilidad.*') ? 'true' : 'false' }}"
+                        aria-controls="sidebarContable">
+                        <i class="ri-money-dollar-circle-line"></i>
+                        <span>Área Contable</span>
 
-                </a>
-                <div class="collapse menu-dropdown {{ request()->routeIs('admin.planes.*', 'admin.conceptos.*', 'admin.recibos.*', 'admin.contabilidad.*') ? 'show' : '' }}"
-                    id="sidebarContable">
-                    <ul class="nav nav-sm flex-column">
-                        @if (Auth::guard('web')->user()->can('planes.pagos.listar'))
+                    </a>
+                    <div class="collapse menu-dropdown {{ request()->routeIs('admin.planes.*', 'admin.conceptos.*', 'admin.recibos.*', 'admin.contabilidad.*') ? 'show' : '' }}"
+                        id="sidebarContable">
+                        <ul class="nav nav-sm flex-column">
+                            @if (Auth::guard('web')->user()->can('planes.pagos.listar'))
+                                <li class="nav-item">
+                                    <a href="{{ route('admin.planes.listar') }}"
+                                        class="nav-link {{ request()->routeIs('admin.planes.*') ? 'active' : '' }}">
+                                        Planes de Pago
+                                    </a>
+                                </li>
+                            @endif
+                            @if (Auth::guard('web')->user()->can('conceptos.pagos.listar'))
+                                <li class="nav-item">
+                                    <a href="{{ route('admin.conceptos.listar') }}"
+                                        class="nav-link {{ request()->routeIs('admin.conceptos.*') ? 'active' : '' }}">
+                                        Conceptos de Pago
+                                    </a>
+                                </li>
+                            @endif
+
                             <li class="nav-item">
-                                <a href="{{ route('admin.planes.listar') }}"
-                                    class="nav-link {{ request()->routeIs('admin.planes.*') ? 'active' : '' }}">
-                                    Planes de Pago
+                                <a class="nav-link {{ request()->routeIs('admin.recibos.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.recibos.historial') }}">
+                                    <i class="ri-file-text-line"></i> Historial de Recibos
                                 </a>
                             </li>
-                        @endif
-                        @if (Auth::guard('web')->user()->can('conceptos.pagos.listar'))
+
                             <li class="nav-item">
-                                <a href="{{ route('admin.conceptos.listar') }}"
-                                    class="nav-link {{ request()->routeIs('admin.conceptos.*') ? 'active' : '' }}">
-                                    Conceptos de Pago
+                                <a class="nav-link {{ request()->routeIs('admin.contabilidad.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.contabilidad.buscar') }}">
+                                    <i class="ri-calculator-line"></i> Área Contable
                                 </a>
                             </li>
-                        @endif
-
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('admin.recibos.*') ? 'active' : '' }}"
-                                href="{{ route('admin.recibos.historial') }}">
-                                <i class="ri-file-text-line"></i> Historial de Recibos
-                            </a>
-                        </li>
-
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('admin.contabilidad.*') ? 'active' : '' }}"
-                                href="{{ route('admin.contabilidad.buscar') }}">
-                                <i class="ri-calculator-line"></i> Área Contable
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('admin.bancos.*') ? 'active' : '' }}"
-                                href="{{ route('admin.bancos.listar') }}">
-                                <i class="ri-calculator-line"></i> Bancos
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('admin.cuentas-bancarias.*') ? 'active' : '' }}"
-                                href="{{ route('admin.cuentas-bancarias.listar') }}">
-                                <i class="ri-calculator-line"></i> Cuentas Bancarias
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.bancos.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.bancos.listar') }}">
+                                    <i class="ri-calculator-line"></i> Bancos
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.cuentas-bancarias.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.cuentas-bancarias.listar') }}">
+                                    <i class="ri-calculator-line"></i> Cuentas Bancarias
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+            @endif
         </ul>
     </div>
 </div>

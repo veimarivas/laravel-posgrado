@@ -21,20 +21,25 @@
         {{-- Botones según fase --}}
         {{-- Botones según fase --}}
         @if ($faseId == 1)
-            <button type="button" title="Editar Oferta académica" class="btn btn-warning btn-sm editOfertaBtn"
-                data-oferta-id="{{ $oferta->id }}">
-                <i class="ri-edit-line"></i>
-            </button>
+            @if (Auth::guard('web')->user()->can('ofertas.academicas.editar'))
+                <button type="button" title="Editar Oferta académica" class="btn btn-warning btn-sm editOfertaBtn"
+                    data-oferta-id="{{ $oferta->id }}">
+                    <i class="ri-edit-line"></i>
+                </button>
+            @endif
         @elseif ($faseId == 2)
-            <button type="button" title="Editar fase 2" class="btn btn-orange btn-sm editFase2Btn"
-                data-oferta-id="{{ $oferta->id }}">
-                <i class="ri-settings-4-line"></i>
-            </button>
-
-            <a href="{{ route('admin.ofertas.contabilidad.planes-pago', $oferta->id) }}" class="btn btn-warning btn-sm"
-                title="Gestión Contable">
-                <i class="ri-money-dollar-circle-line"></i>
-            </a>
+            @if (Auth::guard('web')->user()->can('ofertas.academicas.editar'))
+                <button type="button" title="Editar fase 2" class="btn btn-orange btn-sm editFase2Btn"
+                    data-oferta-id="{{ $oferta->id }}">
+                    <i class="ri-settings-4-line"></i>
+                </button>
+            @endif
+            @if (Auth::guard('web')->user()->can('contabilidad.gestion'))
+                <a href="{{ route('admin.ofertas.contabilidad.planes-pago', $oferta->id) }}"
+                    class="btn btn-warning btn-sm" title="Gestión Contable">
+                    <i class="ri-money-dollar-circle-line"></i>
+                </a>
+            @endif
 
             <a href="{{ route('admin.ofertas.vermodulos', $oferta->id) }}" class="btn btn-info btn-sm"
                 title="Ver Módulos">
@@ -42,10 +47,12 @@
             </a>
         @elseif ($faseId == 3)
             {{-- Fase 3: Inscripciones --}}
-            <a href="{{ route('admin.ofertas.contabilidad.planes-pago', $oferta->id) }}" class="btn btn-warning btn-sm"
-                title="Gestión Contable">
-                <i class="ri-money-dollar-circle-line"></i>
-            </a>
+            @if (Auth::guard('web')->user()->can('contabilidad.gestion'))
+                <a href="{{ route('admin.ofertas.contabilidad.planes-pago', $oferta->id) }}"
+                    class="btn btn-warning btn-sm" title="Gestión Contable">
+                    <i class="ri-money-dollar-circle-line"></i>
+                </a>
+            @endif
 
             <a href="{{ route('admin.ofertas.vermodulos', $oferta->id) }}" class="btn btn-info btn-sm"
                 title="Ver Módulos">
@@ -63,11 +70,12 @@
             </button>
         @elseif ($faseId == 4)
             {{-- Fase 4: En Desarrollo --}}
-
-            <a href="{{ route('admin.ofertas.contabilidad.planes-pago', $oferta->id) }}" class="btn btn-warning btn-sm"
-                title="Gestión Contable">
-                <i class="ri-money-dollar-circle-line"></i>
-            </a>
+            @if (Auth::guard('web')->user()->can('contabilidad.gestion'))
+                <a href="{{ route('admin.ofertas.contabilidad.planes-pago', $oferta->id) }}"
+                    class="btn btn-warning btn-sm" title="Gestión Contable">
+                    <i class="ri-money-dollar-circle-line"></i>
+                </a>
+            @endif
 
             <a href="{{ route('admin.ofertas.vermodulos', $oferta->id) }}" class="btn btn-info btn-sm"
                 title="Ver Módulos">
@@ -81,26 +89,28 @@
         @endif
     </div>
 
-    {{-- Fila 2: Cambio de fase - SEPARADOS DEL GRUPO PRINCIPAL --}}
-    <div class="btn-group" role="group">
-        @if ($oferta->fase_id > 1)
-            <button type="button" class="btn btn-primary btn-sm change-phase" data-oferta-id="{{ $oferta->id }}"
-                data-direction="-1" title="Fase anterior">
-                <i class="ri-arrow-left-line"></i>
-            </button>
-        @endif
+    @if (Auth::guard('web')->user()->can('fases.administrar'))
+        {{-- Fila 2: Cambio de fase - SEPARADOS DEL GRUPO PRINCIPAL --}}
+        <div class="btn-group" role="group">
+            @if ($oferta->fase_id > 1)
+                <button type="button" class="btn btn-primary btn-sm change-phase" data-oferta-id="{{ $oferta->id }}"
+                    data-direction="-1" title="Fase anterior">
+                    <i class="ri-arrow-left-line"></i>
+                </button>
+            @endif
 
-        @php
-            $maxFase = \App\Models\Fase::max('n_fase') ?? 3;
-        @endphp
+            @php
+                $maxFase = \App\Models\Fase::max('n_fase') ?? 3;
+            @endphp
 
-        @if ($oferta->fase_id < $maxFase)
-            <button type="button" class="btn btn-success btn-sm change-phase" data-oferta-id="{{ $oferta->id }}"
-                data-direction="1" title="Fase siguiente">
-                <i class="ri-arrow-right-line"></i>
-            </button>
-        @endif
-    </div>
+            @if ($oferta->fase_id < $maxFase)
+                <button type="button" class="btn btn-success btn-sm change-phase" data-oferta-id="{{ $oferta->id }}"
+                    data-direction="1" title="Fase siguiente">
+                    <i class="ri-arrow-right-line"></i>
+                </button>
+            @endif
+        </div>
+    @endif
 
     {{-- Fila 3: Info rápida --}}
     <div class="text-center">
