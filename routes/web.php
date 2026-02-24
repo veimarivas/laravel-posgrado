@@ -7,6 +7,7 @@ use App\Http\Controllers\Backend\BienvenidosController;
 use App\Http\Controllers\Backend\CajasController;
 use App\Http\Controllers\Backend\CargosController;
 use App\Http\Controllers\Backend\CiudadesController;
+use App\Http\Controllers\Backend\ComprobantesController;
 use App\Http\Controllers\Backend\ConceptosController;
 use App\Http\Controllers\Backend\ConveniosController;
 use App\Http\Controllers\Backend\CuentasBancariasController;
@@ -247,8 +248,15 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
         Route::post('/admin/profile/change-password', 'changePassword')->name('admin.profile.change-password');
         Route::post('/admin/users/reset-password', 'resetPassword')->name('admin.users.reset-password');
 
-        // En el grupo de UserProfileController
         Route::get('/admin/profile/marketing/enlace-con-plan', 'generarEnlaceConPlan')->name('admin.profile.marketing.enlace-con-plan');
+
+        Route::get('/admin/profile/marketing/inscritos-documentos', [UserProfileController::class, 'getInscritosDocumentos'])->name('admin.profile.marketing.inscritos-documentos');
+
+        Route::post('/admin/profile/marketing/subir-respaldo', [UserProfileController::class, 'subirRespaldoPago'])
+            ->name('admin.profile.marketing.subir-respaldo');
+
+        Route::get('/admin/profile/marketing/inscripcion/{id}/cuotas', [UserProfileController::class, 'obtenerCuotasInscripcion'])
+            ->name('admin.profile.marketing.inscripcion.cuotas');
     });
 
     //AREAS
@@ -440,6 +448,15 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
         Route::put('/admin/sucursales/modificar', 'modificar')->name('admin.sucursales.modificar');
         Route::delete('/admin/sucursales/eliminar', 'eliminar')->name('admin.sucursales.eliminar');
         Route::post('/admin/sucursales/verificar', 'verificarNombre')->name('admin.sucursales.verificar');
+    });
+
+    // SUCURSALES - AGREGAR RUTAS FALTANTES
+    Route::controller(ComprobantesController::class)->prefix('admin')->name('admin.comprobantes.')->group(function () {
+        Route::get('/comprobantes', 'index')->name('index');
+        Route::get('/comprobantes/datos', 'datos')->name('datos');
+        Route::get('/comprobante/{id}/detalle', 'detalle')->name('detalle');
+        Route::post('/comprobante/{id}/verificar', 'verificar')->name('verificar');
+        Route::post('/comprobante/{id}/rechazar', 'rechazar')->name('rechazar');
     });
 
     // ESTUDIANTES

@@ -376,6 +376,13 @@
                             </li>
 
                             <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.comprobantes.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.comprobantes.index') }}">
+                                    <i class="ri-file-text-line"></i> Comprobantes de pago
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('admin.contabilidad.*') ? 'active' : '' }}"
                                     href="{{ route('admin.contabilidad.buscar') }}">
                                     <i class="ri-calculator-line"></i> Área Contable

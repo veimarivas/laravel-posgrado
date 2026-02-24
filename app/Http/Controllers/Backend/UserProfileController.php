@@ -12,15 +12,19 @@ use App\Models\Universidade;
 use App\Models\Cargo;
 use App\Models\Sucursale;
 use App\Models\TrabajadoresCargo;
-use App\Models\Inscripcione;
+
 use App\Models\OfertasAcademica;
+use App\Models\PagoRespaldo;
+use App\Models\Inscripcione;
+use App\Models\Cuota;
+use Illuminate\Support\Facades\Storage;
 use App\Models\PlanesConcepto;
 use App\Models\PlanesPago;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Storage;
+
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -35,12 +39,19 @@ class UserProfileController extends Controller
         $user = Auth::user();
         $persona = $user->persona;
 
-        // Cargar datos para formularios
+        // Calcular si tiene cargos de marketing
+        $tieneMarketing = false;
+        if ($persona && $persona->trabajador) {
+            $tieneMarketing = $persona->trabajador->trabajadores_cargos()
+                ->whereIn('cargo_id', [2, 3, 6])
+                ->where('estado', 'Vigente')
+                ->exists(); // exists() es más eficiente que count() > 0
+        }
+
+        // Cargar datos para formularios (si los necesitas)
         $grados = GradosAcademico::all();
         $profesiones = Profesione::all();
         $universidades = Universidade::all();
-
-        // Cargos disponibles
         $cargos = Cargo::all();
         $sucursales = Sucursale::all();
 
@@ -50,7 +61,8 @@ class UserProfileController extends Controller
             'profesiones',
             'universidades',
             'cargos',
-            'sucursales'
+            'sucursales',
+            'tieneMarketing'  // <-- Agregado
         ));
     }
 
@@ -1286,9 +1298,6 @@ class UserProfileController extends Controller
     /**
      * Obtener ofertas académicas en fase 3 para marketing
      */
-    /**
-     * Obtener ofertas académicas en fase 3 para marketing
-     */
     public function getOfertasMarketingActivas(Request $request)
     {
         try {
@@ -1565,6 +1574,396 @@ class UserProfileController extends Controller
                 'success' => false,
                 'msg' => 'Error interno del servidor: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    public function getInscritosDocumentos(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $persona = $user->persona;
+
+            if (!$persona || !$persona->trabajador) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Usuario no tiene trabajador asociado'
+                ], 403);
+            }
+
+            // IDs de cargos de marketing (2,3,6)
+            $cargosMarketingIds = $persona->trabajador->trabajadores_cargos()
+                ->whereIn('cargo_id', [2, 3, 6])
+                ->where('estado', 'Vigente')
+                ->pluck('id');
+
+            if ($cargosMarketingIds->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tiene cargos de marketing vigentes'
+                ], 403);
+            }
+
+            $search = $request->input('search', '');
+            $perPage = $request->input('per_page', 10);
+
+            $query = Inscripcione::with([
+                'estudiante.persona.estudios',
+                'ofertaAcademica.programa',
+                'ofertaAcademica.sucursal.sede',
+                'cuotas' // <-- Agregamos la relación cuotas
+            ])
+                ->whereIn('trabajadores_cargo_id', $cargosMarketingIds)
+                ->where('estado', 'Inscrito');
+
+            if (!empty($search)) {
+                $query->whereHas('estudiante.persona', function ($q) use ($search) {
+                    $q->where('nombres', 'like', "%{$search}%")
+                        ->orWhere('apellido_paterno', 'like', "%{$search}%")
+                        ->orWhere('apellido_materno', 'like', "%{$search}%")
+                        ->orWhere('carnet', 'like', "%{$search}%");
+                });
+            }
+
+            $inscripciones = $query->orderBy('fecha_registro', 'desc')->paginate($perPage);
+
+            // Transformar cada inscripción
+            $inscripciones->getCollection()->transform(function ($inscripcion) {
+                $persona = $inscripcion->estudiante->persona;
+                $estudios = $persona->estudios;
+
+                // Estado de documentos
+                $carnetEstado = $this->evaluarDocumento(
+                    $persona->fotografia_carnet,
+                    $persona->carnet_verificado ?? false
+                );
+
+                $certificadoNacimientoEstado = $this->evaluarDocumento(
+                    $persona->fotografia_certificado_nacimiento,
+                    $persona->certificado_nacimiento_verificado ?? false
+                );
+
+                $docAcademicoEstado = $this->evaluarDocumentoEnEstudios($estudios, 'documento_academico', 'documento_academico_verificado');
+                $docProvisionEstado = $this->evaluarDocumentoEnEstudios($estudios, 'documento_provision_nacional', 'documento_provision_verificado');
+
+                $documentosCompletos = (
+                    $carnetEstado === 'verificado' &&
+                    $certificadoNacimientoEstado === 'verificado' &&
+                    $docAcademicoEstado === 'verificado' &&
+                    $docProvisionEstado === 'verificado'
+                );
+
+                // Verificar pagos iniciales
+                $primerosPagosCompletos = $this->verificarPagosIniciales($inscripcion);
+
+                $inscripcion->documentos = [
+                    'carnet' => $carnetEstado,
+                    'certificado_nacimiento' => $certificadoNacimientoEstado,
+                    'documento_academico' => $docAcademicoEstado,
+                    'documento_provision' => $docProvisionEstado,
+                    'completos' => $documentosCompletos
+                ];
+
+                $inscripcion->estudiante_nombre = trim($persona->nombres . ' ' . $persona->apellido_paterno);
+                $inscripcion->estudiante_carnet = $persona->carnet;
+                $inscripcion->programa_nombre = $inscripcion->ofertaAcademica->programa->nombre ?? 'N/A';
+                $inscripcion->sede_nombre = optional($inscripcion->ofertaAcademica->sucursal->sede)->nombre ?? 'N/A';
+                $inscripcion->sucursal_nombre = $inscripcion->ofertaAcademica->sucursal->nombre ?? 'N/A';
+                $inscripcion->pagos_iniciales_completos = $primerosPagosCompletos; // <-- Nuevo campo
+
+                return $inscripcion;
+            });
+
+            return response()->json([
+                'success' => true,
+                'inscripciones' => $inscripciones,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error en getInscritosDocumentos: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno del servidor'
+            ], 500);
+        }
+    }
+
+    /**
+     * Verifica si el estudiante ha pagado la primera cuota de matrícula y la primera cuota de colegiatura.
+     * Si no existe cuota de matrícula, se considera pagada.
+     */
+    private function verificarPagosIniciales($inscripcion)
+    {
+        $cuotas = $inscripcion->cuotas;
+
+        if ($cuotas->isEmpty()) {
+            return false;
+        }
+
+        // Ordenar por número de cuota ascendente
+        $cuotas = $cuotas->sortBy('n_cuota');
+
+        $tieneMatricula = false;
+        $matriculaPagada = false;
+        $colegiaturaPagada = false;
+
+        foreach ($cuotas as $cuota) {
+            $nombre = mb_strtolower($cuota->nombre, 'UTF-8');
+
+            // Detectar cuota de matrícula
+            if (preg_match('/(matricula|matrícula|inscripción)/i', $nombre)) {
+                $tieneMatricula = true;
+                if ($cuota->pago_terminado == 'si') {
+                    $matriculaPagada = true;
+                }
+                // No detenemos porque la matrícula puede ser la primera, pero la colegiatura puede venir después
+            }
+            // Detectar cuota de certificación (no se considera colegiatura)
+            elseif (preg_match('/(certificación|certificacion|titulación)/i', $nombre)) {
+                continue; // Ignorar y seguir
+            } else {
+                // Es una cuota de colegiatura
+                if ($cuota->pago_terminado == 'si') {
+                    $colegiaturaPagada = true;
+                }
+                // Una vez evaluada la primera cuota de colegiatura, salimos del ciclo
+                break;
+            }
+        }
+
+        // Si no hay matrícula, consideramos que está pagada
+        if (!$tieneMatricula) {
+            $matriculaPagada = true;
+        }
+
+        return $matriculaPagada && $colegiaturaPagada;
+    }
+
+    // Métodos auxiliares (deben estar dentro de la clase)
+    private function evaluarDocumento($archivo, $verificado)
+    {
+        if (empty($archivo)) {
+            return 'sin_archivo';
+        }
+        return $verificado ? 'verificado' : 'pendiente';
+    }
+
+    private function evaluarDocumentoEnEstudios($estudios, $campoArchivo, $campoVerificado)
+    {
+        if ($estudios->isEmpty()) {
+            return 'sin_archivo';
+        }
+
+        $tieneVerificado = false;
+        $tienePendiente = false;
+
+        foreach ($estudios as $estudio) {
+            $archivo = $estudio->{$campoArchivo} ?? null;
+            $verificado = $estudio->{$campoVerificado} ?? false;
+
+            if (!empty($archivo)) {
+                if ($verificado) {
+                    $tieneVerificado = true;
+                } else {
+                    $tienePendiente = true;
+                }
+            }
+        }
+
+        if ($tieneVerificado) {
+            return 'verificado';
+        }
+        if ($tienePendiente) {
+            return 'pendiente';
+        }
+        return 'sin_archivo';
+    }
+
+    /**
+     * Subir comprobante de pago (respaldo) por parte del asesor de marketing
+     */
+    public function subirRespaldoPago(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $persona = $user->persona;
+
+            if (!$persona || !$persona->trabajador) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Usuario no tiene trabajador asociado'
+                ], 403);
+            }
+
+            $cargosMarketingIds = $persona->trabajador->trabajadores_cargos()
+                ->whereIn('cargo_id', [2, 3, 6])
+                ->where('estado', 'Vigente')
+                ->pluck('id');
+
+            if ($cargosMarketingIds->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tiene permisos para realizar esta acción'
+                ], 403);
+            }
+
+            $request->validate([
+                'inscripcione_id' => 'required|exists:inscripciones,id',
+                'cuota_ids' => 'required|array|min:1',
+                'cuota_ids.*' => 'exists:cuotas,id',
+                'archivo' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
+                'observaciones' => 'nullable|string|max:500',
+            ]);
+
+            // Verificar que la inscripción pertenezca a sus cargos
+            $inscripcion = Inscripcione::find($request->inscripcione_id);
+            if (!$cargosMarketingIds->contains($inscripcion->trabajadores_cargo_id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'La inscripción no corresponde a sus cargos'
+                ], 403);
+            }
+
+            // Verificar que todas las cuotas pertenezcan a la inscripción
+            $cuotasIds = $inscripcion->cuotas()->whereIn('id', $request->cuota_ids)->pluck('id');
+            if (count($cuotasIds) != count($request->cuota_ids)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Alguna cuota no pertenece a esta inscripción'
+                ], 422);
+            }
+
+            // Guardar archivo
+            $file = $request->file('archivo');
+            $nombreArchivo = 'respaldo_' . time() . '_' . $inscripcion->id . '.' . $file->getClientOriginalExtension();
+            $ruta = $file->storeAs('public/respaldos_pagos', $nombreArchivo);
+
+            // Crear el respaldo
+            $respaldo = PagoRespaldo::create([
+                'inscripcione_id' => $request->inscripcione_id,
+                'archivo' => $ruta,
+                'observaciones' => $request->observaciones,
+                'estado' => 'pendiente',
+            ]);
+
+            // Asociar las cuotas
+            $respaldo->cuotas()->attach($request->cuota_ids);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Comprobante subido correctamente. Queda pendiente de verificación por el área contable.',
+                'respaldo' => [
+                    'id' => $respaldo->id,
+                    'archivo_url' => Storage::url($ruta),
+                    'estado' => $respaldo->estado,
+                    'cuotas' => $respaldo->cuotas()->pluck('nombre'),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error al subir respaldo: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al subir el comprobante: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener las cuotas de una inscripción (para mostrarlas en el modal de subida)
+     */
+    public function obtenerCuotasInscripcion($id)
+    {
+        try {
+            $user = Auth::user();
+            $persona = $user->persona;
+
+            if (!$persona || !$persona->trabajador) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Usuario no tiene trabajador asociado'
+                ], 403);
+            }
+
+            $cargosMarketingIds = $persona->trabajador->trabajadores_cargos()
+                ->whereIn('cargo_id', [2, 3, 6])
+                ->where('estado', 'Vigente')
+                ->pluck('id');
+
+            if ($cargosMarketingIds->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tiene permisos'
+                ], 403);
+            }
+
+            $inscripcion = Inscripcione::with('cuotas')->findOrFail($id);
+
+            if (!$cargosMarketingIds->contains($inscripcion->trabajadores_cargo_id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tiene acceso a esta inscripción'
+                ], 403);
+            }
+
+            // Filtrar cuotas con saldo pendiente y ordenar
+            $cuotas = $inscripcion->cuotas
+                ->where('pago_pendiente_bs', '>', 0)
+                ->sortBy('n_cuota')
+                ->values()
+                ->map(function ($cuota) {
+                    return [
+                        'id' => $cuota->id,
+                        'nombre' => $cuota->nombre,
+                        'n_cuota' => $cuota->n_cuota,
+                        'pendiente' => number_format($cuota->pago_pendiente_bs, 2) . ' Bs',
+                        'total' => number_format($cuota->pago_total_bs, 2) . ' Bs',
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'cuotas' => $cuotas,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error al obtener cuotas: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al cargar cuotas'
+            ], 500);
+        }
+    }
+
+    public function getCuotasInscripcion($inscripcionId)
+    {
+        try {
+            $user = Auth::user();
+            $persona = $user->persona;
+
+            if (!$persona || !$persona->trabajador) {
+                return response()->json(['error' => 'No autorizado'], 403);
+            }
+
+            $cargosMarketingIds = $persona->trabajador->trabajadores_cargos()
+                ->whereIn('cargo_id', [2, 3, 6])
+                ->where('estado', 'Vigente')
+                ->pluck('id');
+
+            $inscripcion = Inscripcione::where('id', $inscripcionId)
+                ->whereIn('trabajadores_cargo_id', $cargosMarketingIds)
+                ->with('cuotas')
+                ->firstOrFail();
+
+            return response()->json([
+                'success' => true,
+                'cuotas' => $inscripcion->cuotas->map(function ($cuota) {
+                    return [
+                        'id' => $cuota->id,
+                        'nombre' => $cuota->nombre,
+                        'n_cuota' => $cuota->n_cuota,
+                        'pago_pendiente_bs' => $cuota->pago_pendiente_bs,
+                    ];
+                })
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al cargar cuotas'], 500);
         }
     }
 }

@@ -53,4 +53,9 @@ class Inscripcione extends Model
     {
         return $this->belongsTo(TrabajadoresCargo::class, 'trabajadores_cargo_id');
     }
+
+    public function pagosrespaldo()
+    {
+        return $this->hasMany(PagoRespaldo::class, 'inscripcione_id');
+    }
 }

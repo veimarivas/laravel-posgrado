@@ -28,4 +28,9 @@ class Cuota extends Model
     {
         return $this->hasMany(PagosCuota::class, 'cuota_id');
     }
+
+    public function pagosrespaldo()
+    {
+        return $this->hasMany(PagoRespaldo::class, 'cuota_id');
+    }
 }
