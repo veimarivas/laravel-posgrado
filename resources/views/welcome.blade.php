@@ -276,6 +276,16 @@
                         </div>
                     @endforeach
 
+                    @foreach ($convenios as $convenio)
+                        <div class="partner-logo">
+                            <img src="{{ asset($convenio->imagen) }}" alt="{{ $convenio->nombre }}"
+                                onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <div style="font-weight: bold; color: white; font-size: 0.9rem; display: none;">
+                                {{ $convenio->nombre }}
+                            </div>
+                        </div>
+                    @endforeach
+
                 </div>
             </div>
         </section>
