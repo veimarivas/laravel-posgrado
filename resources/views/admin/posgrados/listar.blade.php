@@ -778,6 +778,10 @@
                     success: function(res) {
                         $('#results-container table tbody').replaceWith(res.html);
                         $('#pagination-container').html(res.pagination);
+                        // Reinicializa Feather Icons
+                        if (typeof feather !== 'undefined') {
+                            feather.replace();
+                        }
                     }
                 });
             }
@@ -812,6 +816,9 @@
                 }, function(res) {
                     $('#results-container table tbody').replaceWith(res.html);
                     $('#pagination-container').html(res.pagination);
+                    if (typeof feather !== 'undefined') {
+                        feather.replace();
+                    }
                 });
             });
 

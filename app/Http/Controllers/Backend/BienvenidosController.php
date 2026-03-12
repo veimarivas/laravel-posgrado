@@ -64,7 +64,7 @@ class BienvenidosController extends Controller
                 $query->where('n_fase', 3); // Filtrar por fase 2
             })
             ->orderBy('fecha_inicio_programa', 'asc')
-            ->take(3) // Limitar a 3 ofertas para el modal
+            //->take(3) // Limitar a 3 ofertas para el modal
             ->get();
 
         // OPTIMIZADO: Consulta para obtener trabajadores con cargos principales vigentes
