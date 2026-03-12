@@ -542,22 +542,30 @@
                     @else
                         @foreach ($ofertasFase2 as $oferta)
                             @php
-                                // Obtener el precio del plan "Al Contado" si existe
+                                // Precio del programa (plan "Al Contado")
                                 $planAlContado = $oferta->plan_concepto->firstWhere('plan_pago.nombre', 'Al Contado');
                                 $precio = $planAlContado ? $planAlContado->pago_bs : 0;
 
-                                // Calcular precio con descuento (20% menos como ejemplo)
-                                $precioDescuento = $precio * 0.8;
+                                // Certificación (concepto "Certificación")
+                                $planMatricula = $oferta->plan_concepto->firstWhere('concepto.nombre', 'Certificación');
+                                $matricula = $planMatricula ? $planMatricula->pago_bs : 0;
                             @endphp
                             <div class="offer-card">
-                                <div class="offer-badge">20% DESCUENTO</div>
+                                <div class="offer-badge">OFERTA ESPECIAL</div>
                                 <h3>{{ $oferta->posgrado->nombre ?? 'Programa sin nombre' }}</h3>
                                 <p>{{ Str::limit($oferta->posgrado->objetivo ?? 'Descripción no disponible', 100) }}
                                 </p>
                                 <div class="offer-price">
-                                    <span class="original-price">Bs. {{ number_format($precio, 0, ',', '.') }}</span>
-                                    <span class="discounted-price">Bs.
-                                        {{ number_format($precioDescuento, 0, ',', '.') }}</span>
+                                    <div style="display: flex; flex-direction: column; gap: 0.3rem;">
+                                        <span style="font-weight: 600; color: var(--primary);">
+                                            Colegiatura: <strong style="color: var(--accent); font-size: 1.3rem;">Bs.
+                                                {{ number_format($precio, 0, ',', '.') }}</strong>
+                                        </span>
+                                        <span style="font-weight: 600; color: var(--primary);">
+                                            Certifación: <strong style="color: var(--accent);">Bs.
+                                                {{ number_format($matricula, 0, ',', '.') }}</strong>
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         @endforeach
