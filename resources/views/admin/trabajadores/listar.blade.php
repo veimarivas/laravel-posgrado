@@ -1924,6 +1924,80 @@
             $('.cargo-select-nuevo').trigger('change');
             $('#cargo_id_nuevo').trigger('change');
 
+            // === VERIFICACIÓN DE CARNET EN FORMULARIO NUEVA PERSONA ===
+            let debounceCarnetNuevo;
+            $('#carnet_nuevo').on('input', function() {
+                const carnet = $(this).val().trim();
+                const feedback = $('#feedback_carnet_nuevo');
+                feedback.removeClass('text-success text-danger').text('');
+
+                if (!carnet) {
+                    checkFormNuevaPersona();
+                    return;
+                }
+
+                clearTimeout(debounceCarnetNuevo);
+                debounceCarnetNuevo = setTimeout(() => {
+                    $.post("{{ route('admin.personas.verificar-carnet') }}", {
+                        _token: "{{ csrf_token() }}",
+                        carnet: carnet
+                    }, function(res) {
+                        if (res.exists) {
+                            feedback.addClass('text-danger')
+                                .text('⚠️ Este carnet ya está registrado.');
+                        } else {
+                            feedback.addClass('text-success')
+                                .text('✅ Carnet disponible.');
+                        }
+                        checkFormNuevaPersona();
+                    }).fail(function() {
+                        feedback.addClass('text-danger')
+                            .text('❌ Error al verificar el carnet.');
+                        checkFormNuevaPersona();
+                    });
+                }, 400);
+            });
+
+            // === VERIFICACIÓN DE CORREO EN FORMULARIO NUEVA PERSONA ===
+            let debounceCorreoNuevo;
+            $('#correo_nuevo').on('input', function() {
+                const correo = $(this).val().trim();
+                const feedback = $('#feedback_correo_nuevo');
+                feedback.removeClass('text-success text-danger').text('');
+
+                if (!correo) {
+                    checkFormNuevaPersona();
+                    return;
+                }
+
+                if (!/^\S+@\S+\.\S+$/.test(correo)) {
+                    feedback.addClass('text-danger').text('⚠️ Formato de correo inválido');
+                    checkFormNuevaPersona();
+                    return;
+                }
+
+                clearTimeout(debounceCorreoNuevo);
+                debounceCorreoNuevo = setTimeout(() => {
+                    $.post("{{ route('admin.personas.verificar-correo') }}", {
+                        _token: "{{ csrf_token() }}",
+                        correo: correo
+                    }, function(res) {
+                        if (res.exists) {
+                            feedback.addClass('text-danger')
+                                .text('⚠️ Este correo ya está registrado.');
+                        } else {
+                            feedback.addClass('text-success')
+                                .text('✅ Correo disponible.');
+                        }
+                        checkFormNuevaPersona();
+                    }).fail(function() {
+                        feedback.addClass('text-danger')
+                            .text('❌ Error al verificar el correo.');
+                        checkFormNuevaPersona();
+                    });
+                }, 400);
+            });
+
             // Cargar roles disponibles al inicio
             cargarRolesDisponibles();
 
