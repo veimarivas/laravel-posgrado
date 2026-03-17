@@ -49,7 +49,13 @@ class InscripcionesController extends Controller
 
     public function registrar(Request $request)
     {
-        \Log::info('=== INICIANDO REGISTRO DE INSCRIPCIÓN MEJORADO ===');
+        \Log::info('=== INICIANDO REGISTRO DE INSCRIPCIÓN MEJORADO ===', [
+            'oferta_id' => $request->oferta_id,
+            'estudiante_id' => $request->estudiante_id,
+            'estado' => $request->estado,
+            'planes_pago_id' => $request->planes_pago_id,
+            'adelanto_bs' => $request->adelanto_bs,
+        ]);
 
         $user = Auth::user();
 
@@ -100,7 +106,7 @@ class InscripcionesController extends Controller
         $trabajadorCargo = $user->persona->trabajador->trabajadores_cargos()
             ->where('estado', 'Vigente')
             ->latest('fecha_ingreso')
-            ->firstOrFail();
+            ->first();
 
         if (!$trabajadorCargo) {
             return response()->json([
@@ -117,7 +123,7 @@ class InscripcionesController extends Controller
             'estado' => $request->estado,
             'fecha_registro' => now(),
             'planes_pago_id' => $request->planes_pago_id,
-            'adelanto_bs' => $request->adelanto_bs ?? null,
+            'adelanto_bs' => $request->filled('adelanto_bs') ? (float) $request->adelanto_bs : 0,
         ];
 
         // ✅ Crear la inscripción

@@ -208,10 +208,9 @@
                     <div id="adelanto-section" style="display:none;" class="mb-3">
                         <label class="form-label">Adelanto (Bs) <small class="text-muted">(Opcional)</small></label>
                         <input type="number" step="0.01" name="adelanto_bs" id="adelanto_bs"
-                            class="form-control" placeholder="Ingrese el monto del adelanto (opcional)"
+                            class="form-control" placeholder="Ingrese el monto del adelantado" value="0"
                             min="0">
-                        <small class="text-muted">Si ingresa un adelanto, el estado será automáticamente
-                            "Pre-Inscrito"</small>
+                        <small class="text-muted">Si ingresa un monto mayor a 0, se registrará como adelanto</small>
                     </div>
 
                     <!-- Sección de vista previa de cuotas (solo para Inscrito) -->

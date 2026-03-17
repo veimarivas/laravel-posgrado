@@ -524,7 +524,16 @@
         }
 
         // Para Pre-Inscrito: enviar directamente
-        const formData = $(this).serialize();
+        let formData = $(this).serialize();
+
+        // Asegurar que el campo adelantobs se envíe siempre (incluso si está oculto o vacío)
+        if (estado === 'Pre-Inscrito' && !formData.includes('adelanto_bs=')) {
+            formData += '&adelanto_bs=' + ($('#adelanto_bs').val() || 0);
+        }
+
+        console.log('Datos enviados:', formData);
+        console.log('Estado:', estado);
+        console.log('Adelanto:', $('#adelanto_bs').val());
 
         $.ajax({
             url: "{{ route('admin.inscripciones.registrar') }}",
