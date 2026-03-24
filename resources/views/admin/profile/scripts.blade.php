@@ -1816,18 +1816,47 @@
                 method: 'GET',
                 success: function(response) {
                     if (response.success && response.cuotas.length > 0) {
-                        let html = '<div class="list-group">';
+                        // Agrupar cuotas por tipo
+                        const grupos = {};
                         response.cuotas.forEach(cuota => {
-                            html += `
-                        <label class="list-group-item">
-                            <input class="form-check-input me-2" type="checkbox" name="cuota_ids[]" value="${cuota.id}">
-                            <strong>${cuota.nombre}</strong> (Cuota ${cuota.n_cuota})
-                            <br>
-                            <small class="text-muted">Pendiente: ${cuota.pendiente} / Total: ${cuota.total}</small>
-                        </label>
-                    `;
+                            const tipo = cuota.tipo || 'Otros';
+                            if (!grupos[tipo]) grupos[tipo] = [];
+                            grupos[tipo].push(cuota);
                         });
-                        html += '</div>';
+
+                        const iconos = {
+                            'Matrícula': 'ri-graduation-cap-line text-primary',
+                            'Colegiatura': 'ri-book-open-line text-success',
+                            'Certificación': 'ri-award-line text-warning',
+                            'Otros': 'ri-file-list-line text-secondary',
+                        };
+
+                        let html = '';
+                        ['Matrícula', 'Colegiatura', 'Certificación', 'Otros'].forEach(tipo => {
+                            if (!grupos[tipo] || grupos[tipo].length === 0) return;
+                            const icono = iconos[tipo] || 'ri-file-list-line text-secondary';
+                            const totalTipo = grupos[tipo].reduce((sum, c) => sum + c.pendiente_bs, 0);
+                            html += `<div class="mb-2">
+                                <div class="d-flex align-items-center justify-content-between mb-1 px-1">
+                                    <div>
+                                        <i class="${icono} me-1"></i>
+                                        <span class="fw-semibold small text-uppercase">${tipo}</span>
+                                    </div>
+                                    <span class="badge bg-danger-subtle text-danger small">Total adeudado: ${totalTipo.toFixed(2)} Bs</span>
+                                </div>
+                                <div class="list-group">`;
+                            grupos[tipo].forEach(cuota => {
+                                html += `
+                                <label class="list-group-item list-group-item-action py-2">
+                                    <input class="form-check-input me-2" type="checkbox" name="cuota_ids[]" value="${cuota.id}">
+                                    <strong>${cuota.nombre}</strong>
+                                    <br>
+                                    <small class="text-muted">Pendiente: ${cuota.pendiente} / Total: ${cuota.total}</small>
+                                </label>`;
+                            });
+                            html += `</div></div>`;
+                        });
+
                         $('#cuotasCheckboxContainer').html(html);
                     } else {
                         $('#cuotasCheckboxContainer').html(

@@ -1903,17 +1903,38 @@ class UserProfileController extends Controller
                 ], 403);
             }
 
-            // Filtrar cuotas con saldo pendiente y ordenar
+            // Filtrar cuotas con saldo pendiente, ordenar por tipo y n_cuota
+            $tipoOrden = function ($nombre) {
+                $n = strtolower($nombre);
+                if (str_contains($n, 'matrícula') || str_contains($n, 'matricula')) return 1;
+                if (str_contains($n, 'colegiatura')) return 2;
+                if (str_contains($n, 'certificaci')) return 3;
+                return 4;
+            };
+
+            $tipoLabel = function ($nombre) {
+                $n = strtolower($nombre);
+                if (str_contains($n, 'matrícula') || str_contains($n, 'matricula')) return 'Matrícula';
+                if (str_contains($n, 'colegiatura')) return 'Colegiatura';
+                if (str_contains($n, 'certificaci')) return 'Certificación';
+                return 'Otros';
+            };
+
             $cuotas = $inscripcion->cuotas
                 ->where('pago_pendiente_bs', '>', 0)
-                ->sortBy('n_cuota')
+                ->sortBy([
+                    fn($a, $b) => $tipoOrden($a->nombre) <=> $tipoOrden($b->nombre),
+                    fn($a, $b) => $a->n_cuota <=> $b->n_cuota,
+                ])
                 ->values()
-                ->map(function ($cuota) {
+                ->map(function ($cuota) use ($tipoLabel) {
                     return [
                         'id' => $cuota->id,
                         'nombre' => $cuota->nombre,
                         'n_cuota' => $cuota->n_cuota,
+                        'tipo' => $tipoLabel($cuota->nombre),
                         'pendiente' => number_format($cuota->pago_pendiente_bs, 2) . ' Bs',
+                        'pendiente_bs' => (float) $cuota->pago_pendiente_bs,
                         'total' => number_format($cuota->pago_total_bs, 2) . ' Bs',
                     ];
                 });

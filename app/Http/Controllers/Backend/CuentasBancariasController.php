@@ -95,6 +95,14 @@ class CuentasBancariasController extends Controller
         $campoMonto = 'pago_bs'; // Usar el campo correcto según tu BD
         $totalDepositado = $cuenta->pagos()->sum($campoMonto);
 
+        // Totales agrupados por tipo de pago
+        $totalesPorTipo = $cuenta->pagos()
+            ->select('tipo_pago', DB::raw('SUM(pago_bs) as total'), DB::raw('COUNT(*) as cantidad'))
+            ->groupBy('tipo_pago')
+            ->orderBy('tipo_pago')
+            ->get()
+            ->keyBy('tipo_pago');
+
         // Obtener pagos recientes (ya cargados)
         $pagosRecientes = $cuenta->pagos;
 
@@ -160,6 +168,7 @@ class CuentasBancariasController extends Controller
             'totalPagos',
             'totalDepositado',
             'pagosRecientes',
+            'totalesPorTipo',
             'movimientosPorMes',
             'transferenciasEnviadas',
             'transferenciasRecibidas',

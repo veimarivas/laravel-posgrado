@@ -139,13 +139,11 @@ class ComprobantesController extends Controller
                 'archivo_url' => Storage::url($comprobante->archivo)
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error en verificar comprobante', [
-                'message' => $e->getMessage(),
-                'cuota_ids' => $request->cuota_ids,
-                'inscripcion_id' => $inscripcionId,
-                'cuotas_encontradas' => $cuotas->pluck('id')->toArray()
-            ]);
-            throw $e;
+            \Log::error('Error al obtener detalle del comprobante: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener los datos del comprobante.'
+            ], 500);
         }
     }
 
