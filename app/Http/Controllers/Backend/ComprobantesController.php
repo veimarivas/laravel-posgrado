@@ -92,16 +92,27 @@ class ComprobantesController extends Controller
                 'cuotas'
             ])->findOrFail($id);
 
-            // Obtener también las cuotas pendientes de esta inscripción
+            // Helper: determinar tipo de cuota por nombre
+            $tipoLabel = function ($nombre) {
+                $n = mb_strtolower($nombre);
+                if (str_contains($n, 'matr'))   return 'Matrícula';
+                if (str_contains($n, 'coleg'))   return 'Colegiatura';
+                if (str_contains($n, 'certif'))  return 'Certificación';
+                return 'Otros';
+            };
+
+            // IDs de cuotas ya asociadas al comprobante
+            $cuotasAsociadasIds = $comprobante->cuotas->pluck('id');
+
+            // Cuotas pendientes de la inscripción (excluir las ya asociadas)
             $cuotasPendientes = Cuota::where('inscripcione_id', $comprobante->inscripcion->id)
                 ->where('pago_pendiente_bs', '>', 0)
+                ->whereNotIn('id', $cuotasAsociadasIds)
                 ->orderBy('n_cuota')
                 ->get();
 
             // Datos del estudiante
             $estudiante = $comprobante->inscripcion->estudiante->persona;
-
-
 
             return response()->json([
                 'success' => true,
@@ -118,22 +129,26 @@ class ComprobantesController extends Controller
                     'id' => $comprobante->inscripcion->estudiante_id,
                 ],
                 'programa' => $comprobante->inscripcion->ofertaAcademica->programa->nombre ?? 'N/A',
-                'cuotas' => $comprobante->cuotas->map(function ($cuota) {
+                'cuotas' => $comprobante->cuotas->map(function ($cuota) use ($tipoLabel) {
                     return [
-                        'id' => $cuota->id,
-                        'nombre' => $cuota->nombre,
-                        'n_cuota' => $cuota->n_cuota,
-                        'pago_pendiente_bs' => $cuota->pago_pendiente_bs,
-                        'pago_total_bs' => $cuota->pago_total_bs,
+                        'id'              => $cuota->id,
+                        'nombre'          => $cuota->nombre,
+                        'n_cuota'         => $cuota->n_cuota,
+                        'tipo'            => $tipoLabel($cuota->nombre),
+                        'pago_pendiente_bs'  => $cuota->pago_pendiente_bs,
+                        'pendiente_bs'    => (float) $cuota->pago_pendiente_bs,
+                        'pago_total_bs'   => $cuota->pago_total_bs,
                     ];
                 }),
-                'cuotas_pendientes' => $cuotasPendientes->map(function ($cuota) {
+                'cuotas_pendientes' => $cuotasPendientes->map(function ($cuota) use ($tipoLabel) {
                     return [
-                        'id' => $cuota->id,
-                        'nombre' => $cuota->nombre,
-                        'n_cuota' => $cuota->n_cuota,
-                        'pago_pendiente_bs' => $cuota->pago_pendiente_bs,
-                        'pago_total_bs' => $cuota->pago_total_bs,
+                        'id'              => $cuota->id,
+                        'nombre'          => $cuota->nombre,
+                        'n_cuota'         => $cuota->n_cuota,
+                        'tipo'            => $tipoLabel($cuota->nombre),
+                        'pago_pendiente_bs'  => $cuota->pago_pendiente_bs,
+                        'pendiente_bs'    => (float) $cuota->pago_pendiente_bs,
+                        'pago_total_bs'   => $cuota->pago_total_bs,
                     ];
                 }),
                 'archivo_url' => Storage::url($comprobante->archivo)

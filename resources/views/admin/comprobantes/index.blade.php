@@ -185,125 +185,194 @@
                 var cuotasPendientes = data.cuotas_pendientes;
                 var archivoUrl = data.archivo_url;
 
-                // Preview del archivo
+                // ── Preview del archivo ───────────────────────────────
                 var ext = archivoUrl.split('?')[0].split('.').pop().toLowerCase();
                 var previewHtml;
                 if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
                     previewHtml = `<a href="${archivoUrl}" target="_blank">
-                        <img src="${archivoUrl}" class="img-fluid rounded border" style="max-height:320px;width:100%;object-fit:contain;cursor:pointer;" title="Clic para abrir en nueva pestaña">
+                        <img src="${archivoUrl}" class="img-fluid rounded border" style="max-height:260px;width:100%;object-fit:contain;cursor:pointer;" title="Clic para ampliar">
                     </a>`;
                 } else if (ext === 'pdf') {
-                    previewHtml = `<embed src="${archivoUrl}" type="application/pdf" width="100%" height="320px" class="rounded border">
-                        <div class="mt-1 text-end"><a href="${archivoUrl}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="ri-external-link-line me-1"></i>Abrir PDF</a></div>`;
+                    previewHtml = `<embed src="${archivoUrl}" type="application/pdf" width="100%" height="260px" class="rounded border">
+                        <div class="mt-1 text-end">
+                            <a href="${archivoUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="ri-external-link-line me-1"></i>Abrir PDF
+                            </a>
+                        </div>`;
                 } else {
-                    previewHtml = `<div class="d-flex align-items-center justify-content-center border rounded bg-light" style="height:100px;">
-                        <a href="${archivoUrl}" target="_blank" class="btn btn-outline-primary"><i class="ri-download-line me-1"></i>Descargar archivo</a>
+                    previewHtml = `<div class="d-flex align-items-center justify-content-center border rounded bg-light" style="height:80px;">
+                        <a href="${archivoUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <i class="ri-download-line me-1"></i>Descargar archivo
+                        </a>
                     </div>`;
                 }
 
-                // Cuotas checkboxes
-                var cuotasHtml = '';
-                cuotasAsociadas.forEach(function(cuota) {
-                    cuotasHtml += `
-                        <div class="form-check border rounded px-3 py-2 mb-1">
-                            <input class="form-check-input cuota-checkbox" type="checkbox" name="cuota_ids[]" value="${cuota.id}" id="cuota_${cuota.id}" checked>
-                            <label class="form-check-label w-100" for="cuota_${cuota.id}">
-                                <span class="fw-medium">${cuota.nombre}</span>
-                                <span class="float-end badge bg-warning-subtle text-warning">${cuota.pago_pendiente_bs} Bs</span>
-                            </label>
-                        </div>`;
-                });
-                if (cuotasPendientes && cuotasPendientes.length > 0) {
-                    cuotasHtml += '<p class="text-muted small mt-2 mb-1">Otras cuotas pendientes:</p>';
-                    cuotasPendientes.forEach(function(cuota) {
-                        cuotasHtml += `
-                        <div class="form-check border rounded px-3 py-2 mb-1 bg-light">
-                            <input class="form-check-input cuota-checkbox" type="checkbox" name="cuota_ids[]" value="${cuota.id}" id="cuota_extra_${cuota.id}">
-                            <label class="form-check-label w-100" for="cuota_extra_${cuota.id}">
-                                <span class="fw-medium">${cuota.nombre}</span>
-                                <span class="float-end badge bg-secondary-subtle text-secondary">${cuota.pago_pendiente_bs} Bs</span>
-                            </label>
-                        </div>`;
+                // ── Cuotas agrupadas por tipo ─────────────────────────
+                var iconos = {
+                    'Matrícula':    'ri-graduation-cap-line text-primary',
+                    'Colegiatura':  'ri-book-open-line text-success',
+                    'Certificación':'ri-award-line text-warning',
+                    'Otros':        'ri-file-list-line text-secondary',
+                };
+                var orden = ['Matrícula', 'Colegiatura', 'Certificación', 'Otros'];
+
+                function buildGrupos(cuotas) {
+                    var g = {};
+                    cuotas.forEach(function(c) {
+                        var t = c.tipo || 'Otros';
+                        if (!g[t]) g[t] = [];
+                        g[t].push(c);
                     });
+                    return g;
+                }
+
+                function renderGrupo(grupos, checked, badgeClass) {
+                    var html = '';
+                    orden.forEach(function(tipo) {
+                        if (!grupos[tipo] || grupos[tipo].length === 0) return;
+                        var icono = iconos[tipo] || 'ri-file-list-line text-secondary';
+                        var total = grupos[tipo].reduce(function(s, c) { return s + c.pendiente_bs; }, 0);
+                        html += `<div class="mb-2">
+                            <div class="d-flex align-items-center justify-content-between mb-1 px-1">
+                                <div>
+                                    <i class="${icono} me-1"></i>
+                                    <span class="fw-semibold small text-uppercase">${tipo}</span>
+                                </div>
+                                <span class="badge ${badgeClass} small">Pendiente: ${total.toFixed(2)} Bs</span>
+                            </div>
+                            <div class="list-group list-group-flush">`;
+                        grupos[tipo].forEach(function(cuota) {
+                            var uid = checked ? 'cuota_' + cuota.id : 'cuota_ex_' + cuota.id;
+                            html += `
+                            <label class="list-group-item list-group-item-action py-2 px-2 d-flex align-items-center gap-2">
+                                <input class="form-check-input cuota-checkbox flex-shrink-0" type="checkbox"
+                                    name="cuota_ids[]" value="${cuota.id}" id="${uid}" ${checked ? 'checked' : ''}>
+                                <div class="flex-grow-1 min-w-0">
+                                    <span class="fw-medium d-block">${cuota.nombre}</span>
+                                    <small class="text-muted">Pendiente: <strong>${parseFloat(cuota.pago_pendiente_bs).toFixed(2)} Bs</strong> / Total: ${parseFloat(cuota.pago_total_bs).toFixed(2)} Bs</small>
+                                </div>
+                            </label>`;
+                        });
+                        html += `</div></div>`;
+                    });
+                    return html;
+                }
+
+                var gruposAsociadas  = buildGrupos(cuotasAsociadas);
+                var gruposPendientes = buildGrupos(cuotasPendientes);
+
+                var cuotasHtml = renderGrupo(gruposAsociadas, true, 'bg-primary text-white');
+
+                if (cuotasPendientes && cuotasPendientes.length > 0) {
+                    cuotasHtml += `<div class="border-top pt-2 mt-2">
+                        <p class="text-muted small mb-2"><i class="ri-add-circle-line me-1"></i>Otras cuotas pendientes (opcional):</p>
+                        ${renderGrupo(gruposPendientes, false, 'bg-secondary text-white')}
+                    </div>`;
                 }
 
                 var html = `
-                <div class="row g-0">
+                <div class="row g-3">
                     <!-- Columna izquierda: comprobante + info estudiante -->
-                    <div class="col-md-5 border-end pe-3">
-                        <p class="fw-semibold text-muted small text-uppercase mb-2"><i class="ri-image-line me-1"></i>Comprobante</p>
-                        ${previewHtml}
-                        <div class="mt-3 p-2 bg-light rounded border">
-                            <div class="mb-1"><span class="text-muted small">Estudiante:</span><br><strong>${estudiante.nombre}</strong></div>
-                            <div class="mb-1"><span class="text-muted small">Carnet:</span> ${estudiante.carnet}</div>
-                            <div><span class="text-muted small">Programa:</span><br><span class="small">${programa}</span></div>
+                    <div class="col-md-5">
+                        <div class="border rounded p-2 bg-light mb-2">
+                            <p class="fw-semibold text-muted small text-uppercase mb-2">
+                                <i class="ri-image-line me-1"></i>Comprobante
+                            </p>
+                            ${previewHtml}
                         </div>
-                        <div class="mt-3">
-                            <p class="fw-semibold text-muted small text-uppercase mb-2"><i class="ri-file-list-3-line me-1"></i>Cuotas</p>
-                            ${cuotasHtml}
+                        <div class="border rounded p-2 bg-light">
+                            <p class="fw-semibold text-muted small text-uppercase mb-2">
+                                <i class="ri-user-line me-1"></i>Estudiante
+                            </p>
+                            <div class="mb-1">
+                                <span class="text-muted small d-block">Nombre</span>
+                                <strong>${estudiante.nombre}</strong>
+                            </div>
+                            <div class="mb-1">
+                                <span class="text-muted small d-block">Carnet</span>
+                                <span>${estudiante.carnet}</span>
+                            </div>
+                            <div>
+                                <span class="text-muted small d-block">Programa</span>
+                                <span class="small">${programa}</span>
+                            </div>
                         </div>
                     </div>
-                    <!-- Columna derecha: formulario de pago -->
-                    <div class="col-md-7 ps-3">
-                        <p class="fw-semibold text-muted small text-uppercase mb-3"><i class="ri-money-dollar-circle-line me-1"></i>Registrar Pago</p>
-                        <form id="formVerificarPago">
-                            @csrf
-                            <input type="hidden" name="comprobante_id" value="${comp.id}">
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <label class="form-label form-label-sm">Monto a pagar (Bs) *</label>
-                                    <input type="number" step="0.01" class="form-control form-control-sm" id="monto_pago" name="monto_pago" required>
+
+                    <!-- Columna derecha: cuotas + formulario -->
+                    <div class="col-md-7">
+                        <!-- Cuotas agrupadas -->
+                        <div class="border rounded p-2 mb-3" style="max-height:280px;overflow-y:auto;">
+                            <p class="fw-semibold text-muted small text-uppercase mb-2 sticky-top bg-white py-1">
+                                <i class="ri-file-list-3-line me-1"></i>Cuotas a las que aplica el pago
+                            </p>
+                            ${cuotasHtml}
+                        </div>
+
+                        <!-- Formulario de pago -->
+                        <div class="border rounded p-2">
+                            <p class="fw-semibold text-muted small text-uppercase mb-2">
+                                <i class="ri-money-dollar-circle-line me-1"></i>Datos del Pago
+                            </p>
+                            <form id="formVerificarPago">
+                                @csrf
+                                <input type="hidden" name="comprobante_id" value="${comp.id}">
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="form-label form-label-sm">Monto a pagar (Bs) *</label>
+                                        <input type="number" step="0.01" class="form-control form-control-sm" id="monto_pago" name="monto_pago" required>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label form-label-sm">Descuento (Bs)</label>
+                                        <input type="number" step="0.01" class="form-control form-control-sm" id="descuento_bs" name="descuento_bs" value="0">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label form-label-sm">Tipo de pago *</label>
+                                        <select class="form-select form-select-sm" id="tipo_pago" name="tipo_pago" required>
+                                            <option value="">Seleccionar</option>
+                                            <option value="Efectivo">Efectivo</option>
+                                            <option value="Transferencia">Transferencia</option>
+                                            <option value="Depósito">Depósito</option>
+                                            <option value="Tarjeta">Tarjeta</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label form-label-sm">Fecha de pago *</label>
+                                        <input type="date" class="form-control form-control-sm" id="fecha_pago" name="fecha_pago" value="{{ date('Y-m-d') }}" required>
+                                    </div>
+                                    <div class="col-12" id="campo_caja" style="display:none;">
+                                        <label class="form-label form-label-sm">Caja *</label>
+                                        <select class="form-select form-select-sm" id="caja_id" name="caja_id">
+                                            <option value="">— Seleccionar caja —</option>
+                                            @foreach (\App\Models\Caja::where('activa', true)->with('sucursal')->get() as $caja)
+                                                <option value="{{ $caja->id }}">
+                                                    {{ $caja->nombre }} - {{ $caja->sucursal->nombre ?? 'Sin sucursal' }} (Saldo: {{ number_format($caja->saldo_actual, 2) }} Bs)
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-12" id="campo_cuenta_bancaria" style="display:none;">
+                                        <label class="form-label form-label-sm">Cuenta Bancaria *</label>
+                                        <select class="form-select form-select-sm" id="cuenta_bancaria_id" name="cuenta_bancaria_id">
+                                            <option value="">— Seleccionar cuenta —</option>
+                                            @foreach (\App\Models\CuentasBancarias::where('activa', true)->with('banco')->get() as $cuenta)
+                                                <option value="{{ $cuenta->id }}">
+                                                    {{ $cuenta->banco->nombre ?? 'Sin banco' }} - {{ $cuenta->numero_cuenta }} ({{ $cuenta->moneda }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-12" id="campo_comprobante" style="display:none;">
+                                        <label class="form-label form-label-sm">N° Comprobante</label>
+                                        <input type="text" class="form-control form-control-sm" id="n_comprobante" name="n_comprobante" placeholder="Ej: TRF-0012345">
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label form-label-sm">Observaciones</label>
+                                        <textarea class="form-control form-control-sm" id="observaciones" name="observaciones" rows="2"></textarea>
+                                    </div>
                                 </div>
-                                <div class="col-6">
-                                    <label class="form-label form-label-sm">Descuento (Bs)</label>
-                                    <input type="number" step="0.01" class="form-control form-control-sm" id="descuento_bs" name="descuento_bs" value="0">
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label form-label-sm">Tipo de pago *</label>
-                                    <select class="form-select form-select-sm" id="tipo_pago" name="tipo_pago" required>
-                                        <option value="">Seleccionar</option>
-                                        <option value="Efectivo">Efectivo</option>
-                                        <option value="Transferencia">Transferencia</option>
-                                        <option value="Depósito">Depósito</option>
-                                        <option value="Tarjeta">Tarjeta</option>
-                                    </select>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label form-label-sm">Fecha de pago *</label>
-                                    <input type="date" class="form-control form-control-sm" id="fecha_pago" name="fecha_pago" value="{{ date('Y-m-d') }}" required>
-                                </div>
-                                <div class="col-12" id="campo_caja" style="display:none;">
-                                    <label class="form-label form-label-sm">Caja *</label>
-                                    <select class="form-select form-select-sm" id="caja_id" name="caja_id">
-                                        <option value="">— Seleccionar caja —</option>
-                                        @foreach (\App\Models\Caja::where('activa', true)->with('sucursal')->get() as $caja)
-                                            <option value="{{ $caja->id }}">
-                                                {{ $caja->nombre }} - {{ $caja->sucursal->nombre ?? 'Sin sucursal' }} (Saldo: {{ number_format($caja->saldo_actual, 2) }} Bs)
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-12" id="campo_cuenta_bancaria" style="display:none;">
-                                    <label class="form-label form-label-sm">Cuenta Bancaria *</label>
-                                    <select class="form-select form-select-sm" id="cuenta_bancaria_id" name="cuenta_bancaria_id">
-                                        <option value="">— Seleccionar cuenta —</option>
-                                        @foreach (\App\Models\CuentasBancarias::where('activa', true)->with('banco')->get() as $cuenta)
-                                            <option value="{{ $cuenta->id }}">
-                                                {{ $cuenta->banco->nombre ?? 'Sin banco' }} - {{ $cuenta->numero_cuenta }} ({{ $cuenta->moneda }})
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-12" id="campo_comprobante" style="display:none;">
-                                    <label class="form-label form-label-sm">N° Comprobante *</label>
-                                    <input type="text" class="form-control form-control-sm" id="n_comprobante" name="n_comprobante" placeholder="Ej: TRF-0012345">
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label form-label-sm">Observaciones</label>
-                                    <textarea class="form-control form-control-sm" id="observaciones" name="observaciones" rows="2"></textarea>
-                                </div>
-                            </div>
-                        </form>
+                            </form>
+                        </div>
                     </div>
                 </div>`;
 
