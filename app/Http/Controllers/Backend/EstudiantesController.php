@@ -433,11 +433,19 @@ class EstudiantesController extends Controller
      */
     public function descargarRecibo($id)
     {
-        $pago = Pago::with(['pagos_cuotas.cuota.inscripcion.estudiante.persona'])->findOrFail($id);
-        $cuota = $pago->pagos_cuotas->first()->cuota;
-        $estudiante = $cuota->inscripcion->estudiante;
+        $pago = Pago::with([
+            'pagos_cuotas.cuota.inscripcion.ofertaAcademica.programa',
+            'pagos_cuotas.cuota.inscripcion.ofertaAcademica.sucursal',
+            'pagos_cuotas.cuota.inscripcion.estudiante.persona',
+            'detalles',
+        ])->findOrFail($id);
 
-        $pdf = PDF::loadView('admin.estudiantes.recibo-pago', compact('pago', 'cuota', 'estudiante'));
+        $primerPagoCuota = $pago->pagos_cuotas->first();
+        $cuota     = $primerPagoCuota ? $primerPagoCuota->cuota : null;
+        $estudiante = $cuota ? $cuota->inscripcion->estudiante : null;
+        $pagosCuotas = $pago->pagos_cuotas;
+
+        $pdf = PDF::loadView('admin.estudiantes.recibo-pago', compact('pago', 'cuota', 'estudiante', 'pagosCuotas'));
         return $pdf->download('recibo-' . $pago->recibo . '.pdf');
     }
 
@@ -1184,7 +1192,7 @@ class EstudiantesController extends Controller
             'pagos_cuotas.cuota.inscripcion.estudiante.persona',
             'pagos_cuotas.cuota.inscripcion.ofertaAcademica.programa',
             'detalles'
-        ])->orderBy('fecha_pago', 'desc');
+        ])->orderBy('fecha_pago', 'desc')->orderBy('id', 'desc');
 
         // Aplicar filtros
         if ($fechaInicio) {

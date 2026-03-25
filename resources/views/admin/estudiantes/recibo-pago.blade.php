@@ -292,7 +292,7 @@
                 @endphp
 
                 @if (file_exists($logoPath))
-                    <img src="{{ $logoUrl }}" alt="UNIP" class="logo-img">
+                    <img src="{{ $logoUrl }}" class="logo-img">
                 @else
                     <!-- Si no existe el archivo, mostrar logo por defecto o placeholder -->
                     <div class="logo-placeholder">
@@ -303,40 +303,52 @@
             </div>
 
             <div class="institucion-info">
-                <div class="nombre-institucion">UNIDAD DE NEGOCIOS</div>
-                <div class="lema-institucion">INTELIGENTES PROFESIONALES</div>
-                <div class="sistema">UNIP - SISTEMA DE PAGOS</div>
+                <div class="nombre-institucion">UNIDAD DE PROFESIONALES</div>
+                <div class="lema-institucion">UNIP BOLIVIA SRL</div>
+                <div class="sistema">SISTEMA DE PAGOS</div>
             </div>
         </div>
+
+        @php
+            $sede    = $cuota?->inscripcion?->ofertaAcademica?->sucursal?->nombre ?? 'Sede no especificada';
+            $programa = $cuota?->inscripcion?->ofertaAcademica?->programa?->nombre ?? 'Programa no especificado';
+            $total   = $pago->pago_bs - ($pago->descuento_bs ?? 0);
+        @endphp
 
         <!-- Información del comprobante -->
         <div class="info-comprobante">
             <div class="sede">
-                <span class="sede-label">Lugar / Sede:</span>
-                {{ $cuota->inscripcion->ofertaAcademica->sucursal->nombre ?? 'Sede no especificada' }}
+                <span class="sede-label">Lugar / Sede:</span> {{ $sede }}
             </div>
-
             <div class="comprobante-numero text-center">
                 COMPROBANTE N° {{ $pago->recibo }}
             </div>
-
             <div class="info-pago">
                 <span class="bold">Forma de Pago:</span> {{ $pago->tipo_pago }}
+                &nbsp;&nbsp;
+                <span class="bold">Fecha:</span> {{ \Carbon\Carbon::parse($pago->fecha_pago)->format('d/m/Y') }}
             </div>
         </div>
 
         <!-- Datos del programa y estudiante -->
         <div class="datos-programa">
             <div class="programa-titulo">PROGRAMA</div>
-            <div class="mb-3">
-                {{ $cuota->inscripcion->ofertaAcademica->programa->nombre ?? 'Programa no especificado' }}</div>
+            <div class="mb-3">{{ $programa }}</div>
 
             <div class="datos-estudiante">
-                <div><span class="bold">Estudiante:</span> {{ $estudiante->persona->nombres }}
-                    {{ $estudiante->persona->apellido_paterno }} {{ $estudiante->persona->apellido_materno }} -
-                    {{ $estudiante->persona->carnet }}</div>
-                <div><span class="bold">Señor(a) Depositante:</span> {{ $estudiante->persona->nombres }}
-                    {{ $estudiante->persona->apellido_paterno }}</div>
+                @if ($estudiante && $estudiante->persona)
+                    <div>
+                        <span class="bold">Estudiante:</span>
+                        {{ $estudiante->persona->nombres }}
+                        {{ $estudiante->persona->apellido_paterno }}
+                        {{ $estudiante->persona->apellido_materno ?? '' }}
+                        - {{ $estudiante->persona->carnet }}
+                    </div>
+                    <div>
+                        <span class="bold">Señor(a) Depositante:</span>
+                        {{ $estudiante->persona->nombres }} {{ $estudiante->persona->apellido_paterno }}
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -353,16 +365,18 @@
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>{{ $cuota->nombre }}</td>
-                    <td>{{ $cuota->n_cuota }}</td>
-                    <td>1</td>
-                    <td>{{ number_format($pago->pago_bs, 2) }}</td>
-                    <td>{{ number_format($pago->pago_bs, 2) }}</td>
-                    <td>Cuota</td>
-                </tr>
-                <!-- Si hay descuento, mostrar como segunda fila -->
-                @if ($pago->descuento_bs > 0)
+                @foreach ($pagosCuotas as $pc)
+                    @php $c = $pc->cuota; @endphp
+                    <tr>
+                        <td>{{ $c?->nombre ?? 'N/A' }}</td>
+                        <td>{{ $c?->n_cuota ?? '-' }}</td>
+                        <td>1</td>
+                        <td>{{ number_format($pc->pago_bs, 2) }}</td>
+                        <td>{{ number_format($pc->pago_bs, 2) }}</td>
+                        <td>Cuota</td>
+                    </tr>
+                @endforeach
+                @if (($pago->descuento_bs ?? 0) > 0)
                     <tr>
                         <td>Descuento</td>
                         <td>-</td>
@@ -374,7 +388,7 @@
                 @endif
                 <tr class="total-row">
                     <td colspan="4" class="text-right bold">Total (Bolivianos)</td>
-                    <td colspan="2" class="bold">{{ number_format($pago->pago_bs - $pago->descuento_bs, 2) }}</td>
+                    <td colspan="2" class="bold">{{ number_format($total, 2) }}</td>
                 </tr>
             </tbody>
         </table>
@@ -496,9 +510,10 @@
             <div class="firma-section">
                 <div class="linea-firma"></div>
                 <div class="nombre-firma">Depositante</div>
-                <div class="cargo-firma">{{ $estudiante->persona->nombres }}
-                    {{ $estudiante->persona->apellido_paterno }}</div>
-                <div class="cargo-firma mt-3">N° Doc: {{ $estudiante->persona->carnet }}</div>
+                @if ($estudiante && $estudiante->persona)
+                    <div class="cargo-firma">{{ $estudiante->persona->nombres }} {{ $estudiante->persona->apellido_paterno }}</div>
+                    <div class="cargo-firma mt-3">N° Doc: {{ $estudiante->persona->carnet }}</div>
+                @endif
             </div>
         </div>
 

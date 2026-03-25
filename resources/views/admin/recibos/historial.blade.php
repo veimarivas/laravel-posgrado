@@ -1,74 +1,93 @@
 @extends('admin.dashboard')
 
 @section('admin')
+
+<style>
+    .stat-recibo {
+        border-radius: 10px;
+        border: 1px solid #e9ebec;
+        background: #fff;
+        padding: 1rem 1.2rem;
+        display: flex;
+        align-items: center;
+        gap: .9rem;
+    }
+    .stat-recibo .stat-icon {
+        width: 46px; height: 46px; border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.3rem; flex-shrink: 0;
+    }
+    .stat-recibo .stat-label { font-size: .75rem; color: #6c757d; margin-bottom: .15rem; }
+    .stat-recibo .stat-value { font-size: 1.1rem; font-weight: 700; line-height: 1.2; }
+    .filtros-card { border-radius: 10px; }
+    .tabla-recibos-card { border-radius: 10px; }
+</style>
+
     <!-- Page Title -->
-    <div class="row">
-        <div class="col-12">
-            <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-                <div>
-                    <h4 class="mb-1">Historial de Recibos</h4>
-                    <div class="page-title-right">
-                        <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item active">Recibos</li>
-                        </ol>
-                    </div>
-                </div>
-                <div>
-                    <a href="{{ route('admin.recibos.exportar') . '?' . http_build_query(request()->query()) }}"
-                        class="btn btn-success btn-sm">
-                        <i class="ri-file-excel-line me-1"></i> Exportar Excel
-                    </a>
-                </div>
-            </div>
+    <div class="d-sm-flex align-items-center justify-content-between mb-3">
+        <div>
+            <h4 class="mb-1">Historial de Recibos</h4>
+            <ol class="breadcrumb m-0">
+                <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item active">Recibos</li>
+            </ol>
         </div>
+        <a href="{{ route('admin.recibos.exportar') . '?' . http_build_query(request()->query()) }}"
+           class="btn btn-success btn-sm mt-2 mt-sm-0">
+            <i class="ri-file-excel-line me-1"></i> Exportar Excel
+        </a>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row g-2 mb-3" id="estadisticasContainer">
+        @include('admin.recibos.partials.estadisticas', ['estadisticas' => $estadisticas])
     </div>
 
     <!-- Filtros -->
-    <div class="card border">
-        <div class="card-body">
+    <div class="card border filtros-card mb-3">
+        <div class="card-header py-2 bg-transparent d-flex align-items-center gap-2">
+            <i class="ri-filter-3-line text-primary"></i>
+            <span class="fw-semibold">Filtros de búsqueda</span>
+        </div>
+        <div class="card-body py-2">
             <form id="formFiltrosRecibos">
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label for="fecha_inicio" class="form-label">Fecha Inicio</label>
-                        <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio"
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-2">
+                        <label class="form-label form-label-sm mb-1">Fecha inicio</label>
+                        <input type="date" class="form-control form-control-sm" id="fecha_inicio" name="fecha_inicio"
                             value="{{ request('fecha_inicio') }}">
                     </div>
-                    <div class="col-md-3">
-                        <label for="fecha_fin" class="form-label">Fecha Fin</label>
-                        <input type="date" class="form-control" id="fecha_fin" name="fecha_fin"
+                    <div class="col-md-2">
+                        <label class="form-label form-label-sm mb-1">Fecha fin</label>
+                        <input type="date" class="form-control form-control-sm" id="fecha_fin" name="fecha_fin"
                             value="{{ request('fecha_fin') }}">
                     </div>
                     <div class="col-md-2">
-                        <label for="tipo_pago" class="form-label">Tipo de Pago</label>
-                        <select class="form-select" id="tipo_pago" name="tipo_pago">
+                        <label class="form-label form-label-sm mb-1">Tipo de pago</label>
+                        <select class="form-select form-select-sm" id="tipo_pago" name="tipo_pago">
                             <option value="Todos">Todos</option>
-                            <option value="Efectivo" {{ request('tipo_pago') == 'Efectivo' ? 'selected' : '' }}>Efectivo
-                            </option>
-                            <option value="Transferencia" {{ request('tipo_pago') == 'Transferencia' ? 'selected' : '' }}>
-                                Transferencia</option>
-                            <option value="Depósito" {{ request('tipo_pago') == 'Depósito' ? 'selected' : '' }}>Depósito
-                            </option>
-                            <option value="Tarjeta" {{ request('tipo_pago') == 'Tarjeta' ? 'selected' : '' }}>Tarjeta
-                            </option>
+                            <option value="Efectivo"      {{ request('tipo_pago') == 'Efectivo'      ? 'selected' : '' }}>Efectivo</option>
+                            <option value="Transferencia" {{ request('tipo_pago') == 'Transferencia' ? 'selected' : '' }}>Transferencia</option>
+                            <option value="Depósito"      {{ request('tipo_pago') == 'Depósito'      ? 'selected' : '' }}>Depósito</option>
+                            <option value="Tarjeta"       {{ request('tipo_pago') == 'Tarjeta'       ? 'selected' : '' }}>Tarjeta</option>
                         </select>
                     </div>
-                    <div class="col-md-2">
-                        <label for="recibo" class="form-label">N° Recibo</label>
-                        <input type="text" class="form-control" id="recibo" name="recibo"
+                    <div class="col-md-3">
+                        <label class="form-label form-label-sm mb-1">N° Recibo</label>
+                        <input type="text" class="form-control form-control-sm" id="recibo" name="recibo"
                             value="{{ request('recibo') }}" placeholder="UNIP-000000001">
                     </div>
                     <div class="col-md-2">
-                        <label for="carnet" class="form-label">Carnet</label>
-                        <input type="text" class="form-control" id="carnet" name="carnet"
+                        <label class="form-label form-label-sm mb-1">Carnet</label>
+                        <input type="text" class="form-control form-control-sm" id="carnet" name="carnet"
                             value="{{ request('carnet') }}" placeholder="1234567">
                     </div>
-                    <div class="col-md-12">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="ri-search-line me-1"></i> Buscar
+                    <div class="col-md-1 d-flex gap-1">
+                        <button type="submit" class="btn btn-primary btn-sm w-100" title="Buscar">
+                            <i class="ri-search-line"></i>
                         </button>
-                        <button type="button" id="btnLimpiarFiltros" class="btn btn-light">
-                            <i class="ri-refresh-line me-1"></i> Limpiar
+                        <button type="button" id="btnLimpiarFiltros" class="btn btn-light btn-sm w-100" title="Limpiar">
+                            <i class="ri-refresh-line"></i>
                         </button>
                     </div>
                 </div>
@@ -76,14 +95,16 @@
         </div>
     </div>
 
-    <!-- Estadísticas -->
-    <div class="row mt-3" id="estadisticasContainer">
-        @include('admin.recibos.partials.estadisticas', ['estadisticas' => $estadisticas])
-    </div>
-
     <!-- Tabla de recibos -->
-    <div class="card border mt-3">
-        <div class="card-body">
+    <div class="card border tabla-recibos-card">
+        <div class="card-header py-2 bg-transparent d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+                <i class="ri-receipt-line text-primary"></i>
+                <span class="fw-semibold">Listado de Recibos</span>
+                <span class="badge bg-primary-subtle text-primary ms-1">más recientes primero</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
             <div class="table-responsive" id="tablaRecibosContainer">
                 @include('admin.recibos.partials.table-body', ['recibos' => $recibos])
             </div>
@@ -122,84 +143,27 @@
 
             // Función para actualizar estadísticas
             function actualizarEstadisticas(estadisticas) {
-                $('#estadisticasContainer').html(`
-                <div class="col-xl-3 col-md-6">
-                    <div class="card card-animate">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <p class="fw-medium text-muted mb-0">Total Recibos</p>
-                                    <h4 class="mt-4 ff-secondary fw-semibold">${estadisticas.total_recibos}</h4>
-                                </div>
-                                <div>
-                                    <div class="avatar-sm flex-shrink-0">
-                                        <span class="avatar-title bg-primary-subtle text-primary rounded-circle fs-2">
-                                            <i class="ri-file-text-line"></i>
-                                        </span>
-                                    </div>
-                                </div>
+                var stats = [
+                    { label: 'Total Recibos',   value: estadisticas.total_recibos,       unit: '',   icon: 'ri-file-text-line',        cls: 'bg-primary-subtle text-primary',  valCls: 'text-primary' },
+                    { label: 'Monto Total',      value: formatMoney(estadisticas.total_monto),       unit: 'Bs', icon: 'ri-money-dollar-circle-line', cls: 'bg-dark-subtle text-dark',        valCls: '' },
+                    { label: 'Efectivo',         value: formatMoney(estadisticas.total_efectivo),     unit: 'Bs', icon: 'ri-money-dollar-circle-line', cls: 'bg-success-subtle text-success',  valCls: 'text-success' },
+                    { label: 'Transferencia',    value: formatMoney(estadisticas.total_transferencia),unit: 'Bs', icon: 'ri-bank-transfer-line',       cls: 'bg-info-subtle text-info',        valCls: 'text-info' },
+                    { label: 'Depósito',         value: formatMoney(estadisticas.total_deposito||0),  unit: 'Bs', icon: 'ri-bank-card-2-line',         cls: 'bg-primary-subtle text-primary',  valCls: 'text-primary' },
+                    { label: 'Tarjeta',          value: formatMoney(estadisticas.total_tarjeta||0),   unit: 'Bs', icon: 'ri-bank-card-line',           cls: 'bg-warning-subtle text-warning',  valCls: '' },
+                ];
+                var html = '';
+                stats.forEach(function(s) {
+                    html += `<div class="col-xl-2 col-md-4 col-6">
+                        <div class="stat-recibo">
+                            <div class="stat-icon ${s.cls}"><i class="${s.icon}"></i></div>
+                            <div>
+                                <div class="stat-label">${s.label}</div>
+                                <div class="stat-value ${s.valCls}">${s.value} <small class="fw-normal">${s.unit}</small></div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-md-6">
-                    <div class="card card-animate">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <p class="fw-medium text-muted mb-0">Monto Total</p>
-                                    <h4 class="mt-4 ff-secondary fw-semibold">${formatMoney(estadisticas.total_monto)} Bs</h4>
-                                </div>
-                                <div>
-                                    <div class="avatar-sm flex-shrink-0">
-                                        <span class="avatar-title bg-success-subtle text-success rounded-circle fs-2">
-                                            <i class="ri-money-dollar-circle-line"></i>
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-md-6">
-                    <div class="card card-animate">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <p class="fw-medium text-muted mb-0">Efectivo</p>
-                                    <h4 class="mt-4 ff-secondary fw-semibold">${formatMoney(estadisticas.total_efectivo)} Bs</h4>
-                                </div>
-                                <div>
-                                    <div class="avatar-sm flex-shrink-0">
-                                        <span class="avatar-title bg-warning-subtle text-warning rounded-circle fs-2">
-                                            <i class="ri-bank-card-line"></i>
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-md-6">
-                    <div class="card card-animate">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between">
-                                <div>
-                                    <p class="fw-medium text-muted mb-0">Transferencias</p>
-                                    <h4 class="mt-4 ff-secondary fw-semibold">${formatMoney(estadisticas.total_transferencia)} Bs</h4>
-                                </div>
-                                <div>
-                                    <div class="avatar-sm flex-shrink-0">
-                                        <span class="avatar-title bg-info-subtle text-info rounded-circle fs-2">
-                                            <i class="ri-exchange-funds-line"></i>
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `);
+                    </div>`;
+                });
+                $('#estadisticasContainer').html(html);
             }
 
             // Formatear dinero
@@ -254,6 +218,9 @@
                     <p class="mt-3">Cargando detalles del pago...</p>
                 </div>
             `);
+
+                // Guardar pagoId en el botón imprimir para usarlo en el click
+                $('#btnImprimirDetalle').data('pago-id', pagoId);
 
                 // Mostrar modal
                 $('#modalDetallePago').modal('show');
@@ -315,143 +282,123 @@
                 var estudiante = response.estudiante;
                 var cuotas = response.cuotas;
 
+                // Colores por tipo de pago
+                var tipoBadge = {
+                    'Efectivo':      'bg-success',
+                    'Transferencia': 'bg-info',
+                    'Depósito':      'bg-primary',
+                    'Tarjeta':       'bg-warning text-dark',
+                };
+                var tipoBadgeClass = tipoBadge[pago.tipo_pago] || 'bg-secondary';
+
+                // ── Cabecera: recibo + monto destacado ──────────────────
                 var html = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6 class="mb-3">Información del Recibo</h6>
-                        <table class="table table-sm table-borderless">
-                            <tr>
-                                <td class="fw-medium">N° Recibo:</td>
-                                <td class="text-end"><span class="badge bg-primary">${pago.recibo || 'N/A'}</span></td>
-                            </tr>
-                            <tr>
-                                <td class="fw-medium">Fecha de Pago:</td>
-                                <td class="text-end">${formatDate(pago.fecha_pago)}</td>
-                            </tr>
-                            <tr>
-                                <td class="fw-medium">Tipo de Pago:</td>
-                                <td class="text-end"><span class="badge bg-info">${pago.tipo_pago || 'N/A'}</span></td>
-                            </tr>
-                            <tr>
-                                <td class="fw-medium">Monto Total:</td>
-                                <td class="text-end"><span class="fw-bold text-success">${formatMoney(pago.pago_bs)} Bs</span></td>
-                            </tr>
-            `;
-
-                if (pago.descuento_bs > 0) {
-                    html += `
-                    <tr>
-                        <td class="fw-medium">Descuento:</td>
-                        <td class="text-end"><span class="text-warning">-${formatMoney(pago.descuento_bs)} Bs</span></td>
-                    </tr>
-                    <tr>
-                        <td class="fw-medium">Neto Pagado:</td>
-                        <td class="text-end"><span class="fw-bold text-primary">${formatMoney(pago.pago_bs - pago.descuento_bs)} Bs</span></td>
-                    </tr>
-                `;
-                }
-
-                html += `
-                        </table>
+                <div class="d-flex align-items-center justify-content-between mb-3 p-3 rounded" style="background:linear-gradient(135deg,#405189ee,#405189aa);color:#fff;">
+                    <div>
+                        <div class="small opacity-75 mb-1"><i class="ri-file-text-line me-1"></i>N° de Recibo</div>
+                        <div class="fs-5 fw-bold">${pago.recibo || 'N/A'}</div>
+                        <div class="small opacity-75 mt-1"><i class="ri-calendar-line me-1"></i>${formatDate(pago.fecha_pago)}</div>
                     </div>
-                    <div class="col-md-6">
-                        <h6 class="mb-3">Información del Participante</h6>
-                        <table class="table table-sm table-borderless">
-            `;
+                    <div class="text-end">
+                        <div class="small opacity-75 mb-1">Monto pagado</div>
+                        <div class="fs-4 fw-bold">${formatMoney(pago.pago_bs)} Bs</div>
+                        ${pago.descuento_bs > 0 ? `<div class="small opacity-75">Descuento: -${formatMoney(pago.descuento_bs)} Bs</div>` : ''}
+                        <span class="badge ${tipoBadgeClass} mt-1">${pago.tipo_pago || 'N/A'}</span>
+                    </div>
+                </div>`;
 
+                // ── Tarjetas de info: estudiante | destino ───────────────
+                html += `<div class="row g-2 mb-3">`;
+
+                // Tarjeta estudiante
+                html += `<div class="col-md-6">
+                    <div class="border rounded p-2 h-100">
+                        <div class="fw-semibold text-muted small text-uppercase mb-2">
+                            <i class="ri-user-line me-1"></i>Participante
+                        </div>`;
                 if (estudiante && estudiante.persona) {
                     html += `
-                    <tr>
-                        <td class="fw-medium">Estudiante:</td>
-                        <td class="text-end">${estudiante.persona.nombres} ${estudiante.persona.apellido_paterno}</td>
-                    </tr>
-                    <tr>
-                        <td class="fw-medium">Carnet:</td>
-                        <td class="text-end">${estudiante.persona.carnet}</td>
-                    </tr>
-                `;
+                        <div class="mb-1">
+                            <span class="text-muted small d-block">Nombre</span>
+                            <strong>${estudiante.persona.nombres} ${estudiante.persona.apellido_paterno} ${estudiante.persona.apellido_materno || ''}</strong>
+                        </div>
+                        <div>
+                            <span class="text-muted small d-block">Carnet</span>
+                            <span class="badge bg-secondary">${estudiante.persona.carnet || 'N/A'}</span>
+                        </div>`;
                 } else {
-                    html += `
-                    <tr>
-                        <td colspan="2" class="text-center text-muted">Información del estudiante no disponible</td>
-                    </tr>
-                `;
+                    html += `<div class="text-muted small">Información no disponible</div>`;
                 }
+                html += `</div></div>`;
 
-                html += `
-                        </table>
+                // Tarjeta programa (tomado de la primera cuota)
+                var primeraCuota = cuotas && cuotas.length > 0 ? cuotas[0].cuota : null;
+                // Laravel serializa relaciones camelCase a snake_case en JSON
+                var oferta = primeraCuota && primeraCuota.inscripcion
+                    ? (primeraCuota.inscripcion.oferta_academica || primeraCuota.inscripcion.ofertaAcademica || null)
+                    : null;
+                var nombrePrograma = oferta && oferta.programa ? oferta.programa.nombre : 'No disponible';
+
+                html += `<div class="col-md-6">
+                    <div class="border rounded p-2 h-100">
+                        <div class="fw-semibold text-muted small text-uppercase mb-2">
+                            <i class="ri-graduation-cap-line me-1"></i>Programa
+                        </div>
+                        <div>
+                            <span class="text-muted small d-block">Programa de Posgrado</span>
+                            <strong class="small">${nombrePrograma}</strong>
+                        </div>
                     </div>
-                </div>
-            `;
+                </div></div>`;
 
-                // Agregar información de cuotas si existen
+                // ── Cuotas pagadas ───────────────────────────────────────
                 if (cuotas && cuotas.length > 0) {
-                    html += `
-                    <hr>
-                    <h6 class="mb-3">Cuotas Pagadas</h6>
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Cuota</th>
-                                    <th>Programa</th>
-                                    <th class="text-end">Monto Pagado</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
+                    html += `<div class="border rounded p-2 mb-2">
+                        <div class="fw-semibold text-muted small text-uppercase mb-2">
+                            <i class="ri-file-list-3-line me-1"></i>Cuotas incluidas en este pago
+                        </div>
+                        <div class="list-group list-group-flush">`;
 
                     cuotas.forEach(function(cuotaPago) {
                         var cuota = cuotaPago.cuota;
-                        var programa = cuota && cuota.inscripcion && cuota.inscripcion.ofertaAcademica ?
-                            cuota.inscripcion.ofertaAcademica.programa : null;
+                        var ofertaCuota = cuota && cuota.inscripcion
+                            ? (cuota.inscripcion.oferta_academica || cuota.inscripcion.ofertaAcademica || null)
+                            : null;
+                        var progCuota = ofertaCuota && ofertaCuota.programa ? ofertaCuota.programa.nombre : 'N/A';
 
                         html += `
-                        <tr>
-                            <td>${cuota ? cuota.nombre + ' (' + cuota.n_cuota + ')' : 'N/A'}</td>
-                            <td>${programa ? programa.nombre : 'N/A'}</td>
-                            <td class="text-end">${formatMoney(cuotaPago.pago_bs)} Bs</td>
-                        </tr>
-                    `;
+                        <div class="list-group-item px-1 py-2 d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="fw-medium d-block">${cuota ? cuota.nombre : 'N/A'}</span>
+                                <small class="text-muted"><i class="ri-graduation-cap-line me-1"></i>${progCuota}</small>
+                            </div>
+                            <span class="badge bg-success-subtle text-success fw-semibold">
+                                ${formatMoney(cuotaPago.pago_bs)} Bs
+                            </span>
+                        </div>`;
                     });
 
-                    html += `
-                            </tbody>
-                        </table>
-                    </div>
-                `;
+                    html += `</div></div>`;
                 }
 
-                // Agregar detalles de pago (métodos de pago)
+                // ── Detalle de métodos de pago ───────────────────────────
                 if (pago.detalles && pago.detalles.length > 0) {
-                    html += `
-                    <hr>
-                    <h6 class="mb-3">Detalles de Pago</h6>
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Tipo de Pago</th>
-                                    <th class="text-end">Monto</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                `;
+                    html += `<div class="border rounded p-2">
+                        <div class="fw-semibold text-muted small text-uppercase mb-2">
+                            <i class="ri-bank-line me-1"></i>Métodos de pago
+                        </div>
+                        <div class="list-group list-group-flush">`;
 
                     pago.detalles.forEach(function(detalle) {
+                        var badgeCls = tipoBadge[detalle.tipo_pago] || 'bg-secondary';
                         html += `
-                        <tr>
-                            <td>${detalle.tipo_pago || 'N/A'}</td>
-                            <td class="text-end">${formatMoney(detalle.pago_bs)} Bs</td>
-                        </tr>
-                    `;
+                        <div class="list-group-item px-1 py-2 d-flex align-items-center justify-content-between">
+                            <span class="badge ${badgeCls}">${detalle.tipo_pago || 'N/A'}</span>
+                            <span class="fw-medium">${formatMoney(detalle.pago_bs)} Bs</span>
+                        </div>`;
                     });
 
-                    html += `
-                            </tbody>
-                        </table>
-                    </div>
-                `;
+                    html += `</div></div>`;
                 }
 
                 return html;
@@ -482,46 +429,12 @@
                 return date.toLocaleDateString('es-BO') + ' ' + date.toLocaleTimeString('es-BO');
             }
 
-            // Imprimir detalle
+            // Imprimir / descargar recibo oficial
             $('#btnImprimirDetalle').on('click', function() {
-                var contenido = $('#detallePagoContenido').html();
-                var ventana = window.open('', '_blank');
-                ventana.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Detalle del Recibo</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; margin: 20px; }
-                        .header { text-align: center; margin-bottom: 20px; }
-                        .header h4 { color: #2c3e50; }
-                        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                        th { background-color: #f8f9fa; }
-                        .total { font-weight: bold; color: #2c3e50; }
-                        .text-end { text-align: right; }
-                        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; }
-                        .bg-primary { background-color: #3b7ddd; color: white; }
-                        .bg-info { background-color: #39afd1; color: white; }
-                        .text-success { color: #00a854; }
-                        .text-warning { color: #f0ad4e; }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <h4>Detalle del Recibo</h4>
-                        <p>Generado el: ${new Date().toLocaleDateString('es-BO')} ${new Date().toLocaleTimeString('es-BO')}</p>
-                    </div>
-                    ${contenido}
-                    <script>
-                        window.onload = function() {
-                            window.print();
-                        }
-                    <\/script>
-                </body>
-                </html>
-            `);
-                ventana.document.close();
+                var pagoId = $(this).data('pago-id');
+                if (pagoId) {
+                    window.open('/admin/estudiantes/pago/' + pagoId + '/descargar-recibo', '_blank');
+                }
             });
         });
     </script>

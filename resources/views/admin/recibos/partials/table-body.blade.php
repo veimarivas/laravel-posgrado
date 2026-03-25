@@ -1,86 +1,118 @@
 <table class="table table-hover align-middle mb-0">
     <thead class="table-light">
         <tr>
-            <th width="15%">Recibo</th>
-            <th width="15%">Fecha Pago</th>
-            <th width="25%">Estudiante</th>
-            <th width="15%">Carnet</th>
-            <th width="15%">Programa</th>
-            <th width="10%">Monto</th>
-            <th width="5%">Acciones</th>
+            <th style="width:18%">Recibo</th>
+            <th style="width:12%">Fecha</th>
+            <th style="width:22%">Estudiante</th>
+            <th style="width:28%">Programa</th>
+            <th style="width:10%">Monto</th>
+            <th style="width:10%" class="text-center">Acciones</th>
         </tr>
     </thead>
     <tbody>
         @forelse ($recibos as $pago)
             @php
-                $pagoCuota = $pago->pagos_cuotas->first();
-                $cuota = $pagoCuota ? $pagoCuota->cuota : null;
-                $inscripcion = $cuota ? $cuota->inscripcion : null;
-                $estudiante = $inscripcion ? $inscripcion->estudiante : null;
-                $persona = $estudiante ? $estudiante->persona : null;
-                $programa = $inscripcion ? $inscripcion->ofertaAcademica->programa : null;
+                $pagoCuota  = $pago->pagos_cuotas->first();
+                $cuota      = $pagoCuota?->cuota;
+                $inscripcion = $cuota?->inscripcion;
+                $estudiante = $inscripcion?->estudiante;
+                $persona    = $estudiante?->persona;
+                $oferta     = $inscripcion?->ofertaAcademica;
+                $programa   = $oferta?->programa;
+
+                $tipoBadge = [
+                    'Efectivo'      => 'bg-success',
+                    'Transferencia' => 'bg-info',
+                    'Depósito'      => 'bg-primary',
+                    'Tarjeta'       => 'bg-warning text-dark',
+                ];
+                $badgeCls = $tipoBadge[$pago->tipo_pago] ?? 'bg-secondary';
             @endphp
             <tr>
+                {{-- Recibo + tipo --}}
                 <td>
-                    <span class="fw-bold text-primary">{{ $pago->recibo }}</span>
-                    <div class="small text-muted">
-                        {{ $pago->tipo_pago }}
-                    </div>
+                    <div class="fw-bold text-primary" style="font-size:.85rem;">{{ $pago->recibo }}</div>
+                    <span class="badge {{ $badgeCls }} mt-1" style="font-size:.7rem;">
+                        {{ $pago->tipo_pago ?? 'N/A' }}
+                    </span>
                 </td>
+
+                {{-- Fecha --}}
                 <td>
-                    {{ \Carbon\Carbon::parse($pago->fecha_pago)->format('d/m/Y') }}
-                    <div class="small text-muted">
+                    <div class="fw-medium">{{ \Carbon\Carbon::parse($pago->fecha_pago)->format('d/m/Y') }}</div>
+                    <div class="text-muted" style="font-size:.75rem;">
                         {{ \Carbon\Carbon::parse($pago->fecha_pago)->format('H:i') }}
                     </div>
                 </td>
+
+                {{-- Estudiante con link --}}
                 <td>
-                    @if ($persona)
-                        <div class="fw-medium">{{ $persona->nombres }}</div>
-                        <div class="small">{{ $persona->apellido_paterno }} {{ $persona->apellido_materno }}</div>
+                    @if ($persona && $estudiante)
+                        <a href="{{ route('admin.estudiantes.detalle', $estudiante->id) }}"
+                           class="text-body text-decoration-none fw-medium d-block"
+                           title="Ver detalle del estudiante">
+                            {{ $persona->nombres }}
+                            {{ $persona->apellido_paterno }}
+                            <i class="ri-external-link-line text-primary ms-1" style="font-size:.75rem;"></i>
+                        </a>
+                        <div class="mt-1">
+                            <span class="badge bg-secondary" style="font-size:.7rem;">{{ $persona->carnet }}</span>
+                        </div>
                     @else
-                        <span class="text-muted">N/A</span>
+                        <span class="text-muted small">N/A</span>
                     @endif
                 </td>
+
+                {{-- Programa con link a oferta --}}
                 <td>
-                    @if ($persona)
-                        <span class="badge bg-secondary">{{ $persona->carnet }}</span>
+                    @if ($programa && $oferta)
+                        <a href="{{ route('admin.ofertas.dashboard', $oferta->id) }}"
+                           class="text-body text-decoration-none d-block"
+                           style="font-size:.82rem; line-height:1.3;"
+                           title="Ver dashboard de la oferta">
+                            {{ $programa->nombre }}
+                            <i class="ri-external-link-line text-success ms-1" style="font-size:.72rem;"></i>
+                        </a>
                     @else
-                        <span class="text-muted">N/A</span>
+                        <span class="text-muted small">N/A</span>
                     @endif
                 </td>
-                <td>
-                    @if ($programa)
-                        <div class="small">{{ $programa->nombre }}</div>
-                    @else
-                        <span class="text-muted">N/A</span>
-                    @endif
-                </td>
+
+                {{-- Monto --}}
                 <td>
                     <div class="fw-bold text-success">{{ number_format($pago->pago_bs, 2) }} Bs</div>
-                    @if ($pago->descuento_bs > 0)
-                        <div class="small text-warning">Desc: {{ number_format($pago->descuento_bs, 2) }} Bs</div>
+                    @if (($pago->descuento_bs ?? 0) > 0)
+                        <div class="text-warning" style="font-size:.75rem;">
+                            Desc: -{{ number_format($pago->descuento_bs, 2) }} Bs
+                        </div>
                     @endif
                 </td>
-                <td>
-                    <button class="btn btn-sm btn-primary btn-ver-detalle" data-pago-id="{{ $pago->id }}">
+
+                {{-- Acciones --}}
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-primary btn-ver-detalle"
+                            data-pago-id="{{ $pago->id }}"
+                            title="Ver detalle">
                         <i class="ri-eye-line"></i>
                     </button>
                     <a href="{{ route('admin.estudiantes.descargar-recibo', $pago->id) }}"
-                        class="btn btn-sm btn-success" target="_blank">
+                       class="btn btn-sm btn-outline-success ms-1"
+                       target="_blank"
+                       title="Descargar recibo PDF">
                         <i class="ri-download-line"></i>
                     </a>
                 </td>
             </tr>
         @empty
             <tr>
-                <td colspan="7" class="text-center py-5">
+                <td colspan="6" class="text-center py-5">
                     <div class="avatar-lg mx-auto mb-3">
                         <div class="avatar-title bg-light text-secondary rounded-circle">
                             <i class="ri-file-text-line fs-2"></i>
                         </div>
                     </div>
-                    <h5 class="mb-2">No se encontraron recibos</h5>
-                    <p class="text-muted mb-0">Intenta cambiar los filtros de búsqueda</p>
+                    <h5 class="mb-1">No se encontraron recibos</h5>
+                    <p class="text-muted mb-0 small">Intenta cambiar los filtros de búsqueda</p>
                 </td>
             </tr>
         @endforelse

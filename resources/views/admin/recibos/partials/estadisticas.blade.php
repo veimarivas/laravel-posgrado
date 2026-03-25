@@ -1,82 +1,77 @@
 @if (isset($estadisticas))
-    <div class="col-xl-3 col-md-6">
-        <div class="card card-animate">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <p class="fw-medium text-muted mb-0">Total Recibos</p>
-                        <h4 class="mt-4 ff-secondary fw-semibold">{{ $estadisticas['total_recibos'] }}</h4>
-                    </div>
-                    <div>
-                        <div class="avatar-sm flex-shrink-0">
-                            <span class="avatar-title bg-primary-subtle text-primary rounded-circle fs-2">
-                                <i class="ri-file-text-line"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
+    <div class="col-xl-4 col-md-4 col-6">
+        <div class="stat-recibo">
+            <div class="stat-icon bg-primary-subtle text-primary">
+                <i class="ri-file-text-line"></i>
+            </div>
+            <div>
+                <div class="stat-label">Total Recibos</div>
+                <div class="stat-value text-primary">{{ $estadisticas['total_recibos'] }}</div>
             </div>
         </div>
     </div>
 
-    <div class="col-xl-3 col-md-6">
-        <div class="card card-animate">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <p class="fw-medium text-muted mb-0">Monto Total</p>
-                        <h4 class="mt-4 ff-secondary fw-semibold">{{ number_format($estadisticas['total_monto'], 2) }}
-                            Bs</h4>
-                    </div>
-                    <div>
-                        <div class="avatar-sm flex-shrink-0">
-                            <span class="avatar-title bg-success-subtle text-success rounded-circle fs-2">
-                                <i class="ri-money-dollar-circle-line"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
+    <div class="col-xl-4 col-md-4 col-6">
+        <div class="stat-recibo">
+            <div class="stat-icon bg-dark-subtle text-dark">
+                <i class="ri-money-dollar-circle-line"></i>
+            </div>
+            <div>
+                <div class="stat-label">Monto Total</div>
+                <div class="stat-value">{{ number_format($estadisticas['total_monto'], 2) }} <small
+                        class="fw-normal">Bs</small></div>
             </div>
         </div>
     </div>
 
-    <div class="col-xl-3 col-md-6">
-        <div class="card card-animate">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <p class="fw-medium text-muted mb-0">Efectivo</p>
-                        <h4 class="mt-4 ff-secondary fw-semibold">
-                            {{ number_format($estadisticas['total_efectivo'], 2) }} Bs</h4>
-                    </div>
-                    <div>
-                        <div class="avatar-sm flex-shrink-0">
-                            <span class="avatar-title bg-warning-subtle text-warning rounded-circle fs-2">
-                                <i class="ri-bank-card-line"></i>
-                            </span>
-                        </div>
-                    </div>
-                </div>
+    <div class="col-xl-4 col-md-4 col-6">
+        <div class="stat-recibo">
+            <div class="stat-icon bg-success-subtle text-success">
+                <i class="ri-money-dollar-circle-line"></i>
+            </div>
+            <div>
+                <div class="stat-label">Efectivo</div>
+                <div class="stat-value text-success">{{ number_format($estadisticas['total_efectivo'], 2) }} <small
+                        class="fw-normal">Bs</small></div>
             </div>
         </div>
     </div>
 
-    <div class="col-xl-3 col-md-6">
-        <div class="card card-animate">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <p class="fw-medium text-muted mb-0">Transferencias</p>
-                        <h4 class="mt-4 ff-secondary fw-semibold">
-                            {{ number_format($estadisticas['total_transferencia'], 2) }} Bs</h4>
-                    </div>
-                    <div>
-                        <div class="avatar-sm flex-shrink-0">
-                            <span class="avatar-title bg-info-subtle text-info rounded-circle fs-2">
-                                <i class="ri-exchange-funds-line"></i>
-                            </span>
-                        </div>
-                    </div>
+    <div class="col-xl-4 col-md-4 col-6">
+        <div class="stat-recibo">
+            <div class="stat-icon bg-info-subtle text-info">
+                <i class="ri-bank-transfer-line"></i>
+            </div>
+            <div>
+                <div class="stat-label">Transferencia</div>
+                <div class="stat-value text-info">{{ number_format($estadisticas['total_transferencia'], 2) }} <small
+                        class="fw-normal">Bs</small></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-md-4 col-6">
+        <div class="stat-recibo">
+            <div class="stat-icon bg-primary-subtle text-primary">
+                <i class="ri-bank-card-2-line"></i>
+            </div>
+            <div>
+                <div class="stat-label">Depósito</div>
+                <div class="stat-value text-primary">{{ number_format($estadisticas['total_deposito'] ?? 0, 2) }} <small
+                        class="fw-normal">Bs</small></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4 col-md-4 col-6">
+        <div class="stat-recibo">
+            <div class="stat-icon bg-warning-subtle text-warning">
+                <i class="ri-bank-card-line"></i>
+            </div>
+            <div>
+                <div class="stat-label">Tarjeta</div>
+                <div class="stat-value" style="color:#5a3e00;">
+                    {{ number_format($estadisticas['total_tarjeta'] ?? 0, 2) }} <small class="fw-normal">Bs</small>
                 </div>
             </div>
         </div>
