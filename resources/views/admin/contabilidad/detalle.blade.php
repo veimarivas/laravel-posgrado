@@ -124,6 +124,7 @@
                                     $totalPrograma = $deudaPrograma + $pagadoPrograma;
                                     $porcentajePagado =
                                         $totalPrograma > 0 ? ($pagadoPrograma / $totalPrograma) * 100 : 0;
+                                    $cuotasPendientes = $cuotas->where('pago_terminado', '!=', 'si')->count();
                                 @endphp
 
                                 <div class="accordion-item border-bottom">
@@ -164,6 +165,20 @@
                                         aria-labelledby="contableHeading{{ $index }}"
                                         data-bs-parent="#accordionContable">
                                         <div class="accordion-body p-4">
+                                            {{-- Barra acción multi-cuota --}}
+                                            @if ($cuotasPendientes > 0)
+                                                <div class="d-flex align-items-center justify-content-between bg-light border rounded px-3 py-2 mb-3">
+                                                    <span class="small text-muted">
+                                                        <i class="ri-list-check-2 me-1"></i>
+                                                        {{ $cuotasPendientes }} cuota(s) pendiente(s) en este programa
+                                                    </span>
+                                                    <button type="button"
+                                                        class="btn btn-sm btn-primary btn-pagar-multiple"
+                                                        data-estudiante-id="{{ $estudiante->id }}">
+                                                        <i class="ri-stack-line me-1"></i>Pagar Múltiples Cuotas
+                                                    </button>
+                                                </div>
+                                            @endif
                                             <!-- Cuotas del programa -->
                                             <div class="table-responsive">
                                                 <table class="table table-hover align-middle mb-0">
@@ -336,23 +351,351 @@
 
     <!-- Modales -->
     @include('admin.estudiantes.partials.modal-pagar-cuota')
-    @include('admin.estudiantes.partials.modal-recibo-generado')
+    @include('admin.contabilidad.partials.modal-pagar-contabilidad')
     @include('admin.estudiantes.partials.modal-recibos-cuota')
 @endsection
 
 @push('script')
-    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    <!-- Scripts para pagos (reutilizar de estudiantes) -->
-    @include('admin.estudiantes.partials.scripts-pagos')
-
     <script>
-        $(document).ready(function() {
-            // Asegurar que los acordeones funcionen
-            $('.accordion-button').on('click', function() {
+        // ── togglePcFields debe ser global (llamada desde onchange="" inline) ──
+        var pcCuotasData = {};
+
+        function togglePcFields() {
+            var tipo = document.getElementById('pc_tipo_pago').value;
+            document.getElementById('pc_campo_caja').style.display        = 'none';
+            document.getElementById('pc_campo_cuenta').style.display      = 'none';
+            document.getElementById('pc_campo_comprobante').style.display  = 'none';
+            document.getElementById('pc_caja_id').removeAttribute('required');
+            document.getElementById('pc_cuenta_id').removeAttribute('required');
+            document.getElementById('pc_n_comprobante').removeAttribute('required');
+
+            if (tipo === 'Efectivo') {
+                document.getElementById('pc_campo_caja').style.display = 'block';
+                document.getElementById('pc_caja_id').setAttribute('required', 'required');
+            } else if (['Transferencia', 'Depósito', 'Tarjeta'].includes(tipo)) {
+                document.getElementById('pc_campo_cuenta').style.display      = 'block';
+                document.getElementById('pc_campo_comprobante').style.display  = 'block';
+                document.getElementById('pc_cuenta_id').setAttribute('required', 'required');
+                document.getElementById('pc_n_comprobante').setAttribute('required', 'required');
+            }
+        }
+
+        $(document).ready(function () {
+
+            // ── Acordeón ─────────────────────────────────────────────────────
+            $('.accordion-button').on('click', function () {
                 $(this).toggleClass('collapsed');
             });
-        });
+
+            // ── Helpers multi-cuota ──────────────────────────────────────────
+            function pcActualizarResumen() {
+                var monto     = parseFloat($('#pc_monto_pago').val()) || 0;
+                var descuento = parseFloat($('#pc_descuento').val()) || 0;
+                var total     = Math.max(0, monto - descuento);
+                var pendSel   = parseFloat($('#pc_pendiente_total').text()) || 0;
+                var pct       = pendSel > 0 ? Math.min(100, (total / pendSel) * 100) : 0;
+
+                $('#pc_res_monto').text(monto.toFixed(2) + ' Bs');
+                $('#pc_res_desc').text(descuento.toFixed(2) + ' Bs');
+                $('#pc_res_total').text(total.toFixed(2) + ' Bs');
+                $('#pc_progreso').css('width', pct.toFixed(1) + '%');
+                $('#pc_txt_progreso').text(pct.toFixed(1) + '% del total seleccionado');
+            }
+
+            function pcActualizarTotales() {
+                var total = 0, count = 0;
+                $('.pc-cuota-check:checked').each(function () {
+                    total += pcCuotasData[$(this).val()] || 0;
+                    count++;
+                });
+                $('#pc_pendiente_total').text(total.toFixed(2));
+                $('#totalSelBadge').text(total.toFixed(2) + ' Bs');
+                $('#pc_monto_pago').val(total.toFixed(2));
+                $('#pc_res_cuotas').text(count);
+                pcActualizarResumen();
+            }
+
+            function pcCargarCuotas(estudianteId, preseleccionarId) {
+                $('#listaCuotasPago').html('<div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Cargando...</div>');
+                pcCuotasData = {};
+
+                $.ajax({
+                    url: '/admin/estudiantes/' + estudianteId + '/cuotas-pendientes',
+                    type: 'GET',
+                    success: function (response) {
+                        if (!response.success || !response.programas || response.programas.length === 0) {
+                            $('#listaCuotasPago').html('<div class="alert alert-warning mb-0">No hay cuotas pendientes.</div>');
+                            return;
+                        }
+
+                        var tipoBadgeClass = {
+                            'Matrícula':    'bg-primary text-white',
+                            'Colegiatura':  'bg-success text-white',
+                            'Certificación':'bg-warning text-dark',
+                            'Otros':        'bg-secondary text-white',
+                        };
+
+                        var html = '';
+                        response.programas.forEach(function (prog) {
+                            html += '<div class="prog-header"><i class="ri-graduation-cap-line me-1"></i>' + prog.programa + '</div>';
+                            prog.cuotas.forEach(function (cuota) {
+                                pcCuotasData[cuota.id] = cuota.pendiente_bs;
+                                var checked  = (preseleccionarId && cuota.id == preseleccionarId) ? 'checked' : '';
+                                var selCls   = checked ? 'selected' : '';
+                                var badgeCls = tipoBadgeClass[cuota.tipo] || 'bg-secondary text-white';
+                                html += '<label class="cuota-check-item ' + selCls + '" for="pcCuota_' + cuota.id + '">' +
+                                    '<input class="pc-cuota-check" type="checkbox" id="pcCuota_' + cuota.id + '" value="' + cuota.id + '" ' + checked + '>' +
+                                    '<div class="flex-grow-1 min-w-0">' +
+                                        '<div class="fw-medium" style="font-size:.84rem;">' + cuota.nombre + '</div>' +
+                                        '<div class="text-muted" style="font-size:.75rem;">Pendiente: <strong>' + cuota.pendiente_bs.toFixed(2) + ' Bs</strong></div>' +
+                                    '</div>' +
+                                    '<span class="cuota-tipo-badge ' + badgeCls + '">' + cuota.tipo + '</span>' +
+                                '</label>';
+                            });
+                        });
+
+                        $('#listaCuotasPago').html(html);
+                        pcActualizarTotales();
+                    },
+                    error: function () {
+                        $('#listaCuotasPago').html('<div class="alert alert-danger mb-0">Error al cargar cuotas.</div>');
+                    }
+                });
+            }
+
+            // ── Eventos lista de cuotas ──────────────────────────────────────
+            $(document).on('change', '.pc-cuota-check', function () {
+                $(this).closest('.cuota-check-item').toggleClass('selected', this.checked);
+                pcActualizarTotales();
+            });
+
+            $('#btnSeleccionarTodas').on('click', function () {
+                $('.pc-cuota-check').prop('checked', true).closest('.cuota-check-item').addClass('selected');
+                pcActualizarTotales();
+            });
+
+            $('#btnDeseleccionarTodas').on('click', function () {
+                $('.pc-cuota-check').prop('checked', false).closest('.cuota-check-item').removeClass('selected');
+                pcActualizarTotales();
+            });
+
+            $(document).on('input', '#pc_monto_pago, #pc_descuento', pcActualizarResumen);
+
+            // ── Abrir modal cuota individual ─────────────────────────────────
+            var scSaldoPendiente = 0;
+
+            function scActualizarResumen() {
+                var monto     = parseFloat($('#monto_pago').val()) || 0;
+                var descuento = parseFloat($('#descuento').val()) || 0;
+                if (monto > scSaldoPendiente) { monto = scSaldoPendiente; $('#monto_pago').val(monto.toFixed(2)); }
+                if (descuento > monto)        { descuento = monto;        $('#descuento').val(descuento.toFixed(2)); }
+                var total = Math.max(0, monto - descuento);
+                var pct   = scSaldoPendiente > 0 ? Math.min(100, (monto / scSaldoPendiente) * 100) : 0;
+                $('#resumen-monto').text(monto.toFixed(2) + ' Bs');
+                $('#resumen-descuento').text(descuento.toFixed(2) + ' Bs');
+                $('#resumen-total').text(total.toFixed(2) + ' Bs');
+                $('#progreso-pago').css('width', pct.toFixed(1) + '%');
+                $('#texto-progreso').text(pct.toFixed(1) + '% del saldo pendiente');
+            }
+
+            $(document).on('input', '#monto_pago, #descuento', scActualizarResumen);
+
+            $(document).on('click', '.btn-pagar-cuota', function () {
+                var cuotaId      = $(this).data('cuota-id');
+                var estudianteId = $(this).data('estudiante-id');
+
+                $('#formPagarCuota')[0].reset();
+                $('#cuota_id').val(cuotaId);
+                $('#estudiante_id').val(estudianteId);
+                $('#fecha_pago').val(new Date().toISOString().split('T')[0]);
+                togglePaymentFields();
+                $('#modalPagarCuota').modal('show');
+
+                $.ajax({
+                    url: '/admin/estudiantes/' + estudianteId + '/cuota/' + cuotaId,
+                    type: 'GET',
+                    success: function (r) {
+                        if (r.success) {
+                            var total     = parseFloat(r.cuota.pago_total_bs)    || 0;
+                            var pendiente = parseFloat(r.cuota.pago_pendiente_bs) || 0;
+                            var pagado    = parseFloat(r.cuota.saldo_pagado)      || 0;
+                            scSaldoPendiente = pendiente;
+
+                            $('#info-cuota-nombre').text(r.cuota.nombre);
+                            $('#info-cuota-programa').text(r.cuota.programa);
+                            $('#info-cuota-total').text(total.toFixed(2));
+                            $('#info-cuota-pagado').text(pagado.toFixed(2));
+                            $('#info-cuota-pendiente').text(pendiente.toFixed(2));
+                            $('#maximo_pago').text(pendiente.toFixed(2));
+                            $('#monto_pago').val(pendiente.toFixed(2)).attr('max', pendiente);
+                            scActualizarResumen();
+                        } else {
+                            $('#modalPagarCuota').modal('hide');
+                            Swal.fire('Error', r.msg || 'No se pudo cargar la cuota.', 'error');
+                        }
+                    },
+                    error: function () {
+                        $('#modalPagarCuota').modal('hide');
+                        Swal.fire('Error', 'No se pudo cargar la información de la cuota.', 'error');
+                    }
+                });
+            });
+
+            // ── Submit cuota individual ──────────────────────────────────────
+            $(document).on('submit', '#formPagarCuota', function (e) {
+                e.preventDefault();
+                var estudianteId = $('#estudiante_id').val();
+                var tipo = $('#tipo_pago').val();
+
+                if (!tipo) { Swal.fire('Atención', 'Seleccione el tipo de pago.', 'warning'); return; }
+                if (tipo === 'Efectivo' && !$('#caja_id').val()) {
+                    Swal.fire('Atención', 'Seleccione una caja.', 'warning'); return;
+                }
+                if (['Transferencia', 'Depósito', 'Tarjeta'].includes(tipo) && !$('#cuenta_bancaria_id').val()) {
+                    Swal.fire('Atención', 'Seleccione una cuenta bancaria.', 'warning'); return;
+                }
+
+                var $btn = $(this).find('[type=submit]');
+                $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Procesando...');
+
+                $.ajax({
+                    url: '/admin/estudiantes/' + estudianteId + '/pagar-cuota',
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    success: function (r) {
+                        if (r.success) {
+                            $('#modalPagarCuota').modal('hide');
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Pago Registrado!',
+                                html: '<b>Recibo:</b> ' + r.recibo +
+                                      '<br><a href="' + r.pdf_url + '" target="_blank" class="btn btn-sm btn-primary mt-2">' +
+                                      '<i class="ri-download-line me-1"></i>Descargar Recibo PDF</a>',
+                                confirmButtonText: 'Cerrar'
+                            }).then(function () { location.reload(); });
+                        } else {
+                            Swal.fire('Error', r.msg, 'error');
+                        }
+                    },
+                    error: function (xhr) {
+                        var msg = 'Error al registrar el pago.';
+                        if (xhr.responseJSON) msg = xhr.responseJSON.msg || msg;
+                        Swal.fire('Error', msg, 'error');
+                    },
+                    complete: function () {
+                        $btn.prop('disabled', false).html('<i class="ri-checkbox-circle-line me-1"></i>Registrar Pago');
+                    }
+                });
+            });
+
+            // ── Abrir modal multi-cuota ──────────────────────────────────────
+            $(document).on('click', '.btn-pagar-multiple', function () {
+                var estudianteId = $(this).data('estudiante-id');
+
+                $('#pc_estudiante_id').val(estudianteId);
+                $('#formPagarContabilidad')[0].reset();
+                $('#pc_tipo_pago').val('');
+                togglePcFields();
+                pcCargarCuotas(estudianteId, null);
+                $('#modalPagarContabilidad').modal('show');
+            });
+
+            // ── Registrar pago ───────────────────────────────────────────────
+            $('#btnRegistrarPagoContabilidad').on('click', function () {
+                var cuotaIds = [];
+                $('.pc-cuota-check:checked').each(function () { cuotaIds.push($(this).val()); });
+
+                if (cuotaIds.length === 0) {
+                    Swal.fire('Atención', 'Debe seleccionar al menos una cuota.', 'warning'); return;
+                }
+                var tipo = $('#pc_tipo_pago').val();
+                if (!tipo) {
+                    Swal.fire('Atención', 'Debe seleccionar el tipo de pago.', 'warning'); return;
+                }
+                if (tipo === 'Efectivo' && !$('#pc_caja_id').val()) {
+                    Swal.fire('Atención', 'Debe seleccionar una caja.', 'warning'); return;
+                }
+                if (['Transferencia', 'Depósito', 'Tarjeta'].includes(tipo) && !$('#pc_cuenta_id').val()) {
+                    Swal.fire('Atención', 'Debe seleccionar una cuenta bancaria.', 'warning'); return;
+                }
+                var monto = parseFloat($('#pc_monto_pago').val()) || 0;
+                if (monto <= 0) {
+                    Swal.fire('Atención', 'El monto debe ser mayor a cero.', 'warning'); return;
+                }
+
+                var estudianteId = $('#pc_estudiante_id').val();
+                var formData = new FormData(document.getElementById('formPagarContabilidad'));
+                cuotaIds.forEach(function (id) { formData.append('cuota_ids[]', id); });
+
+                var btn = $(this);
+                btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Registrando...');
+
+                $.ajax({
+                    url: '/admin/estudiantes/' + estudianteId + '/pagar-multiples-cuotas',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function (response) {
+                        if (response.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Pago Registrado!',
+                                html: '<b>Recibo:</b> ' + response.recibo +
+                                      '<br><a href="' + response.pdf_url + '" target="_blank" class="btn btn-sm btn-primary mt-2">' +
+                                      '<i class="ri-download-line me-1"></i>Descargar Recibo PDF</a>',
+                                confirmButtonText: 'Cerrar'
+                            }).then(function () {
+                                $('#modalPagarContabilidad').modal('hide');
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire('Error', response.msg || 'No se pudo registrar el pago.', 'error');
+                        }
+                    },
+                    error: function (xhr) {
+                        var msg = 'Error al registrar el pago.';
+                        if (xhr.responseJSON) msg = xhr.responseJSON.msg || xhr.responseJSON.message || msg;
+                        Swal.fire('Error', msg, 'error');
+                    },
+                    complete: function () {
+                        btn.prop('disabled', false).html('<i class="ri-checkbox-circle-line me-1"></i>Registrar Pago');
+                    }
+                });
+            });
+
+            // ── Botón Recibos ────────────────────────────────────────────────
+            $(document).on('click', '.btn-ver-recibos', function () {
+                var cuotaId     = $(this).data('cuota-id');
+                var cuotaNombre = $(this).data('cuota-nombre');
+
+                $('#modalRecibosTitle').text('Recibos de: ' + cuotaNombre);
+                $('#modalRecibosCuota').modal('show');
+
+                $('#contenidoRecibos').html(
+                    '<div class="text-center py-5">' +
+                    '<div class="spinner-border text-primary" role="status"></div>' +
+                    '<p class="mt-2">Cargando recibos...</p></div>'
+                );
+
+                $.ajax({
+                    url: '/admin/estudiantes/cuota/' + cuotaId + '/recibos',
+                    type: 'GET',
+                    success: function (response) {
+                        if (response.success) {
+                            $('#contenidoRecibos').html(response.html);
+                        } else {
+                            $('#contenidoRecibos').html('<div class="alert alert-danger">' + (response.msg || 'Error') + '</div>');
+                        }
+                    },
+                    error: function () {
+                        $('#contenidoRecibos').html('<div class="alert alert-danger">Error al cargar los recibos.</div>');
+                    }
+                });
+            });
+
+        }); // end ready
     </script>
 @endpush

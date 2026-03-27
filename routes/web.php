@@ -486,6 +486,8 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
 
         // En el grupo de EstudiantesController
         Route::post('/admin/estudiantes/{id}/pagar-cuota', 'registrarPago')->name('admin.estudiantes.pagar-cuota');
+        Route::post('/admin/estudiantes/{id}/pagar-multiples-cuotas', 'registrarPagoMultiple')->name('admin.estudiantes.pagar-multiples');
+        Route::get('/admin/estudiantes/{id}/cuotas-pendientes', 'cuotasPendientesEstudiante')->name('admin.estudiantes.cuotas-pendientes');
         Route::get('/admin/estudiantes/{id}/cuota/{cuotaId}', 'obtenerDatosCuota')->name('admin.estudiantes.cuota.datos');
         Route::get('/admin/estudiantes/pago/{id}/descargar-recibo', 'descargarRecibo')->name('admin.estudiantes.descargar-recibo');
 
@@ -500,6 +502,8 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
         Route::get('/admin/contabilidad/buscar', 'busquedaContable')->name('admin.contabilidad.buscar');
         Route::post('/admin/contabilidad/verificar-carnet', 'verificarCarnetContable')->name('admin.contabilidad.verificar-carnet');
         Route::get('/admin/contabilidad/estudiante/{id}', 'detalleContable')->name('admin.contabilidad.estudiante');
+        Route::get('/admin/contabilidad/cobradores', 'cobradoresReporte')->name('admin.contabilidad.cobradores');
+        Route::get('/admin/contabilidad/cobradores/{tcId}/detalle', 'cobradoresDetalle')->name('admin.contabilidad.cobradores.detalle');
     });
 
     // INSCRIPCIONES

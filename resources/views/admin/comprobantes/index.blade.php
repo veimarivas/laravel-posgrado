@@ -72,6 +72,20 @@
 @push('script')
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        @php
+            $cobradorComp = \Illuminate\Support\Facades\DB::table('users')
+                ->join('personas', 'users.persona_id', '=', 'personas.id')
+                ->join('trabajadores', 'personas.id', '=', 'trabajadores.persona_id')
+                ->join('trabajadores_cargos', 'trabajadores.id', '=', 'trabajadores_cargos.trabajadore_id')
+                ->join('cargos', 'trabajadores_cargos.cargo_id', '=', 'cargos.id')
+                ->where('users.id', auth()->id())
+                ->where('trabajadores_cargos.principal', 1)
+                ->where('trabajadores_cargos.estado', 'Vigente')
+                ->select('personas.nombres', 'personas.apellido_paterno', 'cargos.nombre as cargo')
+                ->first();
+        @endphp
+        var cobrador = @json($cobradorComp);
+
         $(document).ready(function() {
             $.ajaxSetup({
                 headers: {
@@ -314,6 +328,18 @@
                             <p class="fw-semibold text-muted small text-uppercase mb-2">
                                 <i class="ri-money-dollar-circle-line me-1"></i>Datos del Pago
                             </p>
+                            ${cobrador
+                                ? `<div class="alert alert-success d-flex align-items-center gap-2 py-2 mb-2">
+                                    <i class="ri-user-star-line flex-shrink-0"></i>
+                                    <div>
+                                        <div class="fw-semibold" style="font-size:.85rem;">${cobrador.nombres} ${cobrador.apellido_paterno}</div>
+                                        <div class="text-muted" style="font-size:.75rem;">Cobrador — ${cobrador.cargo}</div>
+                                    </div>
+                                  </div>`
+                                : `<div class="alert alert-warning py-2 mb-2 small">
+                                    <i class="ri-alert-line me-1"></i>No se pudo identificar al cobrador. Verifique su cargo vigente.
+                                   </div>`
+                            }
                             <form id="formVerificarPago">
                                 @csrf
                                 <input type="hidden" name="comprobante_id" value="${comp.id}">

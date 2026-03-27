@@ -119,8 +119,34 @@
     </tbody>
 </table>
 
-@if ($recibos->hasPages())
-    <div class="mt-3">
-        {{ $recibos->links('pagination::bootstrap-5') }}
+<div class="d-flex align-items-center justify-content-between px-3 py-2 border-top bg-light flex-wrap gap-2">
+    {{-- Info de registros --}}
+    <div class="text-muted small">
+        @if ($recibos->total() > 0)
+            Mostrando <strong>{{ $recibos->firstItem() }}</strong> – <strong>{{ $recibos->lastItem() }}</strong>
+            de <strong>{{ $recibos->total() }}</strong> recibos
+        @else
+            Sin resultados
+        @endif
     </div>
-@endif
+
+    {{-- Selector por página + paginación --}}
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+        {{-- Per-page --}}
+        <div class="d-flex align-items-center gap-1">
+            <span class="text-muted small">Mostrar</span>
+            <select class="form-select form-select-sm" id="perPageSelect" style="width:70px;">
+                @foreach ([10, 20, 50, 100] as $opt)
+                    <option value="{{ $opt }}" {{ $recibos->perPage() == $opt ? 'selected' : '' }}>{{ $opt }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        {{-- Links --}}
+        @if ($recibos->hasPages())
+            <div class="pagination-wrapper">
+                {{ $recibos->links('pagination::bootstrap-5') }}
+            </div>
+        @endif
+    </div>
+</div>

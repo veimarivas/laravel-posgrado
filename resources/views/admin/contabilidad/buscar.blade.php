@@ -14,6 +14,9 @@
                         </ol>
                     </div>
                 </div>
+                <a href="{{ route('admin.contabilidad.cobradores') }}" class="btn btn-primary btn-sm">
+                    <i class="ri-user-star-line me-1"></i>Reporte de Cobradores
+                </a>
             </div>
         </div>
     </div>

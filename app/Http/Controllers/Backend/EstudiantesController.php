@@ -272,10 +272,10 @@ class EstudiantesController extends Controller
 
             // Generar número de recibo incremental
             $ultimoRecibo = Pago::orderBy('id', 'desc')->first();
-            $numeroRecibo = 'UPI-000000001';
+            $numeroRecibo = 'UNIP-000000001';
             if ($ultimoRecibo && $ultimoRecibo->recibo) {
                 $numero = intval(substr($ultimoRecibo->recibo, 4)) + 1;
-                $numeroRecibo = 'UPI-' . str_pad($numero, 9, '0', STR_PAD_LEFT);
+                $numeroRecibo = 'UNIP-' . str_pad($numero, 9, '0', STR_PAD_LEFT);
             }
 
             // Preparar datos del pago según tipo
@@ -376,9 +376,6 @@ class EstudiantesController extends Controller
 
             DB::commit();
 
-            // Generar el PDF del recibo
-            $pdf = PDF::loadView('admin.estudiantes.recibo-pago', compact('pago', 'cuota', 'estudiante'));
-
             return response()->json([
                 'success' => true,
                 'msg' => 'Pago registrado correctamente.',
@@ -441,12 +438,237 @@ class EstudiantesController extends Controller
         ])->findOrFail($id);
 
         $primerPagoCuota = $pago->pagos_cuotas->first();
-        $cuota     = $primerPagoCuota ? $primerPagoCuota->cuota : null;
-        $estudiante = $cuota ? $cuota->inscripcion->estudiante : null;
+        $cuota       = $primerPagoCuota ? $primerPagoCuota->cuota : null;
+        $estudiante  = $cuota ? $cuota->inscripcion->estudiante : null;
         $pagosCuotas = $pago->pagos_cuotas;
 
-        $pdf = PDF::loadView('admin.estudiantes.recibo-pago', compact('pago', 'cuota', 'estudiante', 'pagosCuotas'));
+        // Obtener datos del cobrador desde trabajadore_cargo_id del pago
+        $cobrador = null;
+        if ($pago->trabajadore_cargo_id) {
+            $cobrador = DB::table('trabajadores_cargos')
+                ->join('trabajadores', 'trabajadores_cargos.trabajadore_id', '=', 'trabajadores.id')
+                ->join('personas', 'trabajadores.persona_id', '=', 'personas.id')
+                ->join('cargos', 'trabajadores_cargos.cargo_id', '=', 'cargos.id')
+                ->where('trabajadores_cargos.id', $pago->trabajadore_cargo_id)
+                ->select(
+                    'personas.nombres',
+                    'personas.apellido_paterno',
+                    'personas.apellido_materno',
+                    'cargos.nombre as cargo'
+                )
+                ->first();
+        }
+
+        $pdf = PDF::loadView('admin.estudiantes.recibo-pago', compact('pago', 'cuota', 'estudiante', 'pagosCuotas', 'cobrador'));
         return $pdf->download('recibo-' . $pago->recibo . '.pdf');
+    }
+
+    /**
+     * Obtener cuotas pendientes de un estudiante agrupadas por programa
+     */
+    public function cuotasPendientesEstudiante($id)
+    {
+        try {
+            $estudiante = Estudiante::with([
+                'inscripciones.ofertaAcademica.programa',
+                'inscripciones.cuotas',
+            ])->findOrFail($id);
+
+            $tipoLabel = function ($nombre) {
+                $n = mb_strtolower($nombre);
+                if (str_contains($n, 'matr'))  return 'Matrícula';
+                if (str_contains($n, 'coleg'))  return 'Colegiatura';
+                if (str_contains($n, 'certif')) return 'Certificación';
+                return 'Otros';
+            };
+
+            $tipoOrden = ['Matrícula' => 1, 'Colegiatura' => 2, 'Certificación' => 3, 'Otros' => 4];
+
+            $programas = [];
+            foreach ($estudiante->inscripciones as $inscripcion) {
+                $cuotas = $inscripcion->cuotas
+                    ->where('pago_pendiente_bs', '>', 0)
+                    ->sortBy([
+                        fn($a, $b) => ($tipoOrden[$tipoLabel($a->nombre)] ?? 4) <=> ($tipoOrden[$tipoLabel($b->nombre)] ?? 4),
+                        fn($a, $b) => $a->n_cuota <=> $b->n_cuota,
+                    ])
+                    ->values()
+                    ->map(fn($c) => [
+                        'id'           => $c->id,
+                        'nombre'       => $c->nombre,
+                        'n_cuota'      => $c->n_cuota,
+                        'tipo'         => $tipoLabel($c->nombre),
+                        'pendiente_bs' => (float) $c->pago_pendiente_bs,
+                        'total_bs'     => (float) $c->pago_total_bs,
+                    ]);
+
+                if ($cuotas->isNotEmpty()) {
+                    $programas[] = [
+                        'inscripcion_id' => $inscripcion->id,
+                        'programa'       => $inscripcion->ofertaAcademica->programa->nombre ?? 'N/A',
+                        'cuotas'         => $cuotas,
+                    ];
+                }
+            }
+
+            return response()->json(['success' => true, 'programas' => $programas]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Registrar pago para múltiples cuotas (usado desde contabilidad)
+     */
+    public function registrarPagoMultiple(Request $request, $estudianteId)
+    {
+        try {
+            $request->validate([
+                'cuota_ids'          => 'required|array|min:1',
+                'cuota_ids.*'        => 'exists:cuotas,id',
+                'monto_pago'         => 'required|numeric|min:0.01',
+                'descuento'          => 'nullable|numeric|min:0',
+                'tipo_pago'          => 'required|in:Efectivo,Transferencia,Depósito,Tarjeta',
+                'fecha_pago'         => 'required|date',
+                'observaciones'      => 'nullable|string|max:500',
+            ]);
+
+            $trabajadoreCargoId = $this->obtenerTrabajadorCargoId(auth()->user());
+            if (!$trabajadoreCargoId) {
+                return response()->json([
+                    'success' => false,
+                    'msg' => 'No se pudo identificar al trabajador responsable.'
+                ], 422);
+            }
+
+            if ($request->tipo_pago === 'Efectivo') {
+                $request->validate(['caja_id' => 'required|exists:cajas,id']);
+            } else {
+                $request->validate([
+                    'cuenta_bancaria_id' => 'required|exists:cuentas_bancarias,id',
+                    'n_comprobante'      => 'required|string|max:100',
+                ]);
+            }
+
+            $estudiante = Estudiante::findOrFail($estudianteId);
+            $cuotas = Cuota::whereIn('id', $request->cuota_ids)
+                ->whereHas('inscripcion', fn($q) => $q->where('estudiante_id', $estudiante->id))
+                ->get();
+
+            if ($cuotas->count() !== count($request->cuota_ids)) {
+                return response()->json(['success' => false, 'msg' => 'Alguna cuota no pertenece a este estudiante.'], 422);
+            }
+
+            $neto = $request->monto_pago - ($request->descuento ?? 0);
+            if ($neto <= 0) {
+                return response()->json(['success' => false, 'msg' => 'El monto neto debe ser mayor a cero.'], 422);
+            }
+
+            DB::beginTransaction();
+
+            // Generar recibo
+            $ultimoRecibo = Pago::orderBy('id', 'desc')->first();
+            $lastNum      = $ultimoRecibo ? (int) preg_replace('/\D/', '', $ultimoRecibo->recibo) : 0;
+            $numeroRecibo = 'UNIP-' . str_pad($lastNum + 1, 9, '0', STR_PAD_LEFT);
+
+            $datosPago = [
+                'recibo'              => $numeroRecibo,
+                'pago_bs'             => $request->monto_pago,
+                'descuento_bs'        => $request->descuento ?? 0,
+                'fecha_pago'          => $request->fecha_pago,
+                'tipo_pago'           => $request->tipo_pago,
+                'estado'              => 'registrado',
+                'trabajadore_cargo_id' => $trabajadoreCargoId,
+                'n_comprobante'       => $request->n_comprobante ?? null,
+            ];
+
+            if ($request->tipo_pago === 'Efectivo') {
+                $datosPago['caja_id'] = $request->caja_id;
+                $datosPago['n_comprobante'] = 'EF-' . str_pad(rand(1000, 9999), 6, '0', STR_PAD_LEFT);
+            } else {
+                $datosPago['cuenta_bancaria_id'] = $request->cuenta_bancaria_id;
+            }
+
+            $pago = Pago::create($datosPago);
+
+            // Registrar movimiento en caja o banco
+            if ($request->tipo_pago === 'Efectivo') {
+                $caja = Caja::findOrFail($request->caja_id);
+                $saldoAnt = $caja->saldo_actual;
+                MovimientosCaja::create([
+                    'caja_id'              => $request->caja_id,
+                    'tipo_movimiento'      => 'ingreso',
+                    'monto'                => $request->monto_pago,
+                    'saldo_anterior'       => $saldoAnt,
+                    'saldo_posterior'      => $saldoAnt + $request->monto_pago,
+                    'descripcion'          => "Pago múltiple recibo #{$numeroRecibo}",
+                    'referencia_id'        => $pago->id,
+                    'referencia_type'      => Pago::class,
+                    'trabajadore_cargo_id' => $trabajadoreCargoId,
+                ]);
+                $caja->saldo_actual = $saldoAnt + $request->monto_pago;
+                $caja->save();
+            } else {
+                $cuenta = CuentasBancarias::findOrFail($request->cuenta_bancaria_id);
+                $saldoAnt = $cuenta->saldo_actual;
+                MovimientosBancarios::create([
+                    'cuenta_bancaria_id'  => $request->cuenta_bancaria_id,
+                    'tipo_movimiento'     => 'pago',
+                    'monto'               => $request->monto_pago,
+                    'saldo_anterior'      => $saldoAnt,
+                    'saldo_posterior'     => $saldoAnt + $request->monto_pago,
+                    'descripcion'         => "Pago múltiple recibo #{$numeroRecibo}",
+                    'referencia_id'       => $pago->id,
+                    'referencia_type'     => Pago::class,
+                    'trabajadore_cargo_id' => $trabajadoreCargoId,
+                ]);
+                $cuenta->saldo_actual = $saldoAnt + $request->monto_pago;
+                $cuenta->save();
+            }
+
+            // Crear detalle
+            $detalle = new Detalle();
+            $detalle->pago_id  = $pago->id;
+            $detalle->pago_bs  = $neto;
+            $detalle->tipo_pago = $request->tipo_pago;
+            $detalle->save();
+
+            // Distribuir monto entre cuotas seleccionadas
+            $montoRestante = $neto;
+            foreach ($cuotas as $cuota) {
+                if ($montoRestante <= 0) break;
+                $montoCuota = min($cuota->pago_pendiente_bs, $montoRestante);
+                if ($montoCuota <= 0) continue;
+
+                PagosCuota::create([
+                    'cuota_id' => $cuota->id,
+                    'pago_id'  => $pago->id,
+                    'pago_bs'  => $montoCuota,
+                ]);
+
+                $cuota->pago_pendiente_bs -= $montoCuota;
+                if ($cuota->pago_pendiente_bs <= 0) {
+                    $cuota->pago_pendiente_bs = 0;
+                    $cuota->pago_terminado    = 'si';
+                }
+                $cuota->save();
+                $montoRestante -= $montoCuota;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'msg'     => 'Pago registrado correctamente.',
+                'recibo'  => $numeroRecibo,
+                'pdf_url' => route('admin.estudiantes.descargar-recibo', $pago->id),
+                'pago_id' => $pago->id,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error al registrar pago múltiple: ' . $e->getMessage());
+            return response()->json(['success' => false, 'msg' => 'Error: ' . $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -1213,17 +1435,20 @@ class EstudiantesController extends Controller
             });
         }
 
-        $recibos = $query->paginate(20)->appends($request->all());
-
-        // Calcular estadísticas
+        // Estadísticas sobre el total filtrado (antes de paginar)
         $estadisticas = [
-            'total_recibos' => $recibos->total(),
-            'total_monto' => $recibos->sum('pago_bs'),
-            'total_efectivo' => $recibos->where('tipo_pago', 'Efectivo')->sum('pago_bs'),
-            'total_transferencia' => $recibos->where('tipo_pago', 'Transferencia')->sum('pago_bs'),
-            'total_deposito' => $recibos->where('tipo_pago', 'Depósito')->sum('pago_bs'),
-            'total_tarjeta' => $recibos->where('tipo_pago', 'Tarjeta')->sum('pago_bs'),
+            'total_recibos'      => (clone $query)->count(),
+            'total_monto'        => (clone $query)->sum('pago_bs'),
+            'total_efectivo'     => (clone $query)->where('tipo_pago', 'Efectivo')->sum('pago_bs'),
+            'total_transferencia'=> (clone $query)->where('tipo_pago', 'Transferencia')->sum('pago_bs'),
+            'total_deposito'     => (clone $query)->where('tipo_pago', 'Depósito')->sum('pago_bs'),
+            'total_tarjeta'      => (clone $query)->where('tipo_pago', 'Tarjeta')->sum('pago_bs'),
         ];
+
+        $perPage = (int) $request->get('per_page', 20);
+        if (!in_array($perPage, [10, 20, 50, 100])) $perPage = 20;
+
+        $recibos = $query->paginate($perPage)->appends($request->all());
 
         if ($request->ajax()) {
             $html = view('admin.recibos.partials.table-body', compact('recibos'))->render();
@@ -1335,6 +1560,104 @@ class EstudiantesController extends Controller
     }
 
     /**
+     * Reporte de cobradores
+     */
+    public function cobradoresReporte(Request $request)
+    {
+        $fechaDesde = $request->get('fecha_desde', now()->toDateString());
+        $fechaHasta = $request->get('fecha_hasta', now()->toDateString());
+        $tipoPago   = $request->get('tipo_pago', '');
+
+        $query = DB::table('pagos')
+            ->join('trabajadores_cargos', 'pagos.trabajadore_cargo_id', '=', 'trabajadores_cargos.id')
+            ->join('trabajadores', 'trabajadores_cargos.trabajadore_id', '=', 'trabajadores.id')
+            ->join('personas', 'trabajadores.persona_id', '=', 'personas.id')
+            ->join('cargos', 'trabajadores_cargos.cargo_id', '=', 'cargos.id')
+            ->whereBetween(DB::raw('DATE(pagos.fecha_pago)'), [$fechaDesde, $fechaHasta]);
+
+        if ($tipoPago) {
+            $query->where('pagos.tipo_pago', $tipoPago);
+        }
+
+        $cobradores = (clone $query)
+            ->select(
+                'trabajadores_cargos.id as tc_id',
+                DB::raw("TRIM(CONCAT(personas.nombres, ' ', personas.apellido_paterno, ' ', COALESCE(personas.apellido_materno, ''))) as nombre_completo"),
+                'cargos.nombre as cargo',
+                DB::raw('COUNT(pagos.id) as total_pagos'),
+                DB::raw('SUM(pagos.pago_bs) as total_bs'),
+                DB::raw('SUM(CASE WHEN pagos.tipo_pago = "Efectivo"      THEN pagos.pago_bs ELSE 0 END) as efectivo_bs'),
+                DB::raw('SUM(CASE WHEN pagos.tipo_pago = "Transferencia" THEN pagos.pago_bs ELSE 0 END) as transferencia_bs'),
+                DB::raw('SUM(CASE WHEN pagos.tipo_pago = "Depósito"      THEN pagos.pago_bs ELSE 0 END) as deposito_bs'),
+                DB::raw('SUM(CASE WHEN pagos.tipo_pago = "Tarjeta"       THEN pagos.pago_bs ELSE 0 END) as tarjeta_bs')
+            )
+            ->groupBy('trabajadores_cargos.id', 'nombre_completo', 'cargos.nombre')
+            ->orderByDesc('total_bs')
+            ->get();
+
+        $totales = [
+            'pagos'         => $cobradores->sum('total_pagos'),
+            'total'         => $cobradores->sum('total_bs'),
+            'efectivo'      => $cobradores->sum('efectivo_bs'),
+            'transferencia' => $cobradores->sum('transferencia_bs'),
+            'deposito'      => $cobradores->sum('deposito_bs'),
+            'tarjeta'       => $cobradores->sum('tarjeta_bs'),
+        ];
+
+        return view('admin.contabilidad.cobradores', compact(
+            'cobradores', 'totales', 'fechaDesde', 'fechaHasta', 'tipoPago'
+        ));
+    }
+
+    /**
+     * Detalle de pagos de un cobrador (AJAX)
+     */
+    public function cobradoresDetalle(Request $request, $tcId)
+    {
+        $fechaDesde = $request->get('fecha_desde', now()->toDateString());
+        $fechaHasta = $request->get('fecha_hasta', now()->toDateString());
+        $tipoPago   = $request->get('tipo_pago', '');
+
+        $query = DB::table('pagos')
+            ->join('pagos_cuotas',       'pagos.id',                        '=', 'pagos_cuotas.pago_id')
+            ->join('cuotas',             'pagos_cuotas.cuota_id',           '=', 'cuotas.id')
+            ->join('inscripciones',      'cuotas.inscripcione_id',          '=', 'inscripciones.id')
+            ->join('estudiantes',        'inscripciones.estudiante_id',     '=', 'estudiantes.id')
+            ->join('personas as pe_est', 'estudiantes.persona_id',          '=', 'pe_est.id')
+            ->join('ofertas_academicas', 'inscripciones.ofertas_academica_id', '=', 'ofertas_academicas.id')
+            ->join('programas',          'ofertas_academicas.programa_id',  '=', 'programas.id')
+            ->where('pagos.trabajadore_cargo_id', $tcId)
+            ->whereBetween(DB::raw('DATE(pagos.fecha_pago)'), [$fechaDesde, $fechaHasta]);
+
+        if ($tipoPago) {
+            $query->where('pagos.tipo_pago', $tipoPago);
+        }
+
+        $pagos = $query->select(
+                'pagos.id',
+                'pagos.recibo',
+                'pagos.pago_bs',
+                'pagos.descuento_bs',
+                'pagos.tipo_pago',
+                'pagos.fecha_pago',
+                DB::raw("TRIM(CONCAT(pe_est.nombres, ' ', pe_est.apellido_paterno, ' ', COALESCE(pe_est.apellido_materno, ''))) as estudiante"),
+                'pe_est.carnet',
+                'programas.nombre as programa',
+                DB::raw('COUNT(DISTINCT pagos_cuotas.cuota_id) as n_cuotas')
+            )
+            ->groupBy(
+                'pagos.id', 'pagos.recibo', 'pagos.pago_bs', 'pagos.descuento_bs',
+                'pagos.tipo_pago', 'pagos.fecha_pago', 'pe_est.nombres',
+                'pe_est.apellido_paterno', 'pe_est.apellido_materno',
+                'pe_est.carnet', 'programas.nombre'
+            )
+            ->orderByDesc('pagos.fecha_pago')
+            ->get();
+
+        return response()->json(['success' => true, 'pagos' => $pagos]);
+    }
+
+    /**
      * Verificar carnet para contabilidad
      */
     public function verificarCarnetContable(Request $request)
@@ -1440,7 +1763,25 @@ class EstudiantesController extends Controller
                 $inscripcion->cuotas_ordenadas = $this->ordenarCuotas($inscripcion->cuotas);
             }
 
-            return view('admin.contabilidad.detalle', compact('estudiante'));
+            // Obtener datos del cobrador (usuario autenticado)
+            $cobrador = DB::table('users')
+                ->join('personas', 'users.persona_id', '=', 'personas.id')
+                ->join('trabajadores', 'personas.id', '=', 'trabajadores.persona_id')
+                ->join('trabajadores_cargos', 'trabajadores.id', '=', 'trabajadores_cargos.trabajadore_id')
+                ->join('cargos', 'trabajadores_cargos.cargo_id', '=', 'cargos.id')
+                ->where('users.id', auth()->id())
+                ->where('trabajadores_cargos.principal', 1)
+                ->where('trabajadores_cargos.estado', 'Vigente')
+                ->select(
+                    'personas.nombres',
+                    'personas.apellido_paterno',
+                    'personas.apellido_materno',
+                    'cargos.nombre as cargo',
+                    'trabajadores_cargos.id as trabajadore_cargo_id'
+                )
+                ->first();
+
+            return view('admin.contabilidad.detalle', compact('estudiante', 'cobrador'));
         } catch (\Exception $e) {
             Log::error('Error al cargar estudiante para contabilidad: ' . $e->getMessage());
             return redirect()->route('admin.contabilidad.buscar')

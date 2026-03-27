@@ -21,6 +21,9 @@
     .stat-recibo .stat-value { font-size: 1.1rem; font-weight: 700; line-height: 1.2; }
     .filtros-card { border-radius: 10px; }
     .tabla-recibos-card { border-radius: 10px; }
+    .pagination-wrapper .pagination { margin-bottom: 0; }
+    .pagination-wrapper .page-link { padding: .25rem .55rem; font-size: .8rem; }
+    .pagination-wrapper .page-item.active .page-link { background-color: #405189; border-color: #405189; }
 </style>
 
     <!-- Page Title -->
@@ -104,10 +107,8 @@
                 <span class="badge bg-primary-subtle text-primary ms-1">más recientes primero</span>
             </div>
         </div>
-        <div class="card-body p-0">
-            <div class="table-responsive" id="tablaRecibosContainer">
-                @include('admin.recibos.partials.table-body', ['recibos' => $recibos])
-            </div>
+        <div class="card-body p-0" id="tablaRecibosContainer">
+            @include('admin.recibos.partials.table-body', ['recibos' => $recibos])
         </div>
     </div>
 
@@ -121,18 +122,16 @@
             // Función para cargar recibos con filtros
             function cargarRecibos() {
                 var formData = $('#formFiltrosRecibos').serialize();
+                var perPage  = $('#perPageSelect').val();
+                if (perPage) formData += '&per_page=' + perPage;
 
                 $.ajax({
                     url: "{{ route('admin.recibos.filtrados') }}",
-                    type: "GET",
+                    type: 'GET',
                     data: formData,
                     success: function(response) {
                         $('#tablaRecibosContainer').html(response.html);
-                        // Actualizar estadísticas si vienen en la respuesta
-                        if (response.estadisticas) {
-                            // Actualizar estadísticas dinámicamente
-                            actualizarEstadisticas(response.estadisticas);
-                        }
+                        if (response.estadisticas) actualizarEstadisticas(response.estadisticas);
                     },
                     error: function(xhr) {
                         console.error(xhr);
@@ -183,24 +182,31 @@
                 cargarRecibos();
             });
 
-            // Paginación
+            // Cambio de registros por página
+            $(document).on('change', '#perPageSelect', function() {
+                cargarRecibos();
+            });
+
+            // Paginación AJAX (delegado para los links generados dinámicamente)
             $(document).on('click', '.pagination a', function(e) {
                 e.preventDefault();
                 var url = $(this).attr('href');
+                if (!url || url === '#') return;
+
+                var extraData = $('#formFiltrosRecibos').serialize();
+                var perPage = $('#perPageSelect').val();
+                if (perPage) extraData += '&per_page=' + perPage;
 
                 $.ajax({
                     url: url,
-                    type: "GET",
-                    data: $('#formFiltrosRecibos').serialize(),
+                    type: 'GET',
+                    data: extraData,
                     success: function(response) {
                         $('#tablaRecibosContainer').html(response.html);
-                        $('html, body').animate({
-                            scrollTop: 0
-                        }, 'slow');
+                        if (response.estadisticas) actualizarEstadisticas(response.estadisticas);
+                        $('html, body').animate({ scrollTop: $('#tablaRecibosContainer').offset().top - 80 }, 300);
                     },
-                    error: function(xhr) {
-                        console.error(xhr);
-                    }
+                    error: function(xhr) { console.error(xhr); }
                 });
             });
 

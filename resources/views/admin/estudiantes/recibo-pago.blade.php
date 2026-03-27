@@ -36,6 +36,9 @@
         .logo-container {
             flex: 0 0 120px;
             margin-right: 20px;
+            background-color: #e8e8e8;
+            border-radius: 8px;
+            padding: 6px;
         }
 
         .logo-img {
@@ -286,15 +289,16 @@
         <div class="header-institucion">
             <div class="logo-container">
                 @php
-                    // Generar la ruta del logo
-                    $logoPath = public_path('frontend/assets/img/logo.png');
-                    $logoUrl = asset('frontend/assets/img/logo.png');
+                    // DomPDF requiere ruta absoluta del sistema (no URL HTTP)
+                    $logoPath = public_path('backend/assets/images/logo.png');
+                    $logoBase64 = file_exists($logoPath)
+                        ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath))
+                        : null;
                 @endphp
 
-                @if (file_exists($logoPath))
-                    <img src="{{ $logoUrl }}" class="logo-img">
+                @if ($logoBase64)
+                    <img src="{{ $logoBase64 }}" class="logo-img">
                 @else
-                    <!-- Si no existe el archivo, mostrar logo por defecto o placeholder -->
                     <div class="logo-placeholder">
                         <div style="font-size: 14px; font-weight: bold; color: #2c3e50;">UNIP</div>
                         <div style="font-size: 10px; color: #666;">Universidad de Postgrado</div>
@@ -310,9 +314,9 @@
         </div>
 
         @php
-            $sede    = $cuota?->inscripcion?->ofertaAcademica?->sucursal?->nombre ?? 'Sede no especificada';
+            $sede = $cuota?->inscripcion?->ofertaAcademica?->sucursal?->nombre ?? 'Sede no especificada';
             $programa = $cuota?->inscripcion?->ofertaAcademica?->programa?->nombre ?? 'Programa no especificado';
-            $total   = $pago->pago_bs - ($pago->descuento_bs ?? 0);
+            $total = $pago->pago_bs - ($pago->descuento_bs ?? 0);
         @endphp
 
         <!-- Información del comprobante -->
@@ -503,15 +507,24 @@
         <div class="firmas">
             <div class="firma-section">
                 <div class="linea-firma"></div>
-                <div class="nombre-firma">Emisor</div>
-                <div class="cargo-firma">Auxiliar Contable</div>
+                @if (!empty($cobrador))
+                    <div class="nombre-firma">
+                        {{ $cobrador->nombres }} {{ $cobrador->apellido_paterno }}
+                        {{ $cobrador->apellido_materno ?? '' }}
+                    </div>
+                    <div class="cargo-firma">{{ $cobrador->cargo }}</div>
+                @else
+                    <div class="nombre-firma">Emisor</div>
+                    <div class="cargo-firma">Auxiliar Contable</div>
+                @endif
             </div>
 
             <div class="firma-section">
                 <div class="linea-firma"></div>
                 <div class="nombre-firma">Depositante</div>
                 @if ($estudiante && $estudiante->persona)
-                    <div class="cargo-firma">{{ $estudiante->persona->nombres }} {{ $estudiante->persona->apellido_paterno }}</div>
+                    <div class="cargo-firma">{{ $estudiante->persona->nombres }}
+                        {{ $estudiante->persona->apellido_paterno }}</div>
                     <div class="cargo-firma mt-3">N° Doc: {{ $estudiante->persona->carnet }}</div>
                 @endif
             </div>

@@ -225,13 +225,18 @@ class ComprobantesController extends Controller
                 $pago->cuenta_bancaria_id = $request->cuenta_bancaria_id;
             }
 
-            // Obtener el trabajador_cargo_id del usuario actual
-            $user = auth()->user();
-            $trabajadorCargo = $user->persona->trabajador->trabajadores_cargos()
-                ->where('estado', 'Vigente')
-                ->first();
-            if ($trabajadorCargo) {
-                $pago->trabajadore_cargo_id = $trabajadorCargo->id;
+            // Obtener el trabajadore_cargo_id del usuario actual (consulta directa, igual que EstudiantesController)
+            $trabajadoreCargoId = DB::table('users')
+                ->join('personas', 'users.persona_id', '=', 'personas.id')
+                ->join('trabajadores', 'personas.id', '=', 'trabajadores.persona_id')
+                ->join('trabajadores_cargos', 'trabajadores.id', '=', 'trabajadores_cargos.trabajadore_id')
+                ->where('users.id', auth()->id())
+                ->where('trabajadores_cargos.principal', 1)
+                ->where('trabajadores_cargos.estado', 'Vigente')
+                ->value('trabajadores_cargos.id');
+
+            if ($trabajadoreCargoId) {
+                $pago->trabajadore_cargo_id = $trabajadoreCargoId;
             }
 
             $pago->save();
