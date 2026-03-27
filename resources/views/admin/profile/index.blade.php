@@ -1,57 +1,56 @@
 @extends('admin.dashboard')
-@section('admin')
+
+@push('style')
     @include('admin.profile.styles')
+@endpush
 
-    <div class="container-fluid">
-        @include('admin.profile.header')
+@section('admin')
 
-        <div class="row">
-            @include('admin.profile.sidebar')
+    @include('admin.profile.header')
 
-            <div class="col-xl-9 col-lg-9">
-                <div class="card">
-                    <div class="card-body p-0">
-                        <div class="border-bottom">
-                            @include('admin.profile.tabs.navigation')
+    <div class="row g-4">
+
+        @include('admin.profile.sidebar')
+
+        <div class="col-xl-9 col-lg-9">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header border-bottom bg-transparent pt-0 pb-0 px-0">
+                    @include('admin.profile.tabs.navigation')
+                </div>
+                <div class="card-body p-4">
+                    <div class="tab-content">
+                        <div class="tab-pane active" id="personal" role="tabpanel">
+                            @include('admin.profile.tabs.personal')
                         </div>
-
-                        <div class="tab-content p-4">
-                            <div class="tab-pane active" id="personal" role="tabpanel">
-                                @include('admin.profile.tabs.personal')
+                        <div class="tab-pane" id="cargos" role="tabpanel">
+                            @include('admin.profile.tabs.cargos')
+                        </div>
+                        <div class="tab-pane" id="estudios" role="tabpanel">
+                            @include('admin.profile.tabs.estudios')
+                        </div>
+                        @if ($tieneMarketing)
+                            <div class="tab-pane" id="marketing" role="tabpanel">
+                                @include('admin.profile.tabs.marketing')
                             </div>
-
-                            <div class="tab-pane" id="cargos" role="tabpanel">
-                                @include('admin.profile.tabs.cargos')
+                            <div class="tab-pane" id="ofertas-activas" role="tabpanel">
+                                @include('admin.profile.tabs.ofertas-activas')
                             </div>
-
-                            <div class="tab-pane" id="estudios" role="tabpanel">
-                                @include('admin.profile.tabs.estudios')
-                            </div>
-
-                            @if ($tieneMarketing)
-                                <div class="tab-pane" id="marketing" role="tabpanel">
-                                    @include('admin.profile.tabs.marketing')
-                                </div>
-
-                                <div class="tab-pane" id="ofertas-activas" role="tabpanel">
-                                    @include('admin.profile.tabs.ofertas-activas')
-                                </div>
-                            @endif
-
-                            <div class="tab-pane" id="password" role="tabpanel">
-                                @include('admin.profile.tabs.password')
-                            </div>
+                        @endif
+                        <div class="tab-pane" id="password" role="tabpanel">
+                            @include('admin.profile.tabs.password')
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
 
     @include('admin.profile.modals.upload-foto')
     @include('admin.profile.modals.convertir-preinscrito')
     @include('admin.profile.modals.enlace')
     @include('admin.profile.modals.enlace-plan')
+
 @endsection
 
 @push('script')

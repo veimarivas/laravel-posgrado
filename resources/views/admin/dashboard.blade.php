@@ -200,6 +200,7 @@
             transition: all 0.3s ease;
         }
     </style>
+    @stack('style')
 </head>
 
 <body>

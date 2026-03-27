@@ -1,56 +1,39 @@
-<!-- Header de la sección -->
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h5 class="card-title mb-1">
-                    <i class="ri-gift-line me-2"></i>Ofertas Académicas Activas
-                </h5>
-                <p class="text-muted mb-0">Programas en fase de inscripciones - Genera enlaces personalizados</p>
-            </div>
-            <div class="d-flex gap-2">
-                <button id="refreshOfertas" class="btn btn-outline-primary btn-sm">
-                    <i class="ri-refresh-line"></i> Actualizar
-                </button>
-                <div class="dropdown">
-                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button"
-                        data-bs-toggle="dropdown">
-                        <i class="ri-download-line me-1"></i> Exportar
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="#" id="exportOfertasCSV">CSV</a></li>
-                        <li><a class="dropdown-item" href="#" id="exportOfertasPDF">PDF</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
+{{-- Header --}}
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <div>
+        <h6 class="mb-0 fw-semibold"><i class="ri-gift-line me-1 text-primary"></i>Ofertas Académicas Activas</h6>
+        <p class="text-muted small mb-0">Programas en inscripciones — genera enlaces personalizados</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button id="refreshOfertas" class="btn btn-outline-primary btn-sm">
+            <i class="ri-refresh-line me-1"></i>Actualizar
+        </button>
     </div>
 </div>
 
-<!-- Filtros -->
-<div class="card border-0 shadow-sm mb-4">
-    <div class="card-body">
-        <div class="row g-3">
-            <div class="col-md-6">
-                <div class="input-group">
-                    <span class="input-group-text">
-                        <i class="ri-search-line"></i>
-                    </span>
-                    <input type="text" class="form-control" id="searchOfertas"
-                        placeholder="Buscar por código o nombre de programa...">
+{{-- Filtros --}}
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body py-2 px-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label mb-1 text-muted fw-semibold" style="font-size:.7rem;">BUSCAR</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="ri-search-line"></i></span>
+                    <input type="text" class="form-control" id="searchOfertas" placeholder="Código o nombre de programa...">
                 </div>
             </div>
-            <div class="col-md-4">
-                <select class="form-select" id="filterSucursal">
+            <div class="col-md-5">
+                <label class="form-label mb-1 text-muted fw-semibold" style="font-size:.7rem;">SUCURSAL</label>
+                <select class="form-select form-select-sm" id="filterSucursal">
                     <option value="">Todas las sucursales</option>
                     @foreach (\App\Models\Sucursale::all() as $sucursal)
                         <option value="{{ $sucursal->id }}">{{ $sucursal->nombre }}</option>
                     @endforeach
                 </select>
             </div>
-            <div class="col-md-2">
-                <button id="applyFilters" class="btn btn-primary w-100">
-                    <i class="ri-filter-line me-1"></i> Filtrar
+            <div class="col-md-2 d-flex align-items-end">
+                <button id="applyFilters" class="btn btn-primary btn-sm w-100">
+                    <i class="ri-filter-line me-1"></i>Filtrar
                 </button>
             </div>
         </div>

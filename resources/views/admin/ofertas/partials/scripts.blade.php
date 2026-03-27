@@ -61,6 +61,7 @@
             convenio_id: $('#filtroConvenio').val() || '',
             fase_id: $('#filtroFase').val() || '',
             modalidade_id: $('#filtroModalidad').val() || '',
+            gestion: $('#filtroGestion').val() || '',
             _token: '{{ csrf_token() }}'
         };
 
@@ -75,19 +76,19 @@
                 if (res.success) {
                     const newTable = `
                         <div class="table-responsive">
-                            <table class="table table-hover table-bordered align-middle" style="min-width: 1100px;">
-                                <thead class="table-light">
-                                    <tr class="text-center">
-                                        <th width="20">N°</th>
-                                        <th width="60">Código</th>
-                                        <th width="120">Programa</th>
-                                        <th width="80">N° Módulos</th>
-                                        <th width="50">Convenio</th>
-                                        <th width="80">Modalidad</th>
-                                        <th width="80">Inicio - Fin</th>
-                                        <th width="70">Inscritos</th>
-                                        <th width="50">Fase</th>
-                                        <th width="200">Acciones</th>
+                            <table class="table table-hover align-middle mb-0" style="min-width:1100px;font-size:.84rem;">
+                                <thead>
+                                    <tr style="background:#f8f9fa;">
+                                        <th width="3%"  class="border-0 py-3 px-3 text-muted fw-semibold text-center" style="font-size:.7rem;">N°</th>
+                                        <th width="7%"  class="border-0 py-3 text-muted fw-semibold text-center"       style="font-size:.7rem;">CÓDIGO</th>
+                                        <th width="20%" class="border-0 py-3 text-muted fw-semibold"                   style="font-size:.7rem;">PROGRAMA</th>
+                                        <th width="5%"  class="border-0 py-3 text-muted fw-semibold text-center"       style="font-size:.7rem;">MÓD.</th>
+                                        <th width="11%" class="border-0 py-3 text-muted fw-semibold"                   style="font-size:.7rem;">CONVENIO</th>
+                                        <th width="9%"  class="border-0 py-3 text-muted fw-semibold text-center"       style="font-size:.7rem;">MODALIDAD</th>
+                                        <th width="10%" class="border-0 py-3 text-muted fw-semibold text-center"       style="font-size:.7rem;">FECHAS</th>
+                                        <th width="6%"  class="border-0 py-3 text-muted fw-semibold text-center"       style="font-size:.7rem;">INSCRITOS</th>
+                                        <th width="8%"  class="border-0 py-3 text-muted fw-semibold text-center"       style="font-size:.7rem;">FASE</th>
+                                        <th width="21%" class="border-0 py-3 text-muted fw-semibold text-center"       style="font-size:.7rem;">ACCIONES</th>
                                     </tr>
                                 </thead>
                                 ${res.html}
@@ -109,10 +110,11 @@
         refreshFeather();
 
         // Event listeners for filters
-        $('#filtroSucursal, #filtroConvenio, #filtroFase, #filtroModalidad').on('change', loadResults);
+        $('#filtroSucursal, #filtroConvenio, #filtroFase, #filtroModalidad, #filtroGestion').on('change', loadResults);
 
         $('#clearFilters').on('click', function() {
             $('#filtroSucursal, #filtroConvenio, #filtroFase, #filtroModalidad').val('');
+            $('#filtroGestion').val('');
             loadResults();
         });
 
@@ -130,6 +132,7 @@
                     convenio_id: $('#filtroConvenio').val() || '',
                     fase_id: $('#filtroFase').val() || '',
                     modalidade_id: $('#filtroModalidad').val() || '',
+                    gestion: $('#filtroGestion').val() || '',
                     page: page
                 },
                 headers: {

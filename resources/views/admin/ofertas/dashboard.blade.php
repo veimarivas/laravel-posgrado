@@ -3,111 +3,99 @@
 <!-- En la sección <head> -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 
+@push('style')
+<style>
+    .nav-tabs .nav-link { border:none; color:#6c757d; font-weight:500; border-bottom:3px solid transparent; white-space:nowrap; }
+    .nav-tabs .nav-link.active { color:#0d6efd; border-bottom:3px solid #0d6efd; background-color:transparent; }
+    .nav-tabs .nav-link:hover:not(.active) { color:#0d6efd; border-bottom:3px solid rgba(13,110,253,.3); }
+    .nav-tabs::-webkit-scrollbar { display:none; }
+</style>
+@endpush
+
 @section('admin')
 
-    <!-- Encabezado de la Oferta -->
-    <div class="row">
-        <div class="col-12">
-            <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-                <div>
-                    <h4 class="mb-1">Dashboard Académico</h4>
-                    <div class="page-title-right">
-                        <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('admin.ofertas.listar') }}">Ofertas</a></li>
-                            <li class="breadcrumb-item active">{{ $oferta->codigo }}</li>
-                        </ol>
-                    </div>
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                    <span class="badge rounded-pill fs-12 p-2"
-                        style="background-color: {{ $oferta->color }}20; color: {{ $oferta->color }}; border: 1px solid {{ $oferta->color }}40;">
-                        <i class="ri-bookmark-fill align-middle me-1"></i> {{ $oferta->fase->nombre ?? 'Sin fase' }}
-                    </span>
-                    <a href="{{ route('admin.ofertas.vermodulos', $oferta->id) }}" class="btn btn-light btn-sm">
-                        <i class="ri-calendar-2-line align-middle me-1"></i> Módulos
-                    </a>
-                    <a href="{{ route('admin.ofertas.planes-pago', $oferta->id) }}" class="btn btn-light btn-sm">
-                        <i class="ri-money-dollar-circle-line align-middle me-1"></i> Planes de Pago
-                    </a>
-                </div>
+    {{-- Header --}}
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1" style="font-size:.82rem;">
+                    <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}" class="text-decoration-none">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('admin.ofertas.listar') }}" class="text-decoration-none">Ofertas</a></li>
+                    <li class="breadcrumb-item active text-muted">{{ $oferta->codigo }}</li>
+                </ol>
+            </nav>
+            <div class="d-flex align-items-center gap-2">
+                <h4 class="mb-0 fw-bold">Dashboard Académico</h4>
+                <span class="badge rounded-pill px-2 py-1"
+                    style="background-color: {{ $oferta->color }}20; color: {{ $oferta->color }}; border: 1px solid {{ $oferta->color }}40; font-size:.75rem;">
+                    <i class="ri-bookmark-fill me-1"></i>{{ $oferta->fase->nombre ?? 'Sin fase' }}
+                </span>
             </div>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ route('admin.ofertas.vermodulos', $oferta->id) }}" class="btn btn-outline-secondary btn-sm">
+                <i class="ri-calendar-2-line me-1"></i>Módulos
+            </a>
+            <a href="{{ route('admin.ofertas.planes-pago', $oferta->id) }}" class="btn btn-outline-primary btn-sm">
+                <i class="ri-money-dollar-circle-line me-1"></i>Planes de Pago
+            </a>
         </div>
     </div>
 
-    <!-- Información Principal de la Oferta -->
-    <div class="row mb-4">
+    {{-- Info Principal --}}
+    <div class="row g-3 mb-4">
         <div class="col-lg-8">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <div>
-                            <h3 class="card-title mb-1">{{ $oferta->programa->nombre ?? 'Programa' }}</h3>
-                            <p class="text-muted mb-0">
-                                <i class="ri-code-s-slash-line align-middle me-1"></i>
-                                <strong>Código:</strong> {{ $oferta->codigo }}
-                                <span class="mx-2">•</span>
-                                <i class="ri-building-line align-middle me-1"></i>
-                                {{ $oferta->sucursal->nombre ?? 'Sin sucursal' }}
-                            </p>
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-start justify-content-between">
+                        <div class="flex-grow-1">
+                            <h5 class="fw-bold mb-1">{{ $oferta->programa->nombre ?? 'Programa' }}</h5>
+                            <div class="d-flex align-items-center gap-3 text-muted mb-3" style="font-size:.83rem;">
+                                <span><i class="ri-code-s-slash-line me-1"></i>{{ $oferta->codigo }}</span>
+                                <span><i class="ri-building-line me-1"></i>{{ $oferta->sucursal->nombre ?? 'Sin sucursal' }}</span>
+                            </div>
                         </div>
-                        <div class="avatar-xl">
+                        <div class="flex-shrink-0 ms-3">
                             @if ($oferta->portada)
-                                <img src="{{ asset($oferta->portada) }}" alt="Portada" class="img-fluid rounded"
-                                    style="max-height: 80px;">
+                                <img src="{{ asset($oferta->portada) }}" alt="Portada" class="rounded" style="width:72px;height:72px;object-fit:cover;">
                             @else
-                                <div class="avatar-title bg-light rounded" style="width: 80px; height: 80px;">
-                                    <i class="ri-book-2-line fs-24 text-primary"></i>
+                                <div class="d-flex align-items-center justify-content-center rounded bg-primary-subtle text-primary" style="width:72px;height:72px;">
+                                    <i class="ri-book-2-line fs-24"></i>
                                 </div>
                             @endif
                         </div>
                     </div>
-
-                    <div class="row g-3 mt-2">
+                    <div class="row g-3">
                         <div class="col-md-4">
-                            <div class="d-flex align-items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="avatar-xs">
-                                        <div class="avatar-title bg-primary-subtle text-primary rounded fs-16">
-                                            <i class="ri-calendar-event-line"></i>
-                                        </div>
-                                    </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="d-flex align-items-center justify-content-center rounded bg-primary-subtle text-primary flex-shrink-0" style="width:36px;height:36px;">
+                                    <i class="ri-calendar-event-line"></i>
                                 </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <h6 class="mb-0 fs-13">Inicio de Programa</h6>
-                                    <p class="text-muted mb-0 fs-12">
-                                        {{ $oferta->fecha_inicio_programa?->format('d/m/Y') ?? 'No definido' }}
-                                    </p>
+                                <div>
+                                    <p class="mb-0 text-muted" style="font-size:.72rem;text-transform:uppercase;font-weight:600;">Inicio</p>
+                                    <span style="font-size:.83rem;">{{ $oferta->fecha_inicio_programa?->format('d/m/Y') ?? 'No definido' }}</span>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="d-flex align-items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="avatar-xs">
-                                        <div class="avatar-title bg-info-subtle text-info rounded fs-16">
-                                            <i class="ri-group-line"></i>
-                                        </div>
-                                    </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="d-flex align-items-center justify-content-center rounded bg-info-subtle text-info flex-shrink-0" style="width:36px;height:36px;">
+                                    <i class="ri-group-line"></i>
                                 </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <h6 class="mb-0 fs-13">Modalidad</h6>
-                                    <p class="text-muted mb-0 fs-12">{{ $oferta->modalidad->nombre ?? 'No definida' }}</p>
+                                <div>
+                                    <p class="mb-0 text-muted" style="font-size:.72rem;text-transform:uppercase;font-weight:600;">Modalidad</p>
+                                    <span style="font-size:.83rem;">{{ $oferta->modalidad->nombre ?? 'No definida' }}</span>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-4">
-                            <div class="d-flex align-items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="avatar-xs">
-                                        <div class="avatar-title bg-warning-subtle text-warning rounded fs-16">
-                                            <i class="ri-bar-chart-line"></i>
-                                        </div>
-                                    </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="d-flex align-items-center justify-content-center rounded bg-warning-subtle text-warning flex-shrink-0" style="width:36px;height:36px;">
+                                    <i class="ri-bar-chart-line"></i>
                                 </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <h6 class="mb-0 fs-13">Nota Mínima</h6>
-                                    <p class="text-muted mb-0 fs-12">{{ $oferta->nota_minima ?? 61 }} pts</p>
+                                <div>
+                                    <p class="mb-0 text-muted" style="font-size:.72rem;text-transform:uppercase;font-weight:600;">Nota Mínima</p>
+                                    <span style="font-size:.83rem;">{{ $oferta->nota_minima ?? 61 }} pts</span>
                                 </div>
                             </div>
                         </div>
@@ -115,43 +103,37 @@
                 </div>
             </div>
         </div>
-
         <div class="col-lg-4">
-            <div class="card bg-primary bg-opacity-10 border-0">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="card-title mb-0 text-primary">Resumen Académico</h5>
-                        <div class="avatar-sm">
-                            <div class="avatar-title bg-primary-subtle text-primary rounded-circle">
-                                <i class="ri-graduation-cap-line"></i>
-                            </div>
+            <div class="row g-3 h-100">
+                <div class="col-6">
+                    <div class="card border-0 shadow-sm h-100" style="border-left:4px solid #28a745!important;">
+                        <div class="card-body p-3 text-center">
+                            <h3 class="mb-1 text-success fw-bold">{{ $totalInscritos }}</h3>
+                            <p class="text-muted mb-0" style="font-size:.78rem;">Inscritos</p>
                         </div>
                     </div>
-
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <div class="border rounded p-2 text-center">
-                                <h3 class="mb-0 text-success">{{ $totalInscritos }}</h3>
-                                <p class="text-muted mb-0 fs-12">Inscritos Activos</p>
-                            </div>
+                </div>
+                <div class="col-6">
+                    <div class="card border-0 shadow-sm h-100" style="border-left:4px solid #ffc107!important;">
+                        <div class="card-body p-3 text-center">
+                            <h3 class="mb-1 text-warning fw-bold">{{ $totalPreInscritos }}</h3>
+                            <p class="text-muted mb-0" style="font-size:.78rem;">Pre-Inscritos</p>
                         </div>
-                        <div class="col-6">
-                            <div class="border rounded p-2 text-center">
-                                <h3 class="mb-0 text-warning">{{ $totalPreInscritos }}</h3>
-                                <p class="text-muted mb-0 fs-12">Pre-Inscritos</p>
-                            </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card border-0 shadow-sm h-100" style="border-left:4px solid #0dcaf0!important;">
+                        <div class="card-body p-3 text-center">
+                            <h6 class="mb-1 fw-bold">{{ $oferta->modulos->count() }}</h6>
+                            <p class="text-muted mb-0" style="font-size:.78rem;">Módulos</p>
                         </div>
-                        <div class="col-6">
-                            <div class="border rounded p-2 text-center">
-                                <h6 class="mb-0">{{ $oferta->modulos->count() }}</h6>
-                                <p class="text-muted mb-0 fs-12">Módulos</p>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="border rounded p-2 text-center">
-                                <h6 class="mb-0">{{ $hombres + $mujeres }}</h6>
-                                <p class="text-muted mb-0 fs-12">Total Estudiantes</p>
-                            </div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card border-0 shadow-sm h-100" style="border-left:4px solid #4361ee!important;">
+                        <div class="card-body p-3 text-center">
+                            <h6 class="mb-1 fw-bold">{{ $hombres + $mujeres }}</h6>
+                            <p class="text-muted mb-0" style="font-size:.78rem;">Estudiantes</p>
                         </div>
                     </div>
                 </div>
@@ -159,56 +141,56 @@
         </div>
     </div>
 
-    <!-- Pestañas de Navegación -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-body">
-                    <ul class="nav nav-tabs nav-tabs-custom nav-justified mb-3" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <a class="nav-link active" data-bs-toggle="tab" href="#tab-resumen" role="tab">
-                                <i class="ri-dashboard-line align-middle me-1"></i> Resumen
-                            </a>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <a class="nav-link" data-bs-toggle="tab" href="#tab-participantes" role="tab">
-                                <i class="ri-user-search-line align-middle me-1"></i> Participantes
-                            </a>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <a class="nav-link" data-bs-toggle="tab" href="#tab-finanzas" role="tab">
-                                <i class="ri-money-dollar-circle-line align-middle me-1"></i> Finanzas
-                            </a>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <a class="nav-link" data-bs-toggle="tab" href="#tab-academico" role="tab">
-                                <i class="ri-book-open-line align-middle me-1"></i> Académico
-                            </a>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <a class="nav-link" data-bs-toggle="tab" href="#tab-demografico" role="tab">
-                                <i class="ri-user-line align-middle me-1"></i> Demográfico
-                            </a>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <a class="nav-link" data-bs-toggle="tab" href="#tab-gestion" role="tab">
-                                <i class="ri-settings-line align-middle me-1"></i> Gestión
-                            </a>
-                        </li>
-                    </ul>
-
-                    <div class="tab-content">
+    {{-- Tabs --}}
+    <div class="card border-0 shadow-sm">
+        <div class="card-header border-bottom bg-transparent pt-0 pb-0 px-0">
+            <ul class="nav nav-tabs card-header-tabs px-3" role="tablist"
+                style="flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;">
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link active py-3" data-bs-toggle="tab" href="#tab-resumen" role="tab" style="font-size:.85rem;white-space:nowrap;">
+                        <i class="ri-dashboard-line me-1"></i>Resumen
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link py-3" data-bs-toggle="tab" href="#tab-participantes" role="tab" style="font-size:.85rem;white-space:nowrap;">
+                        <i class="ri-user-search-line me-1"></i>Participantes
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link py-3" data-bs-toggle="tab" href="#tab-finanzas" role="tab" style="font-size:.85rem;white-space:nowrap;">
+                        <i class="ri-money-dollar-circle-line me-1"></i>Finanzas
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link py-3" data-bs-toggle="tab" href="#tab-academico" role="tab" style="font-size:.85rem;white-space:nowrap;">
+                        <i class="ri-book-open-line me-1"></i>Académico
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link py-3" data-bs-toggle="tab" href="#tab-demografico" role="tab" style="font-size:.85rem;white-space:nowrap;">
+                        <i class="ri-user-line me-1"></i>Demográfico
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link py-3" data-bs-toggle="tab" href="#tab-gestion" role="tab" style="font-size:.85rem;white-space:nowrap;">
+                        <i class="ri-settings-line me-1"></i>Gestión
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body p-4">
+            <div class="tab-content">
                         <!-- Pestaña 1: Resumen - MODIFICADA -->
                         <div class="tab-pane fade show active" id="tab-resumen" role="tabpanel">
                             <div class="row">
                                 <!-- Estadísticas Rápidas -->
                                 <div class="col-lg-3">
                                     <div class="card border">
-                                        <div class="card-header border-bottom bg-light">
-                                            <h5 class="card-title mb-0 fs-16">
+                                        <div class="card-header border-0 py-2 px-3">
+                                            <h6 class="card-title mb-0 fw-semibold" style="font-size:.88rem;">
                                                 <i class="ri-dashboard-line align-middle me-2"></i>
                                                 Resumen Rápido
-                                            </h5>
+                                            </h6>
                                         </div>
                                         <div class="card-body">
                                             <div class="row g-2">
@@ -246,11 +228,11 @@
                                 <!-- Gráfico de Inscripciones por Mes -->
                                 <div class="col-lg-5">
                                     <div class="card border">
-                                        <div class="card-header border-bottom bg-light">
-                                            <h5 class="card-title mb-0 fs-16">
+                                        <div class="card-header border-0 py-2 px-3">
+                                            <h6 class="card-title mb-0 fw-semibold" style="font-size:.88rem;">
                                                 <i class="ri-bar-chart-line align-middle me-2"></i>
                                                 Inscripciones Mensuales
-                                            </h5>
+                                            </h6>
                                         </div>
                                         <div class="card-body">
                                             <canvas id="inscripcionesChart" height="150"></canvas>
@@ -261,11 +243,11 @@
                                 <!-- Distribución por Estado -->
                                 <div class="col-lg-4">
                                     <div class="card border">
-                                        <div class="card-header border-bottom bg-light">
-                                            <h5 class="card-title mb-0 fs-16">
+                                        <div class="card-header border-0 py-2 px-3">
+                                            <h6 class="card-title mb-0 fw-semibold" style="font-size:.88rem;">
                                                 <i class="ri-pie-chart-line align-middle me-2"></i>
                                                 Distribución por Estado
-                                            </h5>
+                                            </h6>
                                         </div>
                                         <div class="card-body">
                                             <div class="row align-items-center">
@@ -324,28 +306,27 @@
                                 <div class="col-12">
                                     <div class="card border">
                                         <div
-                                            class="card-header border-bottom bg-light d-flex justify-content-between align-items-center">
-                                            <h5 class="card-title mb-0 fs-16">
+                                            class="card-header border-0 py-2 px-3 d-flex justify-content-between align-items-center">
+                                            <h6 class="card-title mb-0 fw-semibold" style="font-size:.88rem;">
                                                 <i class="ri-user-add-line align-middle me-2"></i>
                                                 Pre-Inscritos y sus Asesores
-                                            </h5>
-                                            <span class="badge bg-warning">{{ count($preInscritosConAsesor) }}
+                                            </h6>
+                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill" style="font-size:.72rem;">{{ count($preInscritosConAsesor) }}
                                                 registros</span>
                                         </div>
                                         <div class="card-body">
                                             @if (count($preInscritosConAsesor) > 0)
-                                                <div class="table-responsive">
-                                                    <table class="table table-hover align-middle mb-0">
-                                                        <thead class="table-light">
-                                                            <tr>
-                                                                <th width="5%">#</th>
-                                                                <th width="20%">Estudiante</th>
-                                                                <th width="10%">Carnet</th>
-                                                                <th width="15%">Asesor</th>
-                                                                <th width="15%">Plan de Pago</th>
-                                                                <th width="10%">Adelanto (Bs)</th>
-                                                                <th width="15%">Fecha de Registro</th>
-                                                                <th width="10%" class="text-center">Acciones</th>
+                                                <table class="table table-hover align-middle mb-0" style="font-size:.82rem;">
+                                                        <thead>
+                                                            <tr style="background:#f8f9fa;">
+                                                                <th class="border-0 py-2 px-3 text-muted fw-semibold" style="font-size:.7rem;width:4%;">#</th>
+                                                                <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:22%;">ESTUDIANTE</th>
+                                                                <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:9%;">CARNET</th>
+                                                                <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:14%;">ASESOR</th>
+                                                                <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:14%;">PLAN DE PAGO</th>
+                                                                <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:10%;">ADELANTO</th>
+                                                                <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:14%;">FECHA REGISTRO</th>
+                                                                <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:13%;">ACCIONES</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -366,7 +347,7 @@
                                                                     </td>
                                                                     <td>
                                                                         <span
-                                                                            class="badge bg-secondary">{{ $preInscrito['carnet'] }}</span>
+                                                                            class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill" style="font-size:.72rem;">{{ $preInscrito['carnet'] }}</span>
                                                                     </td>
                                                                     <td>
                                                                         @if ($preInscrito['asesor_persona_id'])
@@ -387,7 +368,7 @@
                                                                     </td>
                                                                     <td>
                                                                         <span
-                                                                            class="badge bg-primary">{{ $preInscrito['plan_pago'] }}</span>
+                                                                            class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size:.72rem;">{{ $preInscrito['plan_pago'] }}</span>
                                                                     </td>
                                                                     <td>
                                                                         @if ($preInscrito['adelanto_bs'] > 0)
@@ -440,7 +421,6 @@
                                                             @endforeach
                                                         </tbody>
                                                     </table>
-                                                </div>
                                             @else
                                                 <div class="text-center py-5">
                                                     <div class="avatar-lg mx-auto mb-3">
@@ -465,11 +445,11 @@
                                 <div class="col-12">
                                     <div class="card border">
                                         <div
-                                            class="card-header border-bottom bg-light d-flex justify-content-between align-items-center">
-                                            <h5 class="card-title mb-0 fs-16">
+                                            class="card-header border-0 py-2 px-3 d-flex justify-content-between align-items-center">
+                                            <h6 class="card-title mb-0 fw-semibold" style="font-size:.88rem;">
                                                 <i class="ri-user-search-line align-middle me-2"></i>
                                                 Detalle de Participantes Inscritos
-                                            </h5>
+                                            </h6>
                                             <div>
                                                 <span class="badge bg-primary me-2">{{ count($detalleParticipantes) }}
                                                     participantes</span>
@@ -481,21 +461,20 @@
                                         </div>
                                         <div class="card-body">
                                             <div class="table-responsive">
-                                                <table class="table table-hover align-middle mb-0"
-                                                    id="tablaParticipantes">
-                                                    <thead class="table-light">
-                                                        <tr>
-                                                            <th width="3%">#</th>
-                                                            <th width="10%">Carnet/CI</th>
-                                                            <th width="12%">Apellido Paterno</th>
-                                                            <th width="12%">Apellido Materno</th>
-                                                            <th width="12%">Nombres</th>
-                                                            <th width="10%">Correo</th>
-                                                            <th width="8%">Celular</th>
-                                                            <th width="10%">Dirección</th>
-                                                            <th width="10%">Ciudad</th>
-                                                            <th width="8%">Departamento</th>
-                                                            <th width="5%">Profesión</th>
+                                                <table class="table table-hover align-middle mb-0" id="tablaParticipantes" style="font-size:.82rem;">
+                                                    <thead>
+                                                        <tr style="background:#f8f9fa;">
+                                                            <th class="border-0 py-2 px-3 text-muted fw-semibold" style="font-size:.7rem;width:3%;">#</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:10%;">CARNET/CI</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:11%;">AP. PATERNO</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:11%;">AP. MATERNO</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:11%;">NOMBRES</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:10%;">CORREO</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:8%;">CELULAR</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:10%;">DIRECCIÓN</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:9%;">CIUDAD</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:9%;">DEPTO.</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:8%;">PROFESIÓN</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -662,11 +641,11 @@
                             <div class="row mb-4">
                                 <div class="col-12">
                                     <div class="card border">
-                                        <div class="card-header border-bottom bg-light">
-                                            <h5 class="card-title mb-0 fs-16">
+                                        <div class="card-header border-0 py-2 px-3">
+                                            <h6 class="card-title mb-0 fw-semibold" style="font-size:.88rem;">
                                                 <i class="ri-money-dollar-circle-line align-middle me-2"></i>
                                                 Resumen Financiero por Concepto
-                                            </h5>
+                                            </h6>
                                             <!-- En la sección de acciones o en un lugar visible -->
                                             <a href="{{ route('admin.ofertas.contabilidad.planes-pago', $oferta->id) }}"
                                                 class="btn btn-info btn-sm">
@@ -785,11 +764,11 @@
                             <div class="row mb-4">
                                 <div class="col-lg-6">
                                     <div class="card border">
-                                        <div class="card-header border-bottom bg-light">
-                                            <h5 class="card-title mb-0 fs-16">
+                                        <div class="card-header border-0 py-2 px-3">
+                                            <h6 class="card-title mb-0 fw-semibold" style="font-size:.88rem;">
                                                 <i class="ri-pie-chart-line align-middle me-2"></i>
                                                 Distribución de Ingresos por Concepto
-                                            </h5>
+                                            </h6>
                                         </div>
                                         <div class="card-body">
                                             <canvas id="ingresosConceptoChart" height="250"></canvas>
@@ -799,11 +778,11 @@
 
                                 <div class="col-lg-6">
                                     <div class="card border">
-                                        <div class="card-header border-bottom bg-light">
-                                            <h5 class="card-title mb-0 fs-16">
+                                        <div class="card-header border-0 py-2 px-3">
+                                            <h6 class="card-title mb-0 fw-semibold" style="font-size:.88rem;">
                                                 <i class="ri-bar-chart-horizontal-line align-middle me-2"></i>
                                                 Estado de Cobranza por Concepto
-                                            </h5>
+                                            </h6>
                                         </div>
                                         <div class="card-body">
                                             <canvas id="cobranzaConceptoChart" height="250"></canvas>
@@ -816,12 +795,12 @@
                             <div class="row">
                                 <div class="col-12">
                                     <div class="card border">
-                                        <div class="card-header border-bottom bg-light">
+                                        <div class="card-header border-0 py-2 px-3">
                                             <div class="d-flex justify-content-between align-items-center">
-                                                <h5 class="card-title mb-0 fs-16">
+                                                <h6 class="card-title mb-0 fw-semibold" style="font-size:.88rem;">
                                                     <i class="ri-user-line align-middle me-2"></i>
                                                     Estado Financiero de Participantes
-                                                </h5>
+                                                </h6>
                                                 {{-- Reemplaza el botón actual --}}
                                                 <a href="{{ route('admin.ofertas.exportar-estado-financiero', $oferta->id) }}"
                                                     class="btn btn-light btn-sm" id="exportarTabla" target="_blank">
@@ -831,34 +810,29 @@
                                         </div>
                                         <div class="card-body">
                                             <div class="table-responsive">
-                                                <table class="table table-hover align-middle mb-0" id="tablaFinanzas">
+                                                <table class="table table-hover align-middle mb-0" id="tablaFinanzas" style="font-size:.82rem;">
                                                     <!-- Modifica los encabezados de la tabla -->
-                                                    <thead class="table-light">
-                                                        <tr>
-                                                            <th class="text-center" width="3%">#</th>
-                                                            <th width="8%">Apellido Paterno</th>
-                                                            <th width="8%">Apellido Materno</th>
-                                                            <th width="10%">Nombres</th>
-                                                            <th class="text-center" width="7%">Carnet</th>
-                                                            <th class="text-center" width="10%">Plan de Pago</th>
-                                                            <th class="text-center" width="10%">Vendedor</th>
-                                                            <!-- NUEVAS COLUMNAS -->
-                                                            <th class="text-center" width="8%">Fecha Inscripción</th>
-                                                            <th class="text-center" width="10%">Profesión</th>
-                                                            <th class="text-center" width="8%">Celular</th>
-                                                            <th class="text-center" width="12%">Correo</th>
-                                                            <!-- FIN NUEVAS COLUMNAS -->
-                                                            <th class="text-end" width="8%">Total Plan (Bs)</th>
-
-                                                            <!-- Columnas en ORDEN FIJO -->
-                                                            <th class="text-end" width="9%">Matrícula (Bs)</th>
-                                                            <th class="text-end" width="9%">Colegiatura (Bs)</th>
-                                                            <th class="text-end" width="9%">Certificación (Bs)</th>
-
-                                                            <th class="text-end" width="8%">Total Pagado (Bs)</th>
-                                                            <th class="text-end" width="8%">Saldo Deuda (Bs)</th>
-                                                            <th class="text-center" width="6%">% Pagado</th>
-                                                            <th width="7%">Progreso</th>
+                                                    <thead>
+                                                        <tr style="background:#f8f9fa;">
+                                                            <th class="border-0 py-2 px-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:3%;">#</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:7%;">AP. PAT.</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:7%;">AP. MAT.</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:9%;">NOMBRES</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:6%;">CARNET</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:8%;">PLAN</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:8%;">ASESOR</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:7%;">F. INSCR.</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:8%;">PROFESIÓN</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:7%;">CELULAR</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:9%;">CORREO</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold text-end" style="font-size:.7rem;width:5%;">TOTAL</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold text-end" style="font-size:.7rem;width:5%;">MATR.</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold text-end" style="font-size:.7rem;width:5%;">COLEG.</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold text-end" style="font-size:.7rem;width:5%;">CERTIF.</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold text-end" style="font-size:.7rem;width:5%;">PAGADO</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold text-end" style="font-size:.7rem;width:5%;">DEUDA</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:4%;">%</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:6%;">PROGR.</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -904,11 +878,11 @@
                                                                 </td>
                                                                 <td class="text-center">
                                                                     <span
-                                                                        class="badge bg-secondary">{{ $participante['carnet'] }}</span>
+                                                                        class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill" style="font-size:.72rem;">{{ $participante['carnet'] }}</span>
                                                                 </td>
                                                                 <td class="text-center">
                                                                     <span
-                                                                        class="badge bg-primary">{{ $participante['plan_pago'] }}</span>
+                                                                        class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size:.72rem;">{{ $participante['plan_pago'] }}</span>
                                                                 </td>
                                                                 <td class="text-center">
                                                                     @if ($participante['vendedor_persona_id'] ?? null)
@@ -919,7 +893,7 @@
                                                                             {{ $participante['vendedor'] ?? 'N/A' }}
                                                                         </a>
                                                                     @else
-                                                                        <span class="badge bg-info"
+                                                                        <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill" style="font-size:.72rem;"
                                                                             title="Vendedor que realizó la inscripción">
                                                                             {{ $participante['vendedor'] ?? 'N/A' }}
                                                                         </span>
@@ -1077,9 +1051,9 @@
                                                         @endforeach
                                                     </tbody>
                                                     <!-- En la sección de tfoot, reemplaza los cálculos con: -->
-                                                    <tfoot class="table-light">
+                                                    <tfoot style="background:#f8f9fa;font-size:.78rem;">
                                                         <tr>
-                                                            <td colspan="11" class="fw-bold text-end">TOTALES:</td>
+                                                            <td colspan="11" class="fw-bold text-end py-2" style="font-size:.78rem;">TOTALES:</td>
                                                             <td class="text-end fw-bold">
                                                                 {{ number_format(collect($participantesFinanzas)->sum('total_plan'), 2) }}
                                                             </td>
@@ -1213,7 +1187,7 @@
                                                                             : 0;
                                                                 @endphp
                                                                 <span
-                                                                    class="badge bg-primary">{{ number_format($porcentajeGeneral, 1) }}%</span>
+                                                                    class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size:.72rem;">{{ number_format($porcentajeGeneral, 1) }}%</span>
                                                             </td>
                                                             <td>
                                                                 <div class="progress" style="height: 6px;">
@@ -1234,12 +1208,12 @@
                         <!-- Pestaña 3: Académico -->
                         <div class="tab-pane fade" id="tab-academico" role="tabpanel">
                             <div class="card border">
-                                <div class="card-header border-bottom bg-light">
+                                <div class="card-header border-0 py-2 px-3">
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <h5 class="card-title mb-0 fs-16">
+                                        <h6 class="card-title mb-0 fw-semibold" style="font-size:.88rem;">
                                             <i class="ri-book-open-line align-middle me-2"></i>
                                             Rendimiento Académico
-                                        </h5>
+                                        </h6>
                                         <div>
                                             <span class="badge bg-info-subtle text-info">
                                                 <i class="ri-information-line align-middle me-1"></i>
@@ -1327,7 +1301,7 @@
                                                             </a>
                                                         </td>
                                                         <td class="text-center">
-                                                            <span class="badge bg-secondary">{{ $fila['carnet'] }}</span>
+                                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill" style="font-size:.72rem;">{{ $fila['carnet'] }}</span>
                                                         </td>
                                                         @foreach ($oferta->modulos as $modulo)
                                                             @php
@@ -1475,14 +1449,14 @@
                                 <!-- Distribución por Sexo -->
                                 <div class="col-lg-4">
                                     <div class="card border">
-                                        <div class="card-header border-bottom bg-light">
+                                        <div class="card-header border-0 py-2 px-3">
                                             <div class="d-flex justify-content-between align-items-center">
-                                                <h5 class="card-title mb-0 fs-16">
+                                                <h6 class="card-title mb-0 fw-semibold" style="font-size:.88rem;">
                                                     <i class="ri-user-line align-middle me-2"></i>
                                                     Distribución por Género
-                                                </h5>
+                                                </h6>
                                                 <span
-                                                    class="badge bg-primary">{{ $estadisticasDemograficas['totalEstudiantes'] }}
+                                                    class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size:.72rem;">{{ $estadisticasDemograficas['totalEstudiantes'] }}
                                                     estudiantes</span>
                                             </div>
                                         </div>
@@ -1525,14 +1499,14 @@
                                 <!-- Edad Promedio -->
                                 <div class="col-lg-4">
                                     <div class="card border">
-                                        <div class="card-header border-bottom bg-light">
+                                        <div class="card-header border-0 py-2 px-3">
                                             <div class="d-flex justify-content-between align-items-center">
-                                                <h5 class="card-title mb-0 fs-16">
+                                                <h6 class="card-title mb-0 fw-semibold" style="font-size:.88rem;">
                                                     <i class="ri-calendar-line align-middle me-2"></i>
                                                     Estadísticas de Edad
-                                                </h5>
+                                                </h6>
                                                 <span
-                                                    class="badge bg-info">{{ $estadisticasDemograficas['totalEstudiantes'] }}
+                                                    class="badge bg-info-subtle text-info border border-info-subtle rounded-pill" style="font-size:.72rem;">{{ $estadisticasDemograficas['totalEstudiantes'] }}
                                                     estudiantes</span>
                                             </div>
                                         </div>
@@ -1583,14 +1557,14 @@
                                 <!-- Top Departamentos -->
                                 <div class="col-lg-4">
                                     <div class="card border">
-                                        <div class="card-header border-bottom bg-light">
+                                        <div class="card-header border-0 py-2 px-3">
                                             <div class="d-flex justify-content-between align-items-center">
-                                                <h5 class="card-title mb-0 fs-16">
+                                                <h6 class="card-title mb-0 fw-semibold" style="font-size:.88rem;">
                                                     <i class="ri-map-pin-2-line align-middle me-2"></i>
                                                     Distribución por Departamento
-                                                </h5>
+                                                </h6>
                                                 <span
-                                                    class="badge bg-success">{{ count($estadisticasDemograficas['topDepartamentos']) }}
+                                                    class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size:.72rem;">{{ count($estadisticasDemograficas['topDepartamentos']) }}
                                                     departamentos</span>
                                             </div>
                                         </div>
@@ -1632,11 +1606,11 @@
                             <div class="row mt-4">
                                 <div class="col-12">
                                     <div class="card border">
-                                        <div class="card-header border-bottom bg-light">
-                                            <h5 class="card-title mb-0 fs-16">
+                                        <div class="card-header border-0 py-2 px-3">
+                                            <h6 class="card-title mb-0 fw-semibold" style="font-size:.88rem;">
                                                 <i class="ri-bar-chart-grouped-line align-middle me-2"></i>
                                                 Resumen Demográfico
-                                            </h5>
+                                            </h6>
                                         </div>
                                         <div class="card-body">
                                             <div class="row">
@@ -1705,12 +1679,12 @@
                             <div class="row">
                                 <div class="col-12">
                                     <div class="card border">
-                                        <div class="card-header border-bottom bg-light">
-                                            <h5 class="card-title mb-0 fs-16">
+                                        <div class="card-header border-0 py-2 px-3">
+                                            <h6 class="card-title mb-0 fw-semibold" style="font-size:.88rem;">
                                                 <i class="ri-user-settings-line align-middle me-2"></i>
                                                 Gestión de Inscripciones (Solo Administrador)
-                                            </h5>
-                                            <div class="alert alert-warning mt-2 mb-0 py-2">
+                                            </h6>
+                                            <div class="alert alert-warning border-0 mt-2 mb-0 py-2 rounded-2" style="font-size:.82rem;">
                                                 <i class="ri-alert-line me-2"></i>
                                                 Esta sección es solo para administradores. Permite eliminar o transferir
                                                 inscripciones.
@@ -1718,16 +1692,16 @@
                                         </div>
                                         <div class="card-body">
                                             <div class="table-responsive">
-                                                <table class="table table-hover align-middle mb-0" id="tablaGestion">
-                                                    <thead class="table-light">
-                                                        <tr>
-                                                            <th width="5%">#</th>
-                                                            <th width="20%">Estudiante</th>
-                                                            <th width="15%">Carnet</th>
-                                                            <th width="15%">Plan Actual</th>
-                                                            <th width="10%">Estado</th>
-                                                            <th width="15%">Fecha Inscripción</th>
-                                                            <th width="20%" class="text-center">Acciones</th>
+                                                <table class="table table-hover align-middle mb-0" id="tablaGestion" style="font-size:.82rem;">
+                                                    <thead>
+                                                        <tr style="background:#f8f9fa;">
+                                                            <th class="border-0 py-2 px-3 text-muted fw-semibold" style="font-size:.7rem;width:4%;">#</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:25%;">ESTUDIANTE</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:13%;">CARNET</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:18%;">PLAN ACTUAL</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:10%;">ESTADO</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:15%;">FECHA INSCR.</th>
+                                                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:15%;">ACCIONES</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -1764,21 +1738,21 @@
                                                                     </td>
                                                                     <td>
                                                                         <span
-                                                                            class="badge bg-secondary">{{ $participante['carnet'] }}</span>
+                                                                            class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill" style="font-size:.72rem;">{{ $participante['carnet'] }}</span>
                                                                     </td>
                                                                     <td>
                                                                         <span
-                                                                            class="badge bg-primary">{{ $participante['plan_pago'] }}</span>
+                                                                            class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size:.72rem;">{{ $participante['plan_pago'] }}</span>
                                                                     </td>
                                                                     <td>
                                                                         @if ($inscripcion->estado == 'Inscrito')
-                                                                            <span class="badge bg-success">Inscrito</span>
+                                                                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size:.72rem;">Inscrito</span>
                                                                         @elseif($inscripcion->estado == 'Pre-Inscrito')
                                                                             <span
-                                                                                class="badge bg-warning">Pre-Inscrito</span>
+                                                                                class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill" style="font-size:.72rem;">Pre-Inscrito</span>
                                                                         @else
                                                                             <span
-                                                                                class="badge bg-info">{{ $inscripcion->estado }}</span>
+                                                                                class="badge bg-info-subtle text-info border border-info-subtle rounded-pill" style="font-size:.72rem;">{{ $inscripcion->estado }}</span>
                                                                         @endif
                                                                     </td>
                                                                     <td>
@@ -1806,7 +1780,7 @@
                                                                                 </button>
                                                                             </div>
                                                                         @else
-                                                                            <span class="badge bg-info">Transferido</span>
+                                                                            <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill" style="font-size:.72rem;">Transferido</span>
                                                                         @endif
 
                                                                     </td>
@@ -1822,7 +1796,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
             </div>
         </div>
     </div>

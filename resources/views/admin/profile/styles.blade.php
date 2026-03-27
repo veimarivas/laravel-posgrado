@@ -1,41 +1,28 @@
 <style>
-    .profile-card {
-        transition: all 0.3s ease;
-        border-radius: 15px;
-        overflow: hidden;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    }
-
-    .profile-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
-    }
-
     .profile-avatar {
-        width: 150px;
-        height: 150px;
+        width: 96px;
+        height: 96px;
         object-fit: cover;
-        border: 5px solid #fff;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
     }
 
     .nav-tabs .nav-link {
         border: none;
         color: #6c757d;
         font-weight: 500;
-        padding: 12px 20px;
+        font-size: .87rem;
         border-bottom: 3px solid transparent;
+        white-space: nowrap;
     }
 
     .nav-tabs .nav-link.active {
-        color: #4361ee;
-        border-bottom: 3px solid #4361ee;
+        color: #0d6efd;
+        border-bottom: 3px solid #0d6efd;
         background-color: transparent;
     }
 
     .nav-tabs .nav-link:hover:not(.active) {
-        color: #4361ee;
-        border-bottom: 3px solid rgba(67, 97, 238, 0.3);
+        color: #0d6efd;
+        border-bottom: 3px solid rgba(13, 110, 253, 0.3);
     }
 
     .marketing-card {
@@ -253,40 +240,22 @@
         margin: 0 auto;
     }
 
-    /* Mejorar las tabs para muchas pestañas */
     .nav-tabs {
         flex-wrap: nowrap;
         overflow-x: auto;
         overflow-y: hidden;
         -webkit-overflow-scrolling: touch;
-        -ms-overflow-style: -ms-autohiding-scrollbar;
+        scrollbar-width: none;
     }
 
-    .nav-tabs .nav-link {
-        white-space: nowrap;
-        min-width: 120px;
-        text-align: center;
-    }
+    .nav-tabs::-webkit-scrollbar { display: none; }
 
-    /* Mejorar responsive */
     @media (max-width: 768px) {
-        .nav-tabs .nav-link span.d-none.d-md-inline {
-            display: inline !important;
-            font-size: 0.85em;
-        }
-
         .nav-tabs .nav-link {
-            min-width: 100px;
             padding: 10px 12px;
         }
-
         .stats-card h3 {
-            font-size: 1.5rem;
-        }
-
-        .profile-avatar {
-            width: 120px;
-            height: 120px;
+            font-size: 1.4rem;
         }
     }
 

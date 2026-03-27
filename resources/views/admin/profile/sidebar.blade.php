@@ -1,149 +1,126 @@
-<!-- Perfil Lateral -->
+@php
+    $persona = auth()->user()->persona;
+    $fotoUrl = $persona->fotografia
+        ? asset($persona->fotografia)
+        : asset('backend/assets/images/users/user-dummy-img.jpg');
+
+    $cargoPrincipal = $persona->trabajador
+        ?->trabajadores_cargos->where('principal', 1)->where('estado', 'Vigente')->first()
+        ?->cargo->nombre ?? 'Sin cargo asignado';
+
+    $tieneMarketing   = false;
+    $cargosMarketingIds = [];
+
+    if ($persona->trabajador) {
+        $cargosMarketingIds = $persona->trabajador->trabajadores_cargos
+            ->whereIn('cargo_id', [2, 3, 6])
+            ->where('estado', 'Vigente')
+            ->pluck('id');
+        $tieneMarketing = $cargosMarketingIds->count() > 0;
+    }
+@endphp
+
 <div class="col-xl-3 col-lg-3">
-    <div class="card profile-card mb-4">
-        <div class="card-body text-center p-4">
-            <!-- Sección del Avatar - Actualizada -->
-            <div class="position-relative d-inline-block mb-3">
-                @php
-                    // Si hay una ruta guardada en la base de datos, usamos asset() para crear la URL completa
-                    $fotoUrl = auth()->user()->persona->fotografia
-                        ? asset(auth()->user()->persona->fotografia)
-                        : asset('backend/assets/images/users/user-dummy-img.jpg');
-                @endphp
 
-                <img id="profileAvatar" src="{{ $fotoUrl }}" class="profile-avatar" alt="Avatar"
-                    onerror="this.src='{{ asset('backend/assets/images/users/user-dummy-img.jpg') }}'">
+    {{-- Tarjeta de perfil --}}
+    <div class="card border-0 shadow-sm mb-3 overflow-hidden">
 
-                <div class="position-absolute bottom-0 end-0">
-                    <!-- Botón para cambiar foto -->
-                    <button class="btn btn-primary btn-sm rounded-circle shadow" data-bs-toggle="modal"
-                        data-bs-target="#uploadFotoModal" data-bs-tooltip="tooltip" title="Cambiar foto">
-                        <i class="ri-camera-line"></i>
-                    </button>
-                </div>
+        {{-- Banner superior --}}
+        <div style="height:75px;background:linear-gradient(135deg,#0d6efd 0%,#6f42c1 100%);"></div>
+
+        <div class="card-body text-center pt-0 pb-4 px-3">
+
+            {{-- Avatar --}}
+            <div class="position-relative d-inline-block" style="margin-top:-48px;">
+                <img id="profileAvatar"
+                     src="{{ $fotoUrl }}"
+                     alt="Avatar"
+                     class="rounded-circle shadow"
+                     style="width:96px;height:96px;object-fit:cover;border:4px solid #fff;"
+                     onerror="this.src='{{ asset('backend/assets/images/users/user-dummy-img.jpg') }}'">
+                <button class="btn btn-primary btn-sm rounded-circle position-absolute shadow"
+                        style="width:28px;height:28px;padding:0;bottom:2px;right:2px;"
+                        data-bs-toggle="modal" data-bs-target="#uploadFotoModal"
+                        title="Cambiar foto">
+                    <i class="ri-camera-line" style="font-size:.7rem;"></i>
+                </button>
             </div>
 
-            <h4 id="profileName" class="mb-2">
-                {{ auth()->user()->persona->nombres ?? 'Usuario' }}
-                {{ auth()->user()->persona->apellido_paterno ?? '' }}
-            </h4>
-
-            <p id="profileCargo" class="text-primary fw-medium mb-3">
-                @php
-                    $cargoPrincipal =
-                        auth()
-                            ->user()
-                            ->persona->trabajador->trabajadores_cargos->where('principal', 1)
-                            ->where('estado', 'Vigente')
-                            ->first()->cargo->nombre ?? 'Sin cargo asignado';
-                @endphp
+            {{-- Nombre --}}
+            <h5 id="profileName" class="mb-0 mt-2 fw-semibold">
+                {{ $persona->nombres ?? 'Usuario' }} {{ $persona->apellido_paterno ?? '' }}
+            </h5>
+            <p id="profileCargo" class="text-primary fw-medium mb-2" style="font-size:.85rem;">
                 {{ $cargoPrincipal }}
             </p>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill mb-3" style="font-size:.72rem;">
+                <i class="ri-shield-user-line me-1"></i>{{ auth()->user()->roles->first()->name ?? 'Usuario' }}
+            </span>
 
-            <!-- Badges de información -->
-            <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
-                <span class="badge bg-info-subtle text-info">
-                    <i class="ri-id-card-line me-1"></i>
-                    {{ auth()->user()->persona->carnet ?? 'Sin carnet' }}
+            {{-- Mini badges --}}
+            <div class="d-flex flex-wrap justify-content-center gap-1 mb-3">
+                <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill" style="font-size:.7rem;">
+                    <i class="ri-id-card-line me-1"></i>{{ $persona->carnet ?? 'Sin CI' }}
                 </span>
-                <span class="badge bg-secondary-subtle text-secondary">
-                    <i class="ri-genderless-line me-1"></i>
-                    {{ auth()->user()->persona->sexo ?? '' }}
-                </span>
-                @if (auth()->user()->persona->fecha_nacimiento)
-                    <span class="badge bg-warning-subtle text-warning">
-                        <i class="ri-cake-line me-1"></i>
-                        {{ \Carbon\Carbon::parse(auth()->user()->persona->fecha_nacimiento)->age }} años
+                @if($persona->sexo)
+                    <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill" style="font-size:.7rem;">
+                        <i class="ri-genderless-line me-1"></i>{{ $persona->sexo }}
+                    </span>
+                @endif
+                @if($persona->fecha_nacimiento)
+                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill" style="font-size:.7rem;">
+                        <i class="ri-cake-line me-1"></i>{{ \Carbon\Carbon::parse($persona->fecha_nacimiento)->age }} años
                     </span>
                 @endif
             </div>
 
-            <!-- Información de contacto -->
-            <div class="list-group list-group-flush">
-                <div class="list-group-item border-0 px-0 py-2">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="ri-mail-line text-primary"></i>
+            {{-- Contacto --}}
+            <div class="border-top pt-3 text-start">
+                @foreach([
+                    ['icon'=>'ri-mail-line',    'color'=>'primary', 'label'=>'Correo',     'value'=> $persona->correo   ?? null],
+                    ['icon'=>'ri-phone-line',   'color'=>'success', 'label'=>'Celular',    'value'=> $persona->celular  ?? null],
+                    ['icon'=>'ri-map-pin-line', 'color'=>'info',    'label'=>'Ubicación',  'value'=> (optional($persona->ciudad)->nombre ?? null)
+                        ? optional($persona->ciudad)->nombre . (optional(optional($persona->ciudad)->departamento)->nombre ? ', '.optional($persona->ciudad->departamento)->nombre : '')
+                        : null],
+                ] as $item)
+                    <div class="d-flex align-items-center gap-2 py-2 {{ !$loop->last ? 'border-bottom' : '' }}">
+                        <div class="avatar-xs flex-shrink-0">
+                            <div class="avatar-title bg-{{ $item['color'] }}-subtle text-{{ $item['color'] }} rounded">
+                                <i class="{{ $item['icon'] }} fs-14"></i>
+                            </div>
                         </div>
-                        <div class="flex-grow-1 ms-3">
-                            <small class="text-muted d-block">Correo</small>
-                            <span class="fw-medium">{{ auth()->user()->persona->correo ?? 'Sin correo' }}</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="list-group-item border-0 px-0 py-2">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="ri-phone-line text-success"></i>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <small class="text-muted d-block">Celular</small>
-                            <span class="fw-medium">{{ auth()->user()->persona->celular ?? 'Sin celular' }}</span>
+                        <div class="min-w-0">
+                            <div class="text-muted" style="font-size:.68rem;">{{ strtoupper($item['label']) }}</div>
+                            <div class="fw-medium text-truncate" style="font-size:.82rem;">
+                                {{ $item['value'] ?: '—' }}
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                <div class="list-group-item border-0 px-0 py-2">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="ri-map-pin-line text-info"></i>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <small class="text-muted d-block">Ubicación</small>
-                            <span class="fw-medium">
-                                {{ auth()->user()->persona->ciudad->nombre ?? '' }}
-                                @if (auth()->user()->persona->ciudad && auth()->user()->persona->ciudad->departamento)
-                                    ({{ auth()->user()->persona->ciudad->departamento->nombre }})
-                                @endif
-                            </span>
-                        </div>
-                    </div>
-                </div>
+                @endforeach
             </div>
         </div>
     </div>
 
-    <!-- Mini Dashboard Marketing -->
-    @php
-        $tieneMarketing = false;
-        $cargosMarketingIds = [];
-
-        if (auth()->user()->persona->trabajador) {
-            $cargosMarketingIds = auth()
-                ->user()
-                ->persona->trabajador->trabajadores_cargos->whereIn('cargo_id', [2, 3, 6])
-                ->where('estado', 'Vigente')
-                ->pluck('id');
-
-            $tieneMarketing = $cargosMarketingIds->count() > 0;
-        }
-    @endphp
-
-    <!-- Información rápida -->
-    <div class="card">
-        <div class="card-body">
-            <h6 class="card-title mb-3">
-                <i class="ri-information-line me-2"></i> Información Rápida
-            </h6>
-            <div class="d-flex justify-content-between mb-2">
-                <span class="text-muted">Cargos Activos:</span>
-                <span class="fw-medium">
-                    {{ auth()->user()->persona->trabajador->trabajadores_cargos->where('estado', 'Vigente')->count() ?? 0 }}
-                </span>
-            </div>
-            <div class="d-flex justify-content-between mb-2">
-                <span class="text-muted">Estudios:</span>
-                <span class="fw-medium">
-                    {{ auth()->user()->persona->estudios->count() ?? 0 }}
-                </span>
-            </div>
-            <div class="d-flex justify-content-between">
-                <span class="text-muted">Miembro desde:</span>
-                <span class="fw-medium">
-                    {{ auth()->user()->created_at->format('d/m/Y') }}
-                </span>
-            </div>
+    {{-- Info rápida --}}
+    <div class="card border-0 shadow-sm">
+        <div class="card-header border-0 py-2 px-3" style="background:#f8f9fa;">
+            <span class="fw-semibold small"><i class="ri-information-line me-1 text-primary"></i>Información Rápida</span>
+        </div>
+        <div class="card-body p-0">
+            @foreach([
+                ['label'=>'Cargos activos',  'icon'=>'ri-briefcase-line',     'color'=>'primary',  'value'=> $persona->trabajador?->trabajadores_cargos->where('estado','Vigente')->count() ?? 0],
+                ['label'=>'Estudios',         'icon'=>'ri-graduation-cap-line','color'=>'success',  'value'=> $persona->estudios->count()],
+                ['label'=>'Miembro desde',    'icon'=>'ri-calendar-check-line','color'=>'secondary','value'=> auth()->user()->created_at->format('d/m/Y')],
+            ] as $i => $item)
+                <div class="d-flex align-items-center justify-content-between px-3 py-2 {{ $i < 2 ? 'border-bottom' : '' }}">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="{{ $item['icon'] }} text-{{ $item['color'] }}" style="font-size:.85rem;"></i>
+                        <span class="text-muted small">{{ $item['label'] }}</span>
+                    </div>
+                    <span class="fw-semibold small">{{ $item['value'] }}</span>
+                </div>
+            @endforeach
         </div>
     </div>
+
 </div>

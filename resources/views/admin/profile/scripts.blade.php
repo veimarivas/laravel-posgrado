@@ -306,13 +306,24 @@
                     cutout: '65%',
                     plugins: {
                         legend: {
-                            position: 'right',
+                            position: 'bottom',
                             labels: {
-                                boxWidth: 12,
-                                padding: 15,
+                                boxWidth: 10,
+                                padding: 10,
                                 usePointStyle: true,
-                                color: labels.length === 1 && labels[0] === 'Sin datos disponibles' ?
-                                    '#6c757d' : undefined
+                                font: { size: 10 },
+                                generateLabels: function(chart) {
+                                    const data = chart.data;
+                                    if (!data.labels.length) return [];
+                                    return data.labels.map((label, i) => ({
+                                        text: label.length > 24 ? label.substring(0, 22) + '…' : label,
+                                        fillStyle: data.datasets[0].backgroundColor[i] || '#ccc',
+                                        strokeStyle: data.datasets[0].backgroundColor[i] || '#ccc',
+                                        lineWidth: 0,
+                                        hidden: false,
+                                        index: i
+                                    }));
+                                }
                             }
                         },
                         tooltip: {
@@ -370,21 +381,20 @@
             $('#tableCount').text(pagination.total);
 
             let html = `
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-light">
-                            <tr>
-                                <th width="5%">#</th>
-                                <th width="20%">Estudiante</th>
-                                <th width="15%">Programa</th>
-                                <th width="10%">Sede - Sucursal</th>
-                                <th width="12%">Plan de Pago</th>  <!-- NUEVA COLUMNA -->
-                                <th width="8%">Estado</th>
-                                <th width="10%">Fecha</th>
-                                <th width="10%" class="text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                <table class="table table-hover align-middle mb-0" style="font-size:.82rem;">
+                    <thead>
+                        <tr style="background:#f8f9fa;">
+                            <th class="border-0 py-2 px-3 text-muted fw-semibold" style="font-size:.7rem;width:4%;">#</th>
+                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:22%;">ESTUDIANTE</th>
+                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:20%;">PROGRAMA</th>
+                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:15%;">SEDE / SUCURSAL</th>
+                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:14%;">PLAN DE PAGO</th>
+                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:9%;">ESTADO</th>
+                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:9%;">FECHA</th>
+                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:7%;">ACC.</th>
+                        </tr>
+                    </thead>
+                    <tbody>
             `;
 
             inscripciones.data.forEach((inscripcion, index) => {
@@ -442,66 +452,35 @@
                 accionesHtml += `</div>`;
 
                 html += `
-    <tr class="inscription-row">
-        <td class="fw-semibold text-muted">${rowNumber}</td>
-        <td>
-            <div class="d-flex align-items-center">
-                <div class="flex-shrink-0 me-2">
-                    <div class="avatar-xs">
-                        <div class="avatar-title bg-primary bg-opacity-10 text-primary rounded-circle">
-                            <i class="ri-user-line"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="flex-grow-1">
-                    <h6 class="mb-0">${estudiante?.nombres || 'N/A'} ${estudiante?.apellido_paterno || ''}</h6>
-                    <p class="text-muted mb-0 small">
-                        <i class="ri-id-card-line me-1"></i>
-                        ${estudiante?.carnet || 'N/A'}
-                    </p>
-                </div>
-            </div>
+    <tr>
+        <td class="px-3 py-2 text-muted fw-semibold" style="font-size:.78rem;">${rowNumber}</td>
+        <td class="py-2">
+            <div class="fw-semibold" style="font-size:.82rem;">${estudiante?.nombres || 'N/A'} ${estudiante?.apellido_paterno || ''}</div>
+            <div class="text-muted" style="font-size:.72rem;"><i class="ri-id-card-line me-1"></i>${estudiante?.carnet || 'N/A'}</div>
         </td>
-        <td>
-            <span class="badge programa-badge">
-                <i class="ri-book-line me-1"></i>
-                ${programa?.nombre || 'N/A'}
-            </span>
+        <td class="py-2">
+            <div style="font-size:.8rem;font-weight:500;">${programa?.nombre || 'N/A'}</div>
         </td>
-        <td>
-            <div>
-                <span class="badge sede-badge mb-1">
-                    <i class="ri-building-line me-1"></i>
-                    ${sede?.nombre || 'N/A'}
-                </span>
-                <br>
-                <small class="text-muted">${sucursal?.nombre || 'N/A'}</small>
-            </div>
+        <td class="py-2">
+            <div class="fw-medium" style="font-size:.8rem;">${sede?.nombre || 'N/A'}</div>
+            <div class="text-muted" style="font-size:.72rem;">${sucursal?.nombre || 'N/A'}</div>
         </td>
-        <td>
-            ${planPago ? `
-                        <span class="badge bg-primary-subtle text-primary" data-bs-toggle="tooltip" title="Plan de pago seleccionado">
-                            <i class="ri-money-dollar-circle-line me-1"></i>
-                            ${planPago.nombre || 'Sin nombre'}
-                        </span>
-                    ` : `
-                        <span class="badge bg-secondary-subtle text-secondary">
-                            <i class="ri-information-line me-1"></i>
-                            No asignado
-                        </span>
-                    `}
+        <td class="py-2">
+            ${planPago
+                ? `<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size:.7rem;">${planPago.nombre || 'Sin nombre'}</span>`
+                : `<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill" style="font-size:.7rem;">No asignado</span>`
+            }
         </td>
-        <td>
-            <span class="badge ${inscripcion.estado === 'Inscrito' ? 'bg-success' : 'bg-warning'} badge-status">
+        <td class="text-center py-2">
+            <span class="badge ${inscripcion.estado === 'Inscrito' ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-warning-subtle text-warning border border-warning-subtle'} rounded-pill" style="font-size:.7rem;">
                 ${inscripcion.estado}
             </span>
         </td>
-        <td>
-            <small class="text-muted">${fecha.toLocaleDateString('es-ES')}</small>
-            <br>
-            <small class="text-muted">${fecha.toLocaleTimeString('es-ES', {hour: '2-digit', minute:'2-digit'})}</small>
+        <td class="py-2">
+            <div style="font-size:.78rem;">${fecha.toLocaleDateString('es-ES')}</div>
+            <div class="text-muted" style="font-size:.7rem;">${fecha.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'})}</div>
         </td>
-        <td class="text-center">
+        <td class="text-center py-2">
             ${accionesHtml}
         </td>
     </tr>
@@ -511,7 +490,6 @@
             html += `
                     </tbody>
                 </table>
-            </div>
             `;
 
             $('#marketingTableContainer').html(html);
@@ -704,19 +682,18 @@
                 `;
             } else {
                 html = `
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
-                                <tr>
-                                    <th width="20%">Código</th>
-                                    <th width="25%">Programa</th>
-                                    <th width="15%">Sucursal</th>
-                                    <th width="15%">Modalidad</th>
-                                    <th width="15%">Fechas</th>
-                                    <th width="10%" class="text-center">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                    <table class="table table-hover align-middle mb-0" style="font-size:.82rem;">
+                        <thead>
+                            <tr style="background:#f8f9fa;">
+                                <th class="border-0 py-2 px-3 text-muted fw-semibold" style="font-size:.7rem;width:12%;">CÓDIGO</th>
+                                <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:30%;">PROGRAMA</th>
+                                <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:20%;">SUCURSAL</th>
+                                <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:14%;">MODALIDAD</th>
+                                <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:16%;">FECHAS</th>
+                                <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:8%;">ACC.</th>
+                            </tr>
+                        </thead>
+                        <tbody>
                 `;
 
                 ofertas.data.forEach(oferta => {
@@ -730,52 +707,49 @@
                         '{{ auth()->user()->persona->trabajador->trabajadores_cargos->where('principal', 1)->where('estado', 'Vigente')->first()->id ?? 0 }}';
 
                     html += `
-                        <tr class="oferta-card">
-                            <td>
-                                <strong class="text-primary">${oferta.codigo || 'N/A'}</strong>
+                        <tr>
+                            <td class="px-3 py-2">
+                                <span class="fw-semibold text-primary" style="font-size:.82rem;">${oferta.codigo || 'N/A'}</span>
+                                ${oferta.gestion ? '<br><span class="text-muted" style="font-size:.72rem;">Gest. ' + oferta.gestion + '</span>' : ''}
                             </td>
-                            <td>
-                                <div class="d-flex align-items-start">
-                                    <div class="flex-grow-1">
-                                        <strong>${oferta.programa_nombre || 'Sin programa'}</strong>
-                                        <br>
-                                        <small class="text-muted">${oferta.version ? 'v' + oferta.version : ''} ${oferta.grupo ? 'Grupo ' + oferta.grupo : ''}</small>
-                                    </div>
-                                </div>
+                            <td class="py-2">
+                                <span class="fw-semibold text-dark" style="font-size:.82rem;">${oferta.programa_nombre || 'Sin programa'}</span>
+                                ${(oferta.version || oferta.grupo) ? '<br><span class="text-muted" style="font-size:.72rem;">' + (oferta.version ? 'v' + oferta.version : '') + (oferta.grupo ? ' · Gr.' + oferta.grupo : '') + '</span>' : ''}
                             </td>
-                            <td>
-                                <span class="badge sucursal-badge programa-tag">
-                                    ${oferta.sucursal_nombre || 'Sin sucursal'}
-                                </span>
-                                ${oferta.sede_nombre ? '<br><small class="text-muted">' + oferta.sede_nombre + '</small>' : ''}
+                            <td class="py-2">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size:.72rem;">${oferta.sucursal_nombre || 'N/A'}</span>
+                                ${oferta.sede_nombre ? '<br><span class="text-muted" style="font-size:.72rem;">' + oferta.sede_nombre + '</span>' : ''}
                             </td>
-                            <td>
-                                <span class="badge bg-light text-dark programa-tag">
-                                    ${oferta.modalidad_nombre || 'Sin modalidad'}
-                                </span>
+                            <td class="py-2">
+                                <span class="badge bg-light text-secondary border" style="font-size:.72rem;">${oferta.modalidad_nombre || 'N/A'}</span>
                             </td>
-                            <td>
-                                <div class="small">
-                                    ${fechas}
-                                </div>
+                            <td class="py-2" style="font-size:.78rem;">
+                                <span class="text-muted" style="font-size:.7rem;">Inscripciones:</span><br>
+                                <span>${oferta.fecha_inicio_formateada || '—'}</span>
+                                <span class="text-muted mx-1">→</span>
+                                <span>${oferta.fecha_fin_formateada || '—'}</span>
                             </td>
-                            <td class="text-center">
+                            <td class="text-center py-2">
                                 <div class="d-flex gap-1 justify-content-center">
-                                    <button class="btn btn-sm btn-outline-primary btn-ver-enlace" 
+                                    <button class="btn btn-sm btn-outline-primary btn-ver-enlace"
+                                            style="height:28px;min-width:30px;padding:0 7px;"
+                                            title="Ver enlace"
                                             data-oferta-id="${oferta.id}"
                                             data-enlace="${oferta.enlace_personalizado || '#'}"
                                             data-programa="${oferta.programa_nombre || 'Programa'}"
                                             data-sucursal="${oferta.sucursal_nombre || 'Sin sucursal'}"
                                             data-modalidad="${oferta.modalidad_nombre || 'Sin modalidad'}"
                                             data-qr="${oferta.enlace_qr || ''}">
-                                        <i class="ri-link"></i>
+                                        <i class="ri-link" style="font-size:.82rem;"></i>
                                     </button>
                                     <button class="btn btn-sm btn-plan-generator btn-generar-con-plan"
+                                            style="height:28px;min-width:30px;padding:0 7px;"
+                                            title="Generar enlace con plan"
                                             data-oferta-id="${oferta.id}"
                                             data-oferta-codigo="${oferta.codigo}"
                                             data-programa="${oferta.programa_nombre}"
                                             data-asesor-id="${cargoPrincipalId}">
-                                        <i class="ri-money-dollar-circle-line"></i>
+                                        <i class="ri-money-dollar-circle-line" style="font-size:.82rem;"></i>
                                     </button>
                                 </div>
                             </td>
@@ -1519,11 +1493,18 @@
             const hasLetter = /[a-zA-Z]/.test(password);
             const hasNumber = /\d/.test(password);
 
-            if (password.length > 0) {
-                if (!hasLetter || !hasNumber) {
-                    strengthText.text('Debe contener letras y números');
-                }
+            if (password.length > 0 && (!hasLetter || !hasNumber)) {
+                strengthText.text('Debe contener letras y números');
             }
+
+            // Actualizar indicadores de requisitos
+            const setReq = (id, ok) => {
+                $('#' + id).removeClass('text-muted text-success text-danger')
+                    .addClass(ok ? 'text-success' : (password.length > 0 ? 'text-danger' : 'text-muted'));
+            };
+            setReq('req-length', password.length >= 8);
+            setReq('req-letter', hasLetter);
+            setReq('req-number', hasNumber);
         });
 
         // Validar coincidencia de contraseñas
@@ -1533,16 +1514,19 @@
             const matchText = $('#passwordMatch');
 
             if (confirmPassword.length === 0) {
-                matchText.text('Confirma tu nueva contraseña').removeClass('text-success text-danger');
+                matchText.text('').removeClass('text-success text-danger');
+                $('#req-match').removeClass('text-success text-danger').addClass('text-muted');
                 return;
             }
 
             if (password === confirmPassword) {
-                matchText.text('Las contraseñas coinciden').removeClass('text-danger').addClass(
-                    'text-success');
+                matchText.html('<i class="ri-check-line me-1"></i>Las contraseñas coinciden')
+                    .removeClass('text-danger').addClass('text-success');
+                $('#req-match').removeClass('text-muted text-danger').addClass('text-success');
             } else {
-                matchText.text('Las contraseñas no coinciden').removeClass('text-success').addClass(
-                    'text-danger');
+                matchText.html('<i class="ri-close-line me-1"></i>Las contraseñas no coinciden')
+                    .removeClass('text-success').addClass('text-danger');
+                $('#req-match').removeClass('text-muted text-success').addClass('text-danger');
             }
         });
 
@@ -1704,41 +1688,30 @@
             $('#documentosCount').text(paginator.total);
 
             let html = `
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>#</th>
-                        <th>Estudiante</th>
-                        <th>Programa</th>
-                        <th>Sede/Sucursal</th>
-                        <th>Carnet</th>
-                        <th>Cert. Nacimiento</th>
-                        <th>Doc. Académico</th>
-                        <th>Provisión Nacional</th>
-                        <th>Estado</th>
-                        <th>Pago Inicial</th>
-                        <th>Comprobante</th> <!-- Nueva columna -->
-                    </tr>
-                </thead>
-                <tbody>
+        <table class="table table-hover align-middle mb-0" style="font-size:.82rem;">
+            <thead>
+                <tr style="background:#f8f9fa;">
+                    <th class="border-0 py-2 px-3 text-muted fw-semibold" style="font-size:.7rem;width:3%;">#</th>
+                    <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:22%;">ESTUDIANTE</th>
+                    <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:20%;">PROGRAMA</th>
+                    <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:14%;">SUCURSAL</th>
+                    <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:20%;">DOCUMENTOS</th>
+                    <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:9%;">DOCS.</th>
+                    <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:9%;">PAGOS</th>
+                    <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:3%;">ACC.</th>
+                </tr>
+            </thead>
+            <tbody>
     `;
 
             data.forEach((item, index) => {
                 const rowNumber = (paginator.current_page - 1) * paginator.per_page + index + 1;
                 const docs = item.documentos || {};
 
-                const badge = (estado) => {
-                    switch (estado) {
-                        case 'verificado':
-                            return '<span class="badge bg-success" title="Documento verificado"><i class="ri-check-line"></i> Verificado</span>';
-                        case 'pendiente':
-                            return '<span class="badge bg-warning text-dark" title="Documento pendiente de verificación"><i class="ri-time-line"></i> Pendiente</span>';
-                        case 'sin_archivo':
-                            return '<span class="badge bg-secondary" title="Sin archivo subido"><i class="ri-close-line"></i> Sin archivo</span>';
-                        default:
-                            return '<span class="badge bg-light text-dark">Desconocido</span>';
-                    }
+                const iconDoc = (estado, label) => {
+                    if (estado === 'verificado') return `<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill me-1" style="font-size:.68rem;" title="${label}: Verificado"><i class="ri-check-line"></i></span>`;
+                    if (estado === 'pendiente')  return `<span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill me-1" style="font-size:.68rem;" title="${label}: Pendiente"><i class="ri-time-line"></i></span>`;
+                    return `<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill me-1" style="font-size:.68rem;" title="${label}: Sin archivo"><i class="ri-close-line"></i></span>`;
                 };
 
                 const todosVerificados = docs.carnet === 'verificado' &&
@@ -1746,45 +1719,46 @@
                     docs.documento_academico === 'verificado' &&
                     docs.documento_provision === 'verificado';
 
-                const estadoGeneral = todosVerificados ?
-                    '<span class="badge bg-success">Completos</span>' :
-                    '<span class="badge bg-danger">Incompletos</span>';
+                const estadoGeneral = todosVerificados
+                    ? '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size:.72rem;"><i class="ri-check-double-line"></i> OK</span>'
+                    : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill" style="font-size:.72rem;"><i class="ri-alert-line"></i> Incompleto</span>';
 
-                const pagoInicialBadge = item.pagos_iniciales_completos ?
-                    '<span class="badge bg-success"><i class="ri-check-line"></i> Completos</span>' :
-                    '<span class="badge bg-warning text-dark"><i class="ri-time-line"></i> Pendiente</span>';
-
-                // Botón para subir comprobante
-                const botonSubir = `
-            <button class="btn btn-sm btn-outline-primary btn-subir-respaldo"
-                    data-inscripcion-id="${item.id}"
-                    data-estudiante="${item.estudiante_nombre}"
-                    data-programa="${item.programa_nombre}">
-                <i class="ri-upload-line"></i> Subir
-            </button>
-        `;
+                const pagoInicialBadge = item.pagos_iniciales_completos
+                    ? '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size:.72rem;"><i class="ri-check-line"></i> Completo</span>'
+                    : '<span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill" style="font-size:.72rem;"><i class="ri-time-line"></i> Pendiente</span>';
 
                 html += `
-            <tr class="${todosVerificados ? 'table-success' : 'table-warning'}">
-                <td>${rowNumber}</td>
-                <td>
-                    <strong>${item.estudiante_nombre || 'N/A'}</strong>
-                    <br>
-                    <small class="text-muted">${item.estudiante_carnet || 'Sin carnet'}</small>
+            <tr>
+                <td class="px-3 py-2 text-muted" style="font-size:.78rem;">${rowNumber}</td>
+                <td class="py-2">
+                    <span class="fw-semibold" style="font-size:.82rem;">${item.estudiante_nombre || 'N/A'}</span>
+                    <br><span class="text-muted" style="font-size:.72rem;">${item.estudiante_carnet || 'Sin carnet'}</span>
                 </td>
-                <td>${item.programa_nombre || 'N/A'}</td>
-                <td>
-                    ${item.sede_nombre || 'N/A'}
-                    <br>
-                    <small>${item.sucursal_nombre || ''}</small>
+                <td class="py-2">
+                    <span style="font-size:.78rem;">${item.programa_nombre || 'N/A'}</span>
                 </td>
-                <td>${badge(docs.carnet)}</td>
-                <td>${badge(docs.certificado_nacimiento)}</td>
-                <td>${badge(docs.documento_academico)}</td>
-                <td>${badge(docs.documento_provision)}</td>
-                <td>${estadoGeneral}</td>
-                <td>${pagoInicialBadge}</td>
-                <td>${botonSubir}</td>
+                <td class="py-2">
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size:.72rem;">${item.sucursal_nombre || 'N/A'}</span>
+                    ${item.sede_nombre ? '<br><span class="text-muted" style="font-size:.72rem;">' + item.sede_nombre + '</span>' : ''}
+                </td>
+                <td class="py-2">
+                    ${iconDoc(docs.carnet, 'Carnet')}
+                    ${iconDoc(docs.certificado_nacimiento, 'Cert. Nacimiento')}
+                    ${iconDoc(docs.documento_academico, 'Doc. Académico')}
+                    ${iconDoc(docs.documento_provision, 'Provisión Nac.')}
+                </td>
+                <td class="py-2 text-center">${estadoGeneral}</td>
+                <td class="py-2 text-center">${pagoInicialBadge}</td>
+                <td class="py-2 text-center">
+                    <button class="btn btn-sm btn-outline-primary btn-subir-respaldo"
+                            style="height:28px;min-width:30px;padding:0 7px;"
+                            title="Subir comprobante"
+                            data-inscripcion-id="${item.id}"
+                            data-estudiante="${item.estudiante_nombre}"
+                            data-programa="${item.programa_nombre}">
+                        <i class="ri-upload-line" style="font-size:.82rem;"></i>
+                    </button>
+                </td>
             </tr>
         `;
             });
@@ -1792,7 +1766,6 @@
             html += `
                 </tbody>
             </table>
-        </div>
     `;
 
             $('#documentosTableContainer').html(html);

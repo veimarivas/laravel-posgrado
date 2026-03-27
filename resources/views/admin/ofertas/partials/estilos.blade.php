@@ -122,28 +122,47 @@
         font-weight: 500 !important;
     }
 
-    .btn-teal {
-        background: linear-gradient(135deg, #20c997 0%, #1ba87e 100%);
-        border: none;
-        color: white;
+    .btn.btn-teal {
+        background-color: #20c997 !important;
+        border-color: #1baa7e !important;
+        color: #fff !important;
     }
 
-    .btn-purple {
-        background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
-        border: none;
-        color: white;
+    .btn.btn-teal:hover {
+        background-color: #1baa7e !important;
+        border-color: #18966e !important;
     }
 
-    .btn-orange {
-        background: linear-gradient(135deg, #fd7e14 0%, #e56b00 100%);
-        border: none;
-        color: white;
+    .btn.btn-purple {
+        background-color: #6f42c1 !important;
+        border-color: #5e33a6 !important;
+        color: #fff !important;
     }
 
-    .btn-indigo {
-        background: linear-gradient(135deg, #4B0082 0%, #3a0063 100%);
-        border: none;
-        color: white;
+    .btn.btn-purple:hover {
+        background-color: #5e33a6 !important;
+        border-color: #4d2a8b !important;
+    }
+
+    .btn.btn-orange {
+        background-color: #fd7e14 !important;
+        border-color: #e56b00 !important;
+        color: #fff !important;
+    }
+
+    .btn.btn-orange:hover {
+        background-color: #e56b00 !important;
+        border-color: #cc5f00 !important;
+    }
+
+    .btn.btn-indigo {
+        background-color: #6610f2 !important;
+        border-color: #560bd0 !important;
+        color: #fff !important;
+    }
+
+    .btn.btn-indigo:hover {
+        background-color: #560bd0 !important;
     }
 
     .badge {
@@ -151,17 +170,28 @@
         letter-spacing: 0.3px;
     }
 
-    .btn-teal:hover,
-    .btn-purple:hover,
-    .btn-orange:hover,
-    .btn-indigo:hover {
-        opacity: 0.9;
-        transform: translateY(-1px);
-    }
-
     .table>tbody>tr>td {
         vertical-align: middle;
-        padding: 12px 8px;
+        padding: 8px 8px;
+    }
+
+    .acciones-celda .btn-sm {
+        height: 28px;
+        min-width: 30px;
+        padding: 0.15rem 0.4rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .acciones-celda .btn-sm i {
+        font-size: 13px;
+        line-height: 1;
+    }
+
+    .btn-group .btn:hover {
+        z-index: 2;
+        transform: none;
     }
 
     .table img {

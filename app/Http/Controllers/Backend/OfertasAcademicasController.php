@@ -137,6 +137,10 @@ class OfertasAcademicasController extends Controller
             $query->where('modalidade_id', $request->modalidade_id);
         }
 
+        if ($request->filled('gestion')) {
+            $query->where('gestion', $request->gestion);
+        }
+
         $ofertas = $query->orderBy('created_at', 'desc')->paginate(20);
 
         // **MODIFICACIÓN IMPORTANTE**: Siempre devolver JSON para solicitudes AJAX
@@ -168,6 +172,7 @@ class OfertasAcademicasController extends Controller
         $modalidades = Modalidade::all();
         $sucursales = Sucursale::with('sede')->get();
         $sedes = Sede::all();
+        $gestiones = OfertasAcademica::select('gestion')->distinct()->orderBy('gestion', 'desc')->pluck('gestion');
 
         return view('admin.ofertas.listar', [
             'ofertas' => $ofertas,
@@ -186,6 +191,7 @@ class OfertasAcademicasController extends Controller
             'profesiones' => $profesiones,
             'convenios' => $convenios,
             'fases' => $fases,
+            'gestiones' => $gestiones,
         ]);
     }
 

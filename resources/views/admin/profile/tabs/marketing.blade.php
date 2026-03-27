@@ -1,97 +1,61 @@
-<!-- Filtros Mejorados -->
+{{-- Filtros --}}
 <div class="card border-0 shadow-sm mb-4">
-    <div class="card-body">
-        <h6 class="card-title mb-3">
-            <i class="ri-filter-3-line me-2"></i> Filtros Avanzados
-        </h6>
+    <div class="card-header border-0 py-2 px-3 d-flex align-items-center gap-2" style="background:#f8f9fa;">
+        <i class="ri-filter-3-line text-primary fs-16"></i>
+        <span class="fw-semibold small">Filtros Avanzados</span>
+    </div>
+    <div class="card-body py-2 px-3">
         <form id="marketingFilterForm">
-            <div class="row g-3">
-                <div class="col-md-3">
-                    <div class="filter-group">
-                        <label class="filter-label">Año</label>
-                        <select name="year" id="marketingYear" class="form-select">
-                            @for ($i = date('Y'); $i >= 2020; $i--)
-                                <option value="{{ $i }}" {{ $i == date('Y') ? 'selected' : '' }}>
-                                    {{ $i }}
-                                </option>
-                            @endfor
-                        </select>
+            <div class="row g-2 align-items-end">
+                <div class="col-xl-2 col-md-3 col-sm-6">
+                    <label class="form-label mb-1 text-muted fw-semibold" style="font-size:.7rem;">AÑO</label>
+                    <select name="year" id="marketingYear" class="form-select form-select-sm">
+                        @for ($i = date('Y'); $i >= 2020; $i--)
+                            <option value="{{ $i }}" {{ $i == date('Y') ? 'selected' : '' }}>{{ $i }}</option>
+                        @endfor
+                    </select>
+                </div>
+                <div class="col-xl-2 col-md-3 col-sm-6">
+                    <label class="form-label mb-1 text-muted fw-semibold" style="font-size:.7rem;">MES</label>
+                    <select name="month" id="marketingMonth" class="form-select form-select-sm">
+                        <option value="todos">Todos los meses</option>
+                        @php $meses=[1=>'Enero',2=>'Febrero',3=>'Marzo',4=>'Abril',5=>'Mayo',6=>'Junio',7=>'Julio',8=>'Agosto',9=>'Septiembre',10=>'Octubre',11=>'Noviembre',12=>'Diciembre']; @endphp
+                        @foreach ($meses as $k => $m)
+                            <option value="{{ $k }}">{{ $m }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-xl-2 col-md-3 col-sm-6">
+                    <label class="form-label mb-1 text-muted fw-semibold" style="font-size:.7rem;">ESTADO</label>
+                    <select name="estado" id="marketingEstado" class="form-select form-select-sm">
+                        <option value="">Todos</option>
+                        <option value="Inscrito">Inscrito</option>
+                        <option value="Pre-Inscrito">Pre-Inscrito</option>
+                    </select>
+                </div>
+                <div class="col-xl-3 col-md-3 col-sm-6">
+                    <label class="form-label mb-1 text-muted fw-semibold" style="font-size:.7rem;">PROGRAMA</label>
+                    <select name="programa_id" id="marketingPrograma" class="form-select form-select-sm">
+                        <option value="">Todos los programas</option>
+                        @foreach (\App\Models\Programa::orderBy('nombre')->get() as $programa)
+                            <option value="{{ $programa->id }}">{{ $programa->nombre }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-xl-2 col-md-8 col-sm-8">
+                    <label class="form-label mb-1 text-muted fw-semibold" style="font-size:.7rem;">BUSCAR</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text"><i class="ri-search-line"></i></span>
+                        <input type="text" name="search" id="marketingSearch" class="form-control" placeholder="Nombre o carnet...">
                     </div>
                 </div>
-
-                <div class="col-md-3">
-                    <div class="filter-group">
-                        <label class="filter-label">Mes</label>
-                        <select name="month" id="marketingMonth" class="form-select">
-                            <option value="todos">Todos los meses</option>
-                            @php
-                                $meses = [
-                                    1 => 'Enero',
-                                    2 => 'Febrero',
-                                    3 => 'Marzo',
-                                    4 => 'Abril',
-                                    5 => 'Mayo',
-                                    6 => 'Junio',
-                                    7 => 'Julio',
-                                    8 => 'Agosto',
-                                    9 => 'Septiembre',
-                                    10 => 'Octubre',
-                                    11 => 'Noviembre',
-                                    12 => 'Diciembre',
-                                ];
-                            @endphp
-                            @foreach ($meses as $key => $mes)
-                                <option value="{{ $key }}">{{ $mes }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-
-                <div class="col-md-3">
-                    <div class="filter-group">
-                        <label class="filter-label">Programa</label>
-                        <select name="programa_id" id="marketingPrograma" class="form-select">
-                            <option value="">Todos los programas</option>
-                            @foreach (\App\Models\Programa::orderBy('nombre')->get() as $programa)
-                                <option value="{{ $programa->id }}">{{ $programa->nombre }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-
-                <div class="col-md-3">
-                    <div class="filter-group">
-                        <label class="filter-label">Estado</label>
-                        <select name="estado" id="marketingEstado" class="form-select">
-                            <option value="">Todos los estados</option>
-                            <option value="Inscrito">Inscrito</option>
-                            <option value="Pre-Inscrito">Pre-Inscrito</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="col-md-8">
-                    <div class="filter-group">
-                        <label class="filter-label">Buscar estudiante</label>
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="ri-search-line"></i>
-                            </span>
-                            <input type="text" name="search" id="marketingSearch" class="form-control"
-                                placeholder="Nombre, apellido o carnet...">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-4 d-flex align-items-end">
-                    <div class="d-flex gap-2 w-100">
-                        <button type="submit" id="applyMarketingFilter" class="btn btn-primary flex-grow-1">
-                            <i class="ri-filter-line me-1"></i> Aplicar
-                        </button>
-                        <button type="button" id="resetMarketingFilter" class="btn btn-outline-secondary">
-                            <i class="ri-refresh-line"></i>
-                        </button>
-                    </div>
+                <div class="col-xl-1 col-md-4 col-sm-4 d-flex align-items-end gap-1">
+                    <button type="submit" id="applyMarketingFilter" class="btn btn-primary btn-sm flex-grow-1">
+                        <i class="ri-filter-line"></i>
+                    </button>
+                    <button type="button" id="resetMarketingFilter" class="btn btn-outline-secondary btn-sm">
+                        <i class="ri-refresh-line"></i>
+                    </button>
                 </div>
             </div>
         </form>

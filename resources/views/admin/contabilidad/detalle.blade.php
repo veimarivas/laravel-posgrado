@@ -1,358 +1,468 @@
 @extends('admin.dashboard')
 
 @section('admin')
-    <!-- Page Title -->
+
+    @php
+        $persona = $estudiante->persona;
+        $totalDeuda   = 0;
+        $totalPagado  = 0;
+        $totalCuotas  = 0;
+        $cuotasPagTot = 0;
+        $cuotasPenTot = 0;
+        foreach ($estudiante->inscripciones as $ins) {
+            foreach ($ins->cuotas as $c) {
+                $totalCuotas++;
+                $totalPagado += $c->pago_total_bs - $c->pago_pendiente_bs;
+                $totalDeuda  += $c->pago_pendiente_bs;
+                if ($c->pago_terminado == 'si') { $cuotasPagTot++; } else { $cuotasPenTot++; }
+            }
+        }
+        $pctGlobal = ($totalPagado + $totalDeuda) > 0
+            ? ($totalPagado / ($totalPagado + $totalDeuda)) * 100 : 0;
+        $colorGlobal = match(true) {
+            $pctGlobal == 100 => 'success',
+            $pctGlobal >= 75  => 'primary',
+            $pctGlobal >= 50  => 'warning',
+            default           => 'danger',
+        };
+    @endphp
+
+    {{-- Page title --}}
     <div class="row">
         <div class="col-12">
             <div class="page-title-box d-sm-flex align-items-center justify-content-between">
                 <div>
-                    <h4 class="mb-1">Detalle Contable - {{ $estudiante->persona->nombres ?? 'Participante' }}</h4>
-                    <div class="page-title-right">
-                        <ol class="breadcrumb m-0">
-                            <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('admin.contabilidad.buscar') }}">Contabilidad</a>
-                            </li>
-                            <li class="breadcrumb-item active">{{ $estudiante->persona->carnet ?? '' }}</li>
-                        </ol>
-                    </div>
+                    <h4 class="mb-1">Detalle Contable</h4>
+                    <ol class="breadcrumb m-0">
+                        <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('admin.contabilidad.buscar') }}">Contabilidad</a></li>
+                        <li class="breadcrumb-item active">{{ $persona->carnet ?? '' }}</li>
+                    </ol>
                 </div>
                 <div class="d-flex align-items-center gap-2">
                     <a href="{{ route('admin.contabilidad.buscar') }}" class="btn btn-light btn-sm">
-                        <i class="ri-arrow-left-line align-middle me-1"></i> Volver a Buscar
+                        <i class="ri-arrow-left-line me-1"></i>Volver
                     </a>
                     <a href="{{ route('admin.estudiantes.detalle', $estudiante->id) }}" class="btn btn-info btn-sm">
-                        <i class="ri-user-line align-middle me-1"></i> Ver Perfil Completo
+                        <i class="ri-user-line me-1"></i>Ver Perfil
                     </a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Header Info -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card border">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <div class="d-flex align-items-center">
-                                <div class="flex-shrink-0">
-                                    <div class="avatar-lg">
-                                        <div class="avatar-title bg-primary-subtle text-primary rounded-circle">
-                                            <i class="ri-user-3-line fs-2"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <h4 class="mb-1">{{ $estudiante->persona->nombres }}
-                                        {{ $estudiante->persona->apellido_paterno }}
-                                        {{ $estudiante->persona->apellido_materno }}</h4>
-                                    <div class="d-flex flex-wrap gap-2 mb-2">
-                                        <span class="badge bg-secondary">{{ $estudiante->persona->carnet }}</span>
-                                        <span class="badge bg-info">{{ $estudiante->persona->correo }}</span>
-                                        <span class="badge bg-light text-dark">{{ $estudiante->persona->celular }}</span>
-                                    </div>
-                                    <p class="mb-0 text-muted">
-                                        {{ $estudiante->persona->direccion ?? 'Sin dirección' }} •
-                                        {{ $estudiante->persona->ciudad->nombre ?? 'N/A' }},
-                                        {{ $estudiante->persona->ciudad->departamento->nombre ?? '' }}
-                                    </p>
-                                </div>
+    {{-- Header del participante --}}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <div class="row align-items-center g-3">
+
+                {{-- Avatar + datos personales --}}
+                <div class="col-md-7">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar-lg flex-shrink-0">
+                            <div class="avatar-title bg-primary text-white rounded-3 fw-bold fs-2">
+                                {{ strtoupper(mb_substr($persona->nombres ?? 'P', 0, 1, 'UTF-8')) }}
                             </div>
                         </div>
-                        <div class="col-md-4">
-                            <div class="text-md-end mt-3 mt-md-0">
-                                @php
-                                    $totalDeuda = 0;
-                                    $totalPagado = 0;
-                                    foreach ($estudiante->inscripciones as $inscripcion) {
-                                        foreach ($inscripcion->cuotas as $cuota) {
-                                            $totalPagado += $cuota->pago_total_bs - $cuota->pago_pendiente_bs;
-                                            $totalDeuda += $cuota->pago_pendiente_bs;
-                                        }
-                                    }
-                                @endphp
-                                <h4 class="text-success">{{ number_format($totalPagado, 2) }} Bs</h4>
-                                <p class="text-muted mb-1">Total Pagado</p>
-                                <h4 class="text-danger">{{ number_format($totalDeuda, 2) }} Bs</h4>
-                                <p class="text-muted mb-0">Total Deuda</p>
+                        <div>
+                            <h4 class="mb-1 fw-semibold">
+                                {{ $persona->nombres }}
+                                {{ $persona->apellido_paterno }}
+                                {{ $persona->apellido_materno }}
+                            </h4>
+                            <div class="d-flex flex-wrap gap-2 mb-2">
+                                <span class="badge bg-secondary rounded-pill">
+                                    <i class="ri-id-card-line me-1"></i>{{ $persona->carnet }}
+                                </span>
+                                @if($persona->correo)
+                                <span class="badge bg-info rounded-pill">
+                                    <i class="ri-mail-line me-1"></i>{{ $persona->correo }}
+                                </span>
+                                @endif
+                                @if($persona->celular)
+                                <span class="badge bg-light text-dark border rounded-pill">
+                                    <i class="ri-phone-line me-1"></i>{{ $persona->celular }}
+                                </span>
+                                @endif
+                            </div>
+                            <div class="text-muted small">
+                                <i class="ri-map-pin-line me-1"></i>
+                                {{ $persona->direccion ?? 'Sin dirección' }}
+                                @if($persona->ciudad)
+                                    · {{ $persona->ciudad->nombre ?? '' }},
+                                    {{ optional($persona->ciudad->departamento)->nombre ?? '' }}
+                                @endif
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Programas y cuotas -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card border">
-                <div class="card-header border-bottom bg-light">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="card-title mb-0 fs-16">Programas y Estado de Cuotas</h5>
-                        <span class="badge bg-primary">{{ $estudiante->inscripciones->count() }} Programas</span>
+                {{-- Resumen financiero rápido --}}
+                <div class="col-md-5">
+                    <div class="rounded-3 border p-3" style="background:#f8f9fa;">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small fw-medium">Estado financiero general</span>
+                            <span class="badge bg-{{ $colorGlobal }} rounded-pill">{{ number_format($pctGlobal, 1) }}%</span>
+                        </div>
+                        <div class="progress rounded-pill mb-3" style="height:8px;">
+                            <div class="progress-bar bg-{{ $colorGlobal }}" style="width:{{ $pctGlobal }}%"></div>
+                        </div>
+                        <div class="row g-2 text-center">
+                            <div class="col-4">
+                                <div class="fw-bold text-success">{{ number_format($totalPagado, 2) }}</div>
+                                <div class="text-muted" style="font-size:.7rem;">Bs Pagado</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="fw-bold text-danger">{{ number_format($totalDeuda, 2) }}</div>
+                                <div class="text-muted" style="font-size:.7rem;">Bs Pendiente</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="fw-bold text-primary">{{ $totalCuotas }}</div>
+                                <div class="text-muted" style="font-size:.7rem;">Cuotas</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="card-body">
-                    @if ($estudiante->inscripciones->count() > 0)
-                        <div class="accordion accordion-flush" id="accordionContable">
-                            @foreach ($estudiante->inscripciones->sortByDesc('fecha_registro') as $index => $inscripcion)
-                                @php
-                                    $oferta = $inscripcion->ofertaAcademica;
-                                    $programa = $oferta->programa ?? null;
-                                    $cuotas = $inscripcion->cuotas_ordenadas ?? $inscripcion->cuotas;
 
-                                    // Calcular estadísticas por programa
-                                    $deudaPrograma = 0;
-                                    $pagadoPrograma = 0;
-                                    $cuotasTotales = $cuotas->count();
-                                    $cuotasPagadas = 0;
-                                    $cuotasPendientes = 0;
-
-                                    foreach ($cuotas as $cuota) {
-                                        $deudaPrograma += $cuota->pago_pendiente_bs;
-                                        $pagadoPrograma += $cuota->pago_total_bs - $cuota->pago_pendiente_bs;
-
-                                        if ($cuota->pago_terminado == 'si') {
-                                            $cuotasPagadas++;
-                                        } else {
-                                            $cuotasPendientes++;
-                                        }
-                                    }
-
-                                    $totalPrograma = $deudaPrograma + $pagadoPrograma;
-                                    $porcentajePagado =
-                                        $totalPrograma > 0 ? ($pagadoPrograma / $totalPrograma) * 100 : 0;
-                                    $cuotasPendientes = $cuotas->where('pago_terminado', '!=', 'si')->count();
-                                @endphp
-
-                                <div class="accordion-item border-bottom">
-                                    <h2 class="accordion-header" id="contableHeading{{ $index }}">
-                                        <button class="accordion-button {{ $index > 0 ? 'collapsed' : '' }}" type="button"
-                                            data-bs-toggle="collapse" data-bs-target="#contableCollapse{{ $index }}"
-                                            aria-expanded="{{ $index === 0 ? 'true' : 'false' }}"
-                                            aria-controls="contableCollapse{{ $index }}">
-                                            <div class="d-flex justify-content-between w-100 me-3">
-                                                <div>
-                                                    <h6 class="mb-0">
-                                                        {{ $programa->nombre ?? 'Programa no especificado' }}</h6>
-                                                    <small class="text-muted">
-                                                        {{ $oferta->modalidad->nombre ?? '' }} •
-                                                        {{ $oferta->sucursal->nombre ?? '' }} •
-                                                        {{ $inscripcion->planesPago->nombre ?? '' }}
-                                                    </small>
-                                                </div>
-                                                <div class="text-end">
-                                                    <div class="d-flex flex-column align-items-end">
-                                                        <span class="badge bg-success mb-1">
-                                                            Pagado: {{ number_format($pagadoPrograma, 2) }} Bs
-                                                        </span>
-                                                        <span class="badge bg-danger mb-1">
-                                                            Deuda: {{ number_format($deudaPrograma, 2) }} Bs
-                                                        </span>
-                                                        <div class="progress mt-1" style="width: 100px; height: 6px;">
-                                                            <div class="progress-bar bg-success" role="progressbar"
-                                                                style="width: {{ $porcentajePagado }}%"></div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </button>
-                                    </h2>
-                                    <div id="contableCollapse{{ $index }}"
-                                        class="accordion-collapse collapse {{ $index === 0 ? 'show' : '' }}"
-                                        aria-labelledby="contableHeading{{ $index }}"
-                                        data-bs-parent="#accordionContable">
-                                        <div class="accordion-body p-4">
-                                            {{-- Barra acción multi-cuota --}}
-                                            @if ($cuotasPendientes > 0)
-                                                <div class="d-flex align-items-center justify-content-between bg-light border rounded px-3 py-2 mb-3">
-                                                    <span class="small text-muted">
-                                                        <i class="ri-list-check-2 me-1"></i>
-                                                        {{ $cuotasPendientes }} cuota(s) pendiente(s) en este programa
-                                                    </span>
-                                                    <button type="button"
-                                                        class="btn btn-sm btn-primary btn-pagar-multiple"
-                                                        data-estudiante-id="{{ $estudiante->id }}">
-                                                        <i class="ri-stack-line me-1"></i>Pagar Múltiples Cuotas
-                                                    </button>
-                                                </div>
-                                            @endif
-                                            <!-- Cuotas del programa -->
-                                            <div class="table-responsive">
-                                                <table class="table table-hover align-middle mb-0">
-                                                    <thead class="table-light">
-                                                        <tr>
-                                                            <th>#</th>
-                                                            <th>Cuota</th>
-                                                            <th class="text-end">Total (Bs)</th>
-                                                            <th class="text-end">Pagado (Bs)</th>
-                                                            <th class="text-end">Pendiente (Bs)</th>
-                                                            <th>Fecha Pago</th>
-                                                            <th>Estado</th>
-                                                            <th class="text-center">Acciones</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        @foreach ($cuotas as $cuota)
-                                                            @php
-                                                                $pagado =
-                                                                    $cuota->pago_total_bs - $cuota->pago_pendiente_bs;
-                                                            @endphp
-                                                            <tr
-                                                                class="{{ $cuota->pago_terminado == 'si' ? 'table-success' : 'table-warning' }}">
-                                                                <td>{{ $cuota->n_cuota }}</td>
-                                                                <td>
-                                                                    <div class="fw-medium">{{ $cuota->nombre }}</div>
-                                                                    @if ($cuota->pagos_cuotas->count() > 0)
-                                                                        <small
-                                                                            class="text-muted">{{ $cuota->pagos_cuotas->count() }}
-                                                                            pago(s)</small>
-                                                                    @endif
-                                                                </td>
-                                                                <td class="text-end fw-bold">
-                                                                    {{ number_format($cuota->pago_total_bs, 2) }}</td>
-                                                                <td class="text-end text-success">
-                                                                    {{ number_format($pagado, 2) }}</td>
-                                                                <td class="text-end text-danger">
-                                                                    {{ number_format($cuota->pago_pendiente_bs, 2) }}</td>
-                                                                <td>
-                                                                    @if ($cuota->fecha_pago)
-                                                                        {{ \Carbon\Carbon::parse($cuota->fecha_pago)->format('d/m/Y') }}
-                                                                    @else
-                                                                        <span class="text-muted">Por definir</span>
-                                                                    @endif
-                                                                </td>
-                                                                <td>
-                                                                    @if ($cuota->pago_terminado == 'si')
-                                                                        <span class="badge bg-success">Pagado</span>
-                                                                    @else
-                                                                        <span class="badge bg-warning">Pendiente</span>
-                                                                    @endif
-                                                                </td>
-                                                                <td class="text-center">
-                                                                    @if ($cuota->pago_pendiente_bs > 0)
-                                                                        <button
-                                                                            class="btn btn-sm btn-success btn-pagar-cuota"
-                                                                            data-cuota-id="{{ $cuota->id }}"
-                                                                            data-estudiante-id="{{ $estudiante->id }}">
-                                                                            <i class="ri-money-dollar-circle-line me-1"></i>
-                                                                            Pagar
-                                                                        </button>
-                                                                    @endif
-                                                                    @if ($cuota->pagos_cuotas->count() > 0)
-                                                                        <button
-                                                                            class="btn btn-sm btn-info btn-ver-recibos mt-1"
-                                                                            data-cuota-id="{{ $cuota->id }}"
-                                                                            data-cuota-nombre="{{ $cuota->nombre }}">
-                                                                            <i class="ri-receipt-line me-1"></i> Recibos
-                                                                        </button>
-                                                                    @endif
-                                                                </td>
-                                                            </tr>
-                                                        @endforeach
-                                                        <tr class="table-light">
-                                                            <td colspan="2" class="fw-bold">Totales del Programa:</td>
-                                                            <td class="text-end fw-bold">
-                                                                {{ number_format($totalPrograma, 2) }} Bs</td>
-                                                            <td class="text-end fw-bold text-success">
-                                                                {{ number_format($pagadoPrograma, 2) }} Bs</td>
-                                                            <td class="text-end fw-bold text-danger">
-                                                                {{ number_format($deudaPrograma, 2) }} Bs</td>
-                                                            <td colspan="3"></td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="text-center py-5">
-                            <div class="avatar-lg mx-auto mb-3">
-                                <div class="avatar-title bg-light text-secondary rounded-circle">
-                                    <i class="ri-graduation-cap-line fs-2"></i>
-                                </div>
-                            </div>
-                            <h5 class="mb-2">No hay programas inscritos</h5>
-                            <p class="text-muted mb-0">El participante no está inscrito en ningún programa.</p>
-                        </div>
-                    @endif
-                </div>
             </div>
         </div>
     </div>
 
-    <!-- Totales finales -->
+    {{-- Programas y cuotas --}}
     @if ($estudiante->inscripciones->count() > 0)
-        <div class="row mt-3">
-            <div class="col-md-4">
-                <div class="card border border-primary">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="avatar-sm">
-                                    <div class="avatar-title bg-primary-subtle text-primary rounded">
-                                        <i class="ri-money-dollar-circle-line"></i>
+
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <div>
+                <h5 class="mb-0 fw-semibold">Programas y Estado de Cuotas</h5>
+                <p class="text-muted small mb-0">
+                    {{ $estudiante->inscripciones->count() }} programa(s) ·
+                    {{ $cuotasPagTot }} pagadas · {{ $cuotasPenTot }} pendientes
+                </p>
+            </div>
+            <span class="badge bg-primary rounded-pill px-3 py-2 fs-12">
+                <i class="ri-graduation-cap-line me-1"></i>{{ $estudiante->inscripciones->count() }} Programas
+            </span>
+        </div>
+
+        <div class="accordion" id="accordionContable" style="display:flex; flex-direction:column; gap:.75rem;">
+            @foreach ($estudiante->inscripciones->sortByDesc('fecha_registro') as $index => $inscripcion)
+                @php
+                    $oferta   = $inscripcion->ofertaAcademica;
+                    $programa = $oferta->programa ?? null;
+                    $cuotas   = $inscripcion->cuotas_ordenadas ?? $inscripcion->cuotas;
+
+                    $deudaPrograma    = 0;
+                    $pagadoPrograma   = 0;
+                    $cuotasTotales    = $cuotas->count();
+                    $cuotasPagadas    = 0;
+                    $cuotasPendientes = 0;
+
+                    foreach ($cuotas as $cuota) {
+                        $deudaPrograma  += $cuota->pago_pendiente_bs;
+                        $pagadoPrograma += $cuota->pago_total_bs - $cuota->pago_pendiente_bs;
+                        if ($cuota->pago_terminado == 'si') { $cuotasPagadas++; } else { $cuotasPendientes++; }
+                    }
+
+                    $totalPrograma    = $deudaPrograma + $pagadoPrograma;
+                    $porcentajePagado = $totalPrograma > 0 ? ($pagadoPrograma / $totalPrograma) * 100 : 0;
+                    $cuotasPendientes = $cuotas->where('pago_terminado', '!=', 'si')->count();
+
+                    $colorProg = match(true) {
+                        $porcentajePagado == 100 => 'success',
+                        $porcentajePagado >= 75  => 'primary',
+                        $porcentajePagado >= 50  => 'warning',
+                        default                  => 'danger',
+                    };
+                    $avatarColors = ['bg-primary','bg-success','bg-info','bg-warning','bg-danger'];
+                    $avatarColor  = $avatarColors[$index % count($avatarColors)];
+                    $inicial      = strtoupper(mb_substr($programa->nombre ?? 'P', 0, 1, 'UTF-8'));
+                @endphp
+
+                <div class="accordion-item border-0 rounded-3 overflow-hidden"
+                     style="box-shadow:0 2px 8px rgba(0,0,0,.08); border-left:4px solid var(--bs-{{ $colorProg }}) !important;">
+
+                    {{-- Header --}}
+                    <h2 class="accordion-header" id="contableHeading{{ $index }}">
+                        <button class="accordion-button {{ $index > 0 ? 'collapsed' : '' }} py-3 px-4"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#contableCollapse{{ $index }}"
+                                aria-expanded="{{ $index === 0 ? 'true' : 'false' }}"
+                                aria-controls="contableCollapse{{ $index }}"
+                                style="background:transparent;">
+                            <div class="d-flex align-items-center w-100 me-2 gap-3">
+
+                                {{-- Avatar inicial --}}
+                                <div class="avatar-sm flex-shrink-0">
+                                    <div class="avatar-title {{ $avatarColor }} text-white rounded-2 fw-bold fs-16">
+                                        {{ $inicial }}
+                                    </div>
+                                </div>
+
+                                {{-- Info principal --}}
+                                <div class="flex-grow-1 min-w-0">
+                                    <h6 class="mb-1 fw-semibold text-truncate">
+                                        {{ $programa->nombre ?? 'Programa no especificado' }}
+                                    </h6>
+                                    <div class="d-flex flex-wrap align-items-center gap-3 text-muted" style="font-size:.77rem;">
+                                        @if(optional($oferta->modalidad)->nombre)
+                                        <span>
+                                            <i class="ri-book-open-line me-1 text-primary"></i>
+                                            {{ $oferta->modalidad->nombre }}
+                                        </span>
+                                        @endif
+                                        @if(optional($oferta->sucursal)->nombre)
+                                        <span>
+                                            <i class="ri-map-pin-line me-1 text-primary"></i>
+                                            {{ $oferta->sucursal->nombre }}
+                                        </span>
+                                        @endif
+                                        <span>
+                                            <i class="ri-file-list-3-line me-1 text-primary"></i>
+                                            {{ optional($inscripcion->planesPago)->nombre ?? 'N/A' }}
+                                        </span>
+                                        <span>
+                                            <i class="ri-stack-line me-1 text-primary"></i>
+                                            {{ $cuotasPagadas }}/{{ $cuotasTotales }} cuotas
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {{-- Derecha: montos + barra --}}
+                                <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
+                                    <div class="d-flex gap-1">
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:.72rem;">
+                                            {{ number_format($pagadoPrograma, 2) }} Bs
+                                        </span>
+                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size:.72rem;">
+                                            {{ number_format($deudaPrograma, 2) }} Bs
+                                        </span>
+                                    </div>
+                                    <div style="width:100px;">
+                                        <div class="d-flex justify-content-between" style="font-size:.65rem;">
+                                            <span class="text-muted">Avance</span>
+                                            <span class="fw-semibold text-{{ $colorProg }}">{{ number_format($porcentajePagado, 0) }}%</span>
+                                        </div>
+                                        <div class="progress rounded-pill" style="height:5px;">
+                                            <div class="progress-bar bg-{{ $colorProg }}" style="width:{{ $porcentajePagado }}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </button>
+                    </h2>
+
+                    {{-- Body --}}
+                    <div id="contableCollapse{{ $index }}"
+                         class="accordion-collapse collapse {{ $index === 0 ? 'show' : '' }}"
+                         aria-labelledby="contableHeading{{ $index }}">
+                        <div class="accordion-body p-0">
+
+                            {{-- Barra "Pagar Múltiples" --}}
+                            @if ($cuotasPendientes > 0)
+                                <div class="px-4 py-2 border-top border-bottom d-flex align-items-center justify-content-between"
+                                     style="background:#f0f8ff;">
+                                    <span class="small text-muted">
+                                        <i class="ri-list-check-2 me-1 text-primary"></i>
+                                        <strong>{{ $cuotasPendientes }}</strong> cuota(s) con saldo pendiente
+                                    </span>
+                                    <button type="button"
+                                            class="btn btn-sm btn-primary btn-pagar-multiple"
+                                            data-estudiante-id="{{ $estudiante->id }}">
+                                        <i class="ri-stack-line me-1"></i>Pagar Múltiples Cuotas
+                                    </button>
+                                </div>
+                            @endif
+
+                            {{-- Resumen financiero del programa --}}
+                            <div class="px-4 py-3 bg-light border-bottom">
+                                <div class="row g-2">
+                                    <div class="col-4">
+                                        <div class="text-muted" style="font-size:.7rem;">TOTAL PROGRAMA</div>
+                                        <div class="fw-bold fs-6">{{ number_format($totalPrograma, 2) }} Bs</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="text-muted" style="font-size:.7rem;">PAGADO</div>
+                                        <div class="fw-bold fs-6 text-success">{{ number_format($pagadoPrograma, 2) }} Bs</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="text-muted" style="font-size:.7rem;">PENDIENTE</div>
+                                        <div class="fw-bold fs-6 text-danger">{{ number_format($deudaPrograma, 2) }} Bs</div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h5 class="mb-0">{{ number_format($totalPagado + $totalDeuda, 2) }} Bs</h5>
-                                <small class="text-muted">Monto Total General</small>
+
+                            {{-- Tabla de cuotas --}}
+                            <div class="px-3 py-3">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0" style="font-size:.84rem;">
+                                        <thead>
+                                            <tr style="background:#f8f9fa;">
+                                                <th width="5%" class="text-center border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;">#</th>
+                                                <th width="26%" class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;">CUOTA</th>
+                                                <th width="12%" class="text-center border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;">TOTAL</th>
+                                                <th width="12%" class="text-center border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;">PAGADO</th>
+                                                <th width="12%" class="text-center border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;">PENDIENTE</th>
+                                                <th width="13%" class="text-center border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;">FECHA</th>
+                                                <th width="11%" class="text-center border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;">ESTADO</th>
+                                                <th width="9%" class="text-center border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;">ACCIÓN</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach ($cuotas as $cuota)
+                                                @php
+                                                    $pagado       = $cuota->pago_total_bs - $cuota->pago_pendiente_bs;
+                                                    $tienePagos   = $cuota->pagos_cuotas->count() > 0;
+                                                    $pctCuota     = $cuota->pago_total_bs > 0
+                                                        ? ($pagado / $cuota->pago_total_bs) * 100 : 0;
+                                                @endphp
+                                                <tr>
+                                                    <td class="text-center">
+                                                        <span class="badge bg-light text-dark border">{{ $cuota->n_cuota }}</span>
+                                                    </td>
+                                                    <td>
+                                                        <div class="fw-medium">{{ $cuota->nombre }}</div>
+                                                        @if ($tienePagos)
+                                                            <div class="text-muted" style="font-size:.72rem;">
+                                                                <i class="ri-receipt-line me-1"></i>{{ $cuota->pagos_cuotas->count() }} pago(s)
+                                                            </div>
+                                                        @endif
+                                                        <div class="progress mt-1 rounded-pill" style="height:3px;">
+                                                            <div class="progress-bar {{ $cuota->pago_terminado == 'si' ? 'bg-success' : 'bg-warning' }}"
+                                                                 style="width:{{ $pctCuota }}%"></div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-center fw-medium">{{ number_format($cuota->pago_total_bs, 2) }}</td>
+                                                    <td class="text-center">
+                                                        <span class="text-success fw-medium">{{ number_format($pagado, 2) }}</span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        @if ($cuota->pago_pendiente_bs > 0)
+                                                            <span class="text-danger fw-medium">{{ number_format($cuota->pago_pendiente_bs, 2) }}</span>
+                                                        @else
+                                                            <span class="text-muted">—</span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="text-center text-muted small">
+                                                        @if ($cuota->fecha_pago)
+                                                            {{ \Carbon\Carbon::parse($cuota->fecha_pago)->format('d/m/Y') }}
+                                                        @else
+                                                            <span class="text-muted">—</span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="text-center">
+                                                        @if ($cuota->pago_terminado == 'si')
+                                                            <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                                                <i class="ri-check-line me-1"></i>Pagado
+                                                            </span>
+                                                        @else
+                                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                                                                <i class="ri-time-line me-1"></i>Pendiente
+                                                            </span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <div class="d-flex justify-content-center gap-1">
+                                                            @if ($cuota->pago_pendiente_bs > 0)
+                                                                <button class="btn btn-sm btn-success btn-pagar-cuota"
+                                                                        data-cuota-id="{{ $cuota->id }}"
+                                                                        data-estudiante-id="{{ $estudiante->id }}"
+                                                                        title="Pagar cuota"
+                                                                        style="padding:.2rem .5rem;">
+                                                                    <i class="ri-money-dollar-circle-line"></i>
+                                                                </button>
+                                                            @endif
+                                                            @if ($tienePagos)
+                                                                <button class="btn btn-sm btn-info btn-ver-recibos"
+                                                                        data-cuota-id="{{ $cuota->id }}"
+                                                                        data-cuota-nombre="{{ $cuota->nombre }}"
+                                                                        title="Ver recibos ({{ $cuota->pagos_cuotas->count() }})"
+                                                                        style="padding:.2rem .5rem;">
+                                                                    <i class="ri-receipt-line"></i>
+                                                                    <span class="badge bg-white text-info ms-1" style="font-size:.65rem;">{{ $cuota->pagos_cuotas->count() }}</span>
+                                                                </button>
+                                                            @endif
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                        <tfoot>
+                                            <tr style="background:#f8f9fa;">
+                                                <td colspan="2" class="text-end fw-semibold text-muted small py-2">Totales del programa:</td>
+                                                <td class="text-center fw-bold py-2">{{ number_format($totalPrograma, 2) }}</td>
+                                                <td class="text-center fw-bold text-success py-2">{{ number_format($pagadoPrograma, 2) }}</td>
+                                                <td class="text-center fw-bold text-danger py-2">{{ number_format($deudaPrograma, 2) }}</td>
+                                                <td colspan="3"></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
                             </div>
+
                         </div>
                     </div>
+                </div>
+            @endforeach
+        </div>
+
+        {{-- Footer resumen general --}}
+        <div class="mt-3 p-3 rounded-3 border bg-light d-flex flex-wrap gap-4">
+            <div class="d-flex align-items-center gap-2">
+                <div class="avatar-xs">
+                    <div class="avatar-title bg-primary-subtle text-primary rounded">
+                        <i class="ri-money-dollar-circle-line fs-14"></i>
+                    </div>
+                </div>
+                <div>
+                    <div class="fw-semibold lh-1">{{ number_format($totalPagado + $totalDeuda, 2) }} Bs</div>
+                    <div class="text-muted" style="font-size:.72rem;">Monto Total General</div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card border border-success">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="avatar-sm">
-                                    <div class="avatar-title bg-success-subtle text-success rounded">
-                                        <i class="ri-checkbox-circle-line"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h5 class="mb-0">{{ number_format($totalPagado, 2) }} Bs</h5>
-                                <small class="text-muted">Total Pagado</small>
-                            </div>
-                        </div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="avatar-xs">
+                    <div class="avatar-title bg-success-subtle text-success rounded">
+                        <i class="ri-checkbox-circle-line fs-14"></i>
                     </div>
+                </div>
+                <div>
+                    <div class="fw-semibold lh-1 text-success">{{ number_format($totalPagado, 2) }} Bs</div>
+                    <div class="text-muted" style="font-size:.72rem;">Total Pagado</div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card border border-danger">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="avatar-sm">
-                                    <div class="avatar-title bg-danger-subtle text-danger rounded">
-                                        <i class="ri-alert-line"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <h5 class="mb-0">{{ number_format($totalDeuda, 2) }} Bs</h5>
-                                <small class="text-muted">Total Deuda</small>
-                            </div>
-                        </div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="avatar-xs">
+                    <div class="avatar-title bg-danger-subtle text-danger rounded">
+                        <i class="ri-alert-line fs-14"></i>
                     </div>
                 </div>
+                <div>
+                    <div class="fw-semibold lh-1 text-danger">{{ number_format($totalDeuda, 2) }} Bs</div>
+                    <div class="text-muted" style="font-size:.72rem;">Total Deuda</div>
+                </div>
+            </div>
+        </div>
+
+    @else
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center py-5">
+                <div class="avatar-lg mx-auto mb-3">
+                    <div class="avatar-title bg-light text-secondary rounded-circle">
+                        <i class="ri-graduation-cap-line fs-2"></i>
+                    </div>
+                </div>
+                <h5 class="mb-2">No hay programas inscritos</h5>
+                <p class="text-muted mb-0">El participante no está inscrito en ningún programa.</p>
             </div>
         </div>
     @endif
 
-    <!-- Modales -->
+    {{-- Modales --}}
     @include('admin.estudiantes.partials.modal-pagar-cuota')
     @include('admin.contabilidad.partials.modal-pagar-contabilidad')
     @include('admin.estudiantes.partials.modal-recibos-cuota')
+
 @endsection
 
 @push('script')
