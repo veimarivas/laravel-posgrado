@@ -3,9 +3,10 @@
     $faseColor = $oferta->fase->color ?? '#cccccc';
 @endphp
 
-<div class="d-flex flex-wrap gap-1 justify-content-center">
+<div class="d-flex flex-column align-items-center gap-1">
 
     {{-- Acciones principales según fase --}}
+    <div class="d-flex flex-wrap gap-1 justify-content-center">
     @if ($faseId == 1)
         <button type="button" class="action-btn edit verPlanesPagoBtn"
                 data-oferta-id="{{ $oferta->id }}"
@@ -119,11 +120,13 @@
             <i class="ri-eye-line"></i>
         </a>
     @endif
+    </div>
 
     {{-- Cambio de fase --}}
     @if (Auth::guard('web')->user()->can('fases.administrar'))
         @php $maxFase = \App\Models\Fase::max('n_fase') ?? 3; @endphp
         @if ($oferta->fase_id > 1 || $oferta->fase_id < $maxFase)
+            <div class="d-flex gap-1 justify-content-center">
             @if ($oferta->fase_id > 1)
                 <button type="button" class="action-btn fase change-phase"
                         data-oferta-id="{{ $oferta->id }}"
@@ -138,6 +141,7 @@
                     <i class="ri-arrow-right-line"></i>
                 </button>
             @endif
+            </div>
         @endif
     @endif
 

@@ -50,10 +50,13 @@
 
     function isPromoActive(fIni, fFin) {
         if (!fIni || !fFin) return false;
+        const partsIni = fIni.split('-');
+        const partsFin = fFin.split('-');
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const start = new Date(fIni + 'T00:00:00');
-        const end = new Date(fFin + 'T23:59:59');
+        const start = new Date(parseInt(partsIni[0]), parseInt(partsIni[1]) - 1, parseInt(partsIni[2]));
+        const end = new Date(parseInt(partsFin[0]), parseInt(partsFin[1]) - 1, parseInt(partsFin[2]));
+        end.setHours(23, 59, 59, 999);
         return today >= start && today <= end;
     }
 
@@ -62,14 +65,15 @@
         let html = '<div class="row g-3">';
 
         planes.forEach((plan, idx) => {
-            const esPromo   = plan.es_promocion == 1;
+            const esPromo   = parseInt(plan.es_promocion) === 1;
             const fIni      = plan.fecha_inicio_promocion || null;
             const fFin      = plan.fecha_fin_promocion || null;
             const promoActiva = esPromo && fIni && fFin ? isPromoActive(fIni, fFin) : false;
 
-            const color     = esPromo ? (promoActiva ? '#10b981' : '#ef4444') : paleta[idx % paleta.length];
+            // Color: promo vigente=verde, promo expirada=rojo, normal=paleta
+            const color      = esPromo ? (promoActiva ? '#10b981' : '#ef4444') : paleta[idx % paleta.length];
             const colorLight = color + '15';
-            const iconPlan  = esPromo ? 'ri-price-tag-3-line' : 'ri-bank-card-line';
+            const iconPlan   = esPromo ? 'ri-price-tag-3-line' : 'ri-bank-card-line';
 
             // Totales
             let totalPlan = 0, totalRegular = 0;
@@ -82,6 +86,25 @@
                 totalRegular += tr;
             });
             const ahorro = totalRegular - totalPlan;
+
+            // Badge de estado promo
+            let promoBadgeHtml = '';
+            if (esPromo) {
+                if (fIni && fFin) {
+                    promoBadgeHtml = `
+                    <span class="badge rounded-pill" style="background: ${promoActiva ? '#dcfce7' : '#fef2f2'}; color: ${promoActiva ? '#16a34a' : '#dc2626'}; font-size: 0.68rem; font-weight: 600;">
+                        <i class="ri-price-tag-3-line me-1"></i>${promoActiva ? 'PROMO VIGENTE' : 'PROMO EXPIRADA'}
+                    </span>`;
+                } else {
+                    promoBadgeHtml = `
+                    <span class="badge rounded-pill" style="background: #fef3c7; color: #d97706; font-size: 0.68rem; font-weight: 600;">
+                        <i class="ri-price-tag-3-line me-1"></i>PROMOCIÓN
+                    </span>`;
+                }
+            } else {
+                promoBadgeHtml = `
+                <span class="badge rounded-pill" style="background: ${colorLight}; color: ${color}; font-size: 0.68rem; font-weight: 600;">Plan ${idx + 1}</span>`;
+            }
 
             html += `
             <div class="col-md-6">
@@ -97,20 +120,13 @@
                                 <div>
                                     <div class="fw-semibold" style="font-size: 0.9rem; color: #1e293b;">${plan.nombre}</div>
                                     ${esPromo && fIni ? `
-                                    <div style="font-size: 0.72rem; color: ${promoActiva ? '#059669' : '#dc2626'};">
+                                    <div style="font-size: 0.72rem; color: ${promoActiva ? '#059669' : '#dc2626'}; font-weight: 500;">
                                         <i class="ri-calendar-line me-1"></i>${fmtDate(fIni)} — ${fmtDate(fFin)}
-                                        <span class="badge rounded-pill ms-1" style="background: ${promoActiva ? '#dcfce7' : '#fef2f2'}; color: ${promoActiva ? '#16a34a' : '#dc2626'}; font-size: 0.6rem; font-weight: 600;">
-                                            ${promoActiva ? 'Vigente' : 'Expirada'}
-                                        </span>
                                     </div>` : ''}
                                 </div>
                             </div>
                             <div class="d-flex flex-column align-items-end gap-1">
-                                ${esPromo ? `
-                                <span class="badge rounded-pill" style="background: ${promoActiva ? '#dcfce7' : '#fef2f2'}; color: ${promoActiva ? '#16a34a' : '#dc2626'}; font-size: 0.68rem; font-weight: 600;">
-                                    <i class="ri-price-tag-3-line me-1"></i>${promoActiva ? 'PROMO VIGENTE' : 'PROMO EXPIRADA'}
-                                </span>` : `
-                                <span class="badge rounded-pill" style="background: ${colorLight}; color: ${color}; font-size: 0.68rem; font-weight: 600;">Plan ${idx + 1}</span>`}
+                                ${promoBadgeHtml}
                                 <span class="badge rounded-pill" style="background: #f1f5f9; color: #64748b; font-size: 0.62rem;">${plan.conceptos.length} concepto(s)</span>
                             </div>
                         </div>
@@ -120,19 +136,14 @@
                     <div class="card-body p-0">`;
 
             plan.conceptos.forEach((c, cIdx) => {
-                const tp      = parseFloat(String(c.total_concepto).replace(',', '')) || 0;
-                const treg    = c.precio_regular ? parseFloat(String(c.precio_regular).replace(',', '')) : null;
-                const dPct    = c.descuento_porcentaje;
-                const dBs     = c.descuento_bs ? parseFloat(String(c.descuento_bs).replace(',', '')) : null;
-                const rowBg   = cIdx % 2 === 0 ? '#fafbfc' : 'white';
-                const iColor  = color;
+                const rowBg = cIdx % 2 === 0 ? '#fafbfc' : 'white';
 
                 html += `
                         <div style="padding: 10px 14px; background: ${rowBg}; ${cIdx < plan.conceptos.length - 1 ? 'border-bottom: 1px solid #f1f5f9;' : ''}">
                             <div class="d-flex align-items-center justify-content-between">
                                 <div class="d-flex align-items-center gap-2 flex-grow-1" style="min-width: 0;">
-                                    <div style="width: 28px; height: 28px; background: ${iColor}15; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                        <i class="ri-price-tag-3-line" style="font-size: 0.8rem; color: ${iColor};"></i>
+                                    <div style="width: 28px; height: 28px; background: ${color}15; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                        <i class="ri-price-tag-3-line" style="font-size: 0.8rem; color: ${color};"></i>
                                     </div>
                                     <div style="min-width: 0;">
                                         <div class="fw-medium" style="font-size: 0.82rem; color: #1e293b;">${c.concepto_nombre}</div>
