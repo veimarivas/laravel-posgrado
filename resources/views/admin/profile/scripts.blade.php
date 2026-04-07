@@ -396,16 +396,16 @@
             $('#tableCount').text(pagination.total);
 
             let html = `
-                <table class="table table-hover align-middle mb-0" style="font-size:.82rem;min-width:800px;">
+                <table class="table table-hover align-middle mb-0" style="font-size:.8rem;">
                     <thead>
                         <tr style="background:#f8f9fa;">
-                            <th class="border-0 py-2 px-2 text-muted fw-semibold" style="font-size:.7rem;width:30px;text-align:center;">#</th>
-                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;min-width:180px;">ESTUDIANTE</th>
-                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;min-width:160px;">PROGRAMA</th>
-                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;min-width:120px;">PLAN</th>
-                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:90px;">ESTADO</th>
-                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:90px;">FECHA</th>
-                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:110px;">ACCIONES</th>
+                            <th class="border-0 py-2 px-2 text-muted fw-semibold" style="font-size:.68rem;width:28px;text-align:center;">#</th>
+                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.68rem;">ESTUDIANTE</th>
+                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.68rem;">PROGRAMA</th>
+                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.68rem;width:130px;">PLAN</th>
+                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.68rem;width:80px;">ESTADO</th>
+                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.68rem;width:80px;">FECHA</th>
+                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.68rem;width:110px;">ACCIONES</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -461,30 +461,30 @@
 
                 html += `
     <tr>
-        <td class="px-2 py-2 text-muted fw-semibold" style="font-size:.75rem;text-align:center;">${rowNumber}</td>
-        <td class="py-2" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-            <div class="fw-semibold" style="font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${estudiante?.nombres || ''} ${estudiante?.apellido_paterno || ''} ${estudiante?.apellido_materno || ''}">
+        <td class="px-2 py-2 text-muted fw-semibold" style="font-size:.72rem;text-align:center;">${rowNumber}</td>
+        <td class="py-2">
+            <div class="fw-semibold" style="font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${estudiante?.nombres || ''} ${estudiante?.apellido_paterno || ''} ${estudiante?.apellido_materno || ''}">
                 ${estudiante?.nombres || 'N/A'} ${estudiante?.apellido_paterno || ''}
             </div>
-            <div class="text-muted" style="font-size:.7rem;"><i class="ri-id-card-line me-1"></i>${estudiante?.carnet || 'N/A'}</div>
+            <div class="text-muted" style="font-size:.68rem;"><i class="ri-id-card-line me-1"></i>${estudiante?.carnet || 'N/A'}</div>
         </td>
-        <td class="py-2" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-            <div style="font-size:.78rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${programa?.nombre || 'N/A'}">${programa?.nombre || 'N/A'}</div>
-            ${sucursal ? `<div class="text-muted" style="font-size:.68rem;">${sucursal?.nombre || ''}</div>` : ''}
+        <td class="py-2">
+            <div style="font-size:.76rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${programa?.nombre || 'N/A'}">${programa?.nombre || 'N/A'}</div>
+            ${sucursal ? `<div class="text-muted" style="font-size:.65rem;">${sucursal?.nombre || ''}</div>` : ''}
         </td>
         <td class="py-2">
             ${planPago
-                ? `<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size:.68rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;" title="${planPago.nombre || ''}">${planPago.nombre || 'Sin nombre'}</span>`
-                : `<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill" style="font-size:.68rem;">No asignado</span>`
+                ? `<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size:.65rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;" title="${planPago.nombre || ''}">${planPago.nombre || 'Sin nombre'}</span>`
+                : `<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill" style="font-size:.65rem;">No asignado</span>`
             }
         </td>
         <td class="text-center py-2">
-            <span class="badge ${inscripcion.estado === 'Inscrito' ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-warning-subtle text-warning border border-warning-subtle'} rounded-pill" style="font-size:.68rem;">
+            <span class="badge ${inscripcion.estado === 'Inscrito' ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-warning-subtle text-warning border border-warning-subtle'} rounded-pill" style="font-size:.65rem;">
                 ${inscripcion.estado}
             </span>
         </td>
         <td class="py-2 text-center">
-            <div style="font-size:.75rem;">${fecha.toLocaleDateString('es-ES')}</div>
+            <div style="font-size:.72rem;">${fecha.toLocaleDateString('es-ES')}</div>
         </td>
         <td class="text-center py-2">
             ${accionesHtml}
