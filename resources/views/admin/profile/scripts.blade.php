@@ -28,10 +28,25 @@
         // FUNCIONALIDADES DE MARKETING
         // ==============================
 
+        let marketingLoaded = false;
+        let ofertasLoaded = false;
+
         // Cargar datos de marketing cuando se muestra el tab
-        $(document).on('shown.bs.tab', 'a[href="#marketing"]', function() {
-            if (!marketingChart) {
-                loadMarketingData();
+        $(document).on('shown.bs.tab', '[data-bs-target="#marketing"]', function() {
+            if (!marketingLoaded) {
+                marketingLoaded = true;
+                setTimeout(function() {
+                    loadMarketingData();
+                    loadDocumentosData();
+                }, 150);
+            }
+        });
+
+        // Cargar ofertas activas cuando se muestra el tab
+        $(document).on('shown.bs.tab', '[data-bs-target="#ofertas-activas"]', function() {
+            if (!ofertasLoaded) {
+                ofertasLoaded = true;
+                loadOfertasActivas();
             }
         });
 
@@ -381,17 +396,16 @@
             $('#tableCount').text(pagination.total);
 
             let html = `
-                <table class="table table-hover align-middle mb-0" style="font-size:.82rem;">
+                <table class="table table-hover align-middle mb-0" style="font-size:.82rem;min-width:800px;">
                     <thead>
                         <tr style="background:#f8f9fa;">
-                            <th class="border-0 py-2 px-3 text-muted fw-semibold" style="font-size:.7rem;width:4%;">#</th>
-                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:22%;">ESTUDIANTE</th>
-                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:20%;">PROGRAMA</th>
-                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:15%;">SEDE / SUCURSAL</th>
-                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:14%;">PLAN DE PAGO</th>
-                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:9%;">ESTADO</th>
-                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:9%;">FECHA</th>
-                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:7%;">ACC.</th>
+                            <th class="border-0 py-2 px-2 text-muted fw-semibold" style="font-size:.7rem;width:30px;text-align:center;">#</th>
+                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;min-width:180px;">ESTUDIANTE</th>
+                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;min-width:160px;">PROGRAMA</th>
+                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;min-width:120px;">PLAN</th>
+                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:90px;">ESTADO</th>
+                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:90px;">FECHA</th>
+                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:110px;">ACCIONES</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -401,84 +415,76 @@
                 const estudiante = inscripcion.estudiante?.persona;
                 const programa = inscripcion.oferta_academica?.programa;
                 const sucursal = inscripcion.oferta_academica?.sucursal;
-                const sede = sucursal?.sede;
-                const planPago = inscripcion.planes_pago; // Obtener el plan de pago
+                const planPago = inscripcion.planes_pago;
                 const fecha = new Date(inscripcion.fecha_registro);
                 const rowNumber = (pagination.current_page - 1) * pagination.per_page + index + 1;
 
-                // Generar botones de acción (sin cambios)
-                let accionesHtml = `
-    <div class="d-flex flex-wrap gap-1 justify-content-center">
-        <a href="/admin/profile/marketing/inscripcion/${inscripcion.id}/formulario-pdf"
-           class="btn btn-sm btn-outline-primary"
-           data-bs-toggle="tooltip"
-           title="Generar Formulario PDF"
-           target="_blank">
-            <i class="ri-file-text-line me-1"></i>PDF
-        </a>
-        <a href="/admin/estudiantes/detalle/${inscripcion.estudiante_id}"
-           class="btn btn-sm btn-outline-info"
-           data-bs-toggle="tooltip"
-           title="Ver detalles del estudiante">
-            <i class="ri-eye-line"></i>
-        </a>
-    `;
+                // Botones de acción compactos (icon-only 28x28px)
+                let accionesHtml = `<div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;">`;
 
-                // Para Pre-Inscritos, agregar el botón de conversión
+                accionesHtml += `
+                    <a href="/admin/profile/marketing/inscripcion/${inscripcion.id}/formulario-pdf"
+                       class="action-btn-mkt"
+                       style="width:28px;height:28px;border-radius:6px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;text-decoration:none;transition:all .2s;"
+                       title="Generar Formulario PDF" target="_blank">
+                        <i class="ri-file-text-line"></i>
+                    </a>
+                    <a href="/admin/estudiantes/detalle/${inscripcion.estudiante_id}"
+                       class="action-btn-mkt"
+                       style="width:28px;height:28px;border-radius:6px;background:#f0fdfa;color:#0f766e;border:1px solid #ccfbf1;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;text-decoration:none;transition:all .2s;"
+                       title="Ver detalles">
+                        <i class="ri-eye-line"></i>
+                    </a>`;
+
                 if (inscripcion.estado === 'Pre-Inscrito') {
                     accionesHtml += `
-        <button class="btn btn-sm btn-success btn-convertir-inscrito"
-                data-inscripcion-id="${inscripcion.id}"
-                data-oferta-id="${inscripcion.oferta_academica.id}"
-                data-estudiante-nombre="${estudiante?.nombres || 'N/A'} ${estudiante?.apellido_paterno || ''}"
-                data-estudiante-carnet="${estudiante?.carnet || 'N/A'}"
-                data-programa-nombre="${programa?.nombre || 'N/A'}"
-                data-bs-toggle="tooltip"
-                title="Convertir a Inscrito">
-            <i class="ri-user-add-line"></i>
-        </button>
-        `;
+                    <button class="action-btn-mkt btn-convertir-inscrito"
+                            style="width:28px;height:28px;border-radius:6px;background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;cursor:pointer;transition:all .2s;"
+                            data-inscripcion-id="${inscripcion.id}"
+                            data-oferta-id="${inscripcion.oferta_academica.id}"
+                            data-estudiante-nombre="${estudiante?.nombres || 'N/A'} ${estudiante?.apellido_paterno || ''}"
+                            data-estudiante-carnet="${estudiante?.carnet || 'N/A'}"
+                            data-programa-nombre="${programa?.nombre || 'N/A'}"
+                            title="Convertir a Inscrito">
+                        <i class="ri-user-add-line"></i>
+                    </button>`;
                 } else {
-                    // Para Inscritos, agregar botón para ver cuotas
                     accionesHtml += `
-        <a href="/admin/inscripciones/${inscripcion.id}/cuotas"
-           class="btn btn-sm btn-outline-info"
-           data-bs-toggle="tooltip"
-           title="Ver cuotas de pago">
-            <i class="ri-money-dollar-circle-line"></i>
-        </a>
-        `;
+                    <a href="/admin/inscripciones/${inscripcion.id}/cuotas"
+                       class="action-btn-mkt"
+                       style="width:28px;height:28px;border-radius:6px;background:#faf5ff;color:#9333ea;border:1px solid #e9d5ff;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;text-decoration:none;transition:all .2s;"
+                       title="Ver cuotas">
+                        <i class="ri-money-dollar-circle-line"></i>
+                    </a>`;
                 }
                 accionesHtml += `</div>`;
 
                 html += `
     <tr>
-        <td class="px-3 py-2 text-muted fw-semibold" style="font-size:.78rem;">${rowNumber}</td>
-        <td class="py-2">
-            <div class="fw-semibold" style="font-size:.82rem;">${estudiante?.nombres || 'N/A'} ${estudiante?.apellido_paterno || ''}</div>
-            <div class="text-muted" style="font-size:.72rem;"><i class="ri-id-card-line me-1"></i>${estudiante?.carnet || 'N/A'}</div>
+        <td class="px-2 py-2 text-muted fw-semibold" style="font-size:.75rem;text-align:center;">${rowNumber}</td>
+        <td class="py-2" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            <div class="fw-semibold" style="font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${estudiante?.nombres || ''} ${estudiante?.apellido_paterno || ''} ${estudiante?.apellido_materno || ''}">
+                ${estudiante?.nombres || 'N/A'} ${estudiante?.apellido_paterno || ''}
+            </div>
+            <div class="text-muted" style="font-size:.7rem;"><i class="ri-id-card-line me-1"></i>${estudiante?.carnet || 'N/A'}</div>
         </td>
-        <td class="py-2">
-            <div style="font-size:.8rem;font-weight:500;">${programa?.nombre || 'N/A'}</div>
-        </td>
-        <td class="py-2">
-            <div class="fw-medium" style="font-size:.8rem;">${sede?.nombre || 'N/A'}</div>
-            <div class="text-muted" style="font-size:.72rem;">${sucursal?.nombre || 'N/A'}</div>
+        <td class="py-2" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            <div style="font-size:.78rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${programa?.nombre || 'N/A'}">${programa?.nombre || 'N/A'}</div>
+            ${sucursal ? `<div class="text-muted" style="font-size:.68rem;">${sucursal?.nombre || ''}</div>` : ''}
         </td>
         <td class="py-2">
             ${planPago
-                ? `<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size:.7rem;">${planPago.nombre || 'Sin nombre'}</span>`
-                : `<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill" style="font-size:.7rem;">No asignado</span>`
+                ? `<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size:.68rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;" title="${planPago.nombre || ''}">${planPago.nombre || 'Sin nombre'}</span>`
+                : `<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill" style="font-size:.68rem;">No asignado</span>`
             }
         </td>
         <td class="text-center py-2">
-            <span class="badge ${inscripcion.estado === 'Inscrito' ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-warning-subtle text-warning border border-warning-subtle'} rounded-pill" style="font-size:.7rem;">
+            <span class="badge ${inscripcion.estado === 'Inscrito' ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-warning-subtle text-warning border border-warning-subtle'} rounded-pill" style="font-size:.68rem;">
                 ${inscripcion.estado}
             </span>
         </td>
-        <td class="py-2">
-            <div style="font-size:.78rem;">${fecha.toLocaleDateString('es-ES')}</div>
-            <div class="text-muted" style="font-size:.7rem;">${fecha.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'})}</div>
+        <td class="py-2 text-center">
+            <div style="font-size:.75rem;">${fecha.toLocaleDateString('es-ES')}</div>
         </td>
         <td class="text-center py-2">
             ${accionesHtml}
@@ -589,7 +595,7 @@
         // ==============================
 
         // Cargar ofertas activas cuando se muestra el tab
-        $(document).on('shown.bs.tab', 'a[href="#ofertas-activas"]', function() {
+        $(document).on('shown.bs.tab', '[data-bs-target="#ofertas-activas"]', function() {
             loadOfertasActivas();
         });
 
@@ -709,30 +715,29 @@
                     html += `
                         <tr>
                             <td class="px-3 py-2">
-                                <span class="fw-semibold text-primary" style="font-size:.82rem;">${oferta.codigo || 'N/A'}</span>
-                                ${oferta.gestion ? '<br><span class="text-muted" style="font-size:.72rem;">Gest. ' + oferta.gestion + '</span>' : ''}
+                                <span class="fw-semibold" style="font-size:.82rem;color:var(--conc-primary);">${oferta.codigo || 'N/A'}</span>
+                                ${oferta.gestion ? '<br><span style="font-size:.72rem;color:var(--conc-text-muted);">Gest. ' + oferta.gestion + '</span>' : ''}
                             </td>
                             <td class="py-2">
                                 <span class="fw-semibold text-dark" style="font-size:.82rem;">${oferta.programa_nombre || 'Sin programa'}</span>
-                                ${(oferta.version || oferta.grupo) ? '<br><span class="text-muted" style="font-size:.72rem;">' + (oferta.version ? 'v' + oferta.version : '') + (oferta.grupo ? ' · Gr.' + oferta.grupo : '') + '</span>' : ''}
+                                ${(oferta.version || oferta.grupo) ? '<br><span style="font-size:.72rem;color:var(--conc-text-muted);">' + (oferta.version ? 'v' + oferta.version : '') + (oferta.grupo ? ' · Gr.' + oferta.grupo : '') + '</span>' : ''}
                             </td>
                             <td class="py-2">
-                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size:.72rem;">${oferta.sucursal_nombre || 'N/A'}</span>
-                                ${oferta.sede_nombre ? '<br><span class="text-muted" style="font-size:.72rem;">' + oferta.sede_nombre + '</span>' : ''}
+                                <span class="estado-badge-profile vigente" style="font-size:.72rem;">${oferta.sucursal_nombre || 'N/A'}</span>
+                                ${oferta.sede_nombre ? '<br><span style="font-size:.72rem;color:var(--conc-text-muted);">' + oferta.sede_nombre + '</span>' : ''}
                             </td>
                             <td class="py-2">
-                                <span class="badge bg-light text-secondary border" style="font-size:.72rem;">${oferta.modalidad_nombre || 'N/A'}</span>
+                                <span class="estado-badge-profile inactivo" style="font-size:.72rem;">${oferta.modalidad_nombre || 'N/A'}</span>
                             </td>
                             <td class="py-2" style="font-size:.78rem;">
-                                <span class="text-muted" style="font-size:.7rem;">Inscripciones:</span><br>
+                                <span style="font-size:.7rem;color:var(--conc-text-muted);">Inscripciones:</span><br>
                                 <span>${oferta.fecha_inicio_formateada || '—'}</span>
-                                <span class="text-muted mx-1">→</span>
+                                <span style="color:var(--conc-text-muted);mx-1;"> → </span>
                                 <span>${oferta.fecha_fin_formateada || '—'}</span>
                             </td>
                             <td class="text-center py-2">
                                 <div class="d-flex gap-1 justify-content-center">
-                                    <button class="btn btn-sm btn-outline-primary btn-ver-enlace"
-                                            style="height:28px;min-width:30px;padding:0 7px;"
+                                    <button class="oferta-action-btn link-btn btn-ver-enlace"
                                             title="Ver enlace"
                                             data-oferta-id="${oferta.id}"
                                             data-enlace="${oferta.enlace_personalizado || '#'}"
@@ -740,16 +745,15 @@
                                             data-sucursal="${oferta.sucursal_nombre || 'Sin sucursal'}"
                                             data-modalidad="${oferta.modalidad_nombre || 'Sin modalidad'}"
                                             data-qr="${oferta.enlace_qr || ''}">
-                                        <i class="ri-link" style="font-size:.82rem;"></i>
+                                        <i class="ri-share-line"></i>
                                     </button>
-                                    <button class="btn btn-sm btn-plan-generator btn-generar-con-plan"
-                                            style="height:28px;min-width:30px;padding:0 7px;"
+                                    <button class="oferta-action-btn plan-btn btn-generar-con-plan"
                                             title="Generar enlace con plan"
                                             data-oferta-id="${oferta.id}"
                                             data-oferta-codigo="${oferta.codigo}"
                                             data-programa="${oferta.programa_nombre}"
                                             data-asesor-id="${cargoPrincipalId}">
-                                        <i class="ri-money-dollar-circle-line" style="font-size:.82rem;"></i>
+                                        <i class="ri-coupon-line"></i>
                                     </button>
                                 </div>
                             </td>
@@ -814,31 +818,31 @@
                 method: 'GET',
                 success: function(response) {
                     if (response.success && response.planes.length > 0) {
-                        let html = '<div class="row">';
+                        let html = '<div class="row g-3">';
                         response.planes.forEach((plan, index) => {
                             let totalPlan = plan.conceptos.reduce((sum, c) => sum +
                                 parseFloat(c.pago_bs), 0);
+                            let featuresHtml = plan.conceptos.map(c => 
+                                `<div class="plan-card-feature">
+                                    <i class="ri-checkbox-circle-fill"></i>
+                                    <span>${c.concepto_nombre}: <strong>${c.n_cuotas} cuota(s)</strong></span>
+                                </div>`
+                            ).join('');
                             html += `
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6">
                             <div class="plan-card plan-option" data-plan-id="${plan.id}">
-                                <div class="plan-header">
-                                    <h6 class="mb-0 text-white">${plan.nombre}</h6>
+                                <div class="plan-card-header">
+                                    <h6>${plan.nombre}</h6>
+                                    <div class="plan-card-price">${totalPlan.toFixed(2)} Bs</div>
                                 </div>
-                                <div class="card-body">
-                                    <div class="plan-price">${totalPlan.toFixed(2)} Bs</div>
-                                    <ul class="plan-feature-list mt-3">
-                                        ${plan.conceptos.map(c => 
-                                            `<li><i class="ri-checkbox-circle-line text-success me-2"></i>${c.concepto_nombre}: ${c.n_cuotas} cuotas</li>`
-                                        ).join('')}
-                                    </ul>
-                                    <div class="text-center mt-3">
-                                        <button class="btn btn-outline-primary btn-sm btn-seleccionar-plan" 
-                                                data-plan-id="${plan.id}"
-                                                data-plan-nombre="${plan.nombre}">
-                                            Seleccionar
-                                        </button>
-                                    </div>
+                                <div class="plan-card-body">
+                                    ${featuresHtml}
                                 </div>
+                                <button class="plan-card-btn btn-seleccionar-plan" 
+                                        data-plan-id="${plan.id}"
+                                        data-plan-nombre="${plan.nombre}">
+                                    Seleccionar Plan
+                                </button>
                             </div>
                         </div>
                     `;
@@ -898,17 +902,12 @@
 
             // Configurar botón de copiar
             $('#copyGeneratedLink').off('click').on('click', function() {
+                const enlace = $('#linkText').text();
                 navigator.clipboard.writeText(enlace).then(function() {
-                    const originalText = $(this).html();
-                    $(this).html('<i class="ri-check-line"></i>');
-                    setTimeout(() => {
-                        $(this).html(originalText);
-                    }, 2000);
                     showToast('success', 'Enlace copiado al portapapeles');
-                }.bind(this));
+                });
             });
 
-            // Opcional: mostrar un mensaje de éxito
             showToast('success', `Enlace generado con el plan: ${planNombre}`);
         }
 
@@ -1034,18 +1033,10 @@
             // Copiar enlace al portapapeles
             $('#copyEnlaceBtn').on('click', function() {
                 const enlaceInput = $('#modalEnlace');
-                enlaceInput.select();
-                document.execCommand('copy');
-
-                // Cambiar temporalmente el texto del botón
-                const originalText = $(this).html();
-                $(this).html('<i class="ri-check-line"></i> Copiado');
-
-                setTimeout(() => {
-                    $(this).html(originalText);
-                }, 2000);
-
-                showToast('success', 'Enlace copiado al portapapeles');
+                const enlace = enlaceInput.val();
+                navigator.clipboard.writeText(enlace).then(function() {
+                    showToast('success', 'Enlace copiado al portapapeles');
+                });
             });
         }
 
@@ -1273,29 +1264,39 @@
 
         // Función para mostrar toast
         function showToast(type, message) {
-            // Usar Toastr si está disponible
-            if (typeof toastr !== 'undefined') {
-                toastr[type](message);
+            var config = {
+                success: { icon: 'ri-checkbox-circle-fill', bgClass: 'bg-success', title: 'Éxito' },
+                error: { icon: 'ri-close-circle-fill', bgClass: 'bg-danger', title: 'Error' },
+                warning: { icon: 'ri-alert-fill', bgClass: 'bg-warning', title: 'Advertencia' },
+                info: { icon: 'ri-information-fill', bgClass: 'bg-info', title: 'Información' }
+            };
+            var toastConfig = config[type] || config.info;
+            var toastId = 'toast-' + Date.now();
+            var toastHtml = `
+                <div id="${toastId}" class="toast ${toastConfig.bgClass} text-white" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="toast-header ${toastConfig.bgClass} text-white border-bottom-0">
+                        <i class="${toastConfig.icon} me-2"></i>
+                        <strong class="me-auto">${toastConfig.title}</strong>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                    <div class="toast-body d-flex align-items-center">
+                        <i class="${toastConfig.icon} me-2 fs-5"></i>
+                        <span class="flex-grow-1">${message}</span>
+                    </div>
+                </div>`;
+            var container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.className = 'toast-container position-fixed top-0 end-0 p-3';
+                container.style.zIndex = '999999';
+                document.body.appendChild(container);
             }
-            // Usar SweetAlert si está disponible
-            else if (typeof Swal !== 'undefined') {
-                const Toast = Swal.mixin({
-                    toast: true,
-                    position: 'top-end',
-                    showConfirmButton: false,
-                    timer: 3000,
-                    timerProgressBar: true,
-                });
-
-                Toast.fire({
-                    icon: type,
-                    title: message
-                });
-            }
-            // Fallback a alert nativo
-            else {
-                alert(`${type.toUpperCase()}: ${message}`);
-            }
+            container.insertAdjacentHTML('afterbegin', toastHtml);
+            var toastElement = document.getElementById(toastId);
+            var toast = new bootstrap.Toast(toastElement, { autohide: true, delay: 3000 });
+            toast.show();
+            toastElement.addEventListener('hidden.bs.toast', function() { this.remove(); });
         }
 
         // Funciones auxiliares
@@ -1434,8 +1435,8 @@
         // ==============================
 
         // Mostrar/ocultar contraseña
-        $(document).on('click', '.toggle-password', function() {
-            const input = $(this).closest('.input-group').find('input');
+        $(document).on('click', '.toggle-pw', function() {
+            const input = $(this).closest('.password-input-group').find('input');
             const icon = $(this).find('i');
 
             if (input.attr('type') === 'password') {
