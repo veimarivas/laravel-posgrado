@@ -1699,25 +1699,17 @@
             $('#documentosCount').text(paginator.total);
 
             let html = `
-        <table class="table table-hover align-middle mb-0" style="font-size:.76rem;table-layout:fixed;width:100%;">
-            <colgroup>
-                <col style="width:3%;">
-                <col style="width:18%;">
-                <col style="width:22%;">
-                <col style="width:30%;">
-                <col style="width:8%;">
-                <col style="width:8%;">
-                <col style="width:11%;">
-            </colgroup>
+        <table class="table table-hover align-middle mb-0" style="font-size:.82rem;">
             <thead>
                 <tr style="background:#f8f9fa;">
-                    <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.63rem;text-align:center;">#</th>
-                    <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.63rem;overflow:hidden;">ESTUDIANTE</th>
-                    <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.63rem;overflow:hidden;">PROGRAMA</th>
-                    <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.63rem;overflow:hidden;">DOCUMENTOS</th>
-                    <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.63rem;">DOCS.</th>
-                    <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.63rem;">PAGOS</th>
-                    <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.63rem;">ACC.</th>
+                    <th class="border-0 py-2 px-3 text-muted fw-semibold" style="font-size:.7rem;width:3%;">#</th>
+                    <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:22%;">ESTUDIANTE</th>
+                    <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:20%;">PROGRAMA</th>
+                    <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:14%;">SUCURSAL</th>
+                    <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;width:20%;">DOCUMENTOS</th>
+                    <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:9%;">DOCS.</th>
+                    <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:9%;">PAGOS</th>
+                    <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.7rem;width:3%;">ACC.</th>
                 </tr>
             </thead>
             <tbody>
@@ -1728,9 +1720,9 @@
                 const docs = item.documentos || {};
 
                 const iconDoc = (estado, label) => {
-                    if (estado === 'verificado') return `<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size:.6rem;padding:1px 4px;" title="${label}: Verificado"><i class="ri-check-line"></i></span>`;
-                    if (estado === 'pendiente')  return `<span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill" style="font-size:.6rem;padding:1px 4px;" title="${label}: Pendiente"><i class="ri-time-line"></i></span>`;
-                    return `<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill" style="font-size:.6rem;padding:1px 4px;" title="${label}: Sin archivo"><i class="ri-close-line"></i></span>`;
+                    if (estado === 'verificado') return `<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill me-1" style="font-size:.68rem;" title="${label}: Verificado"><i class="ri-check-line"></i></span>`;
+                    if (estado === 'pendiente')  return `<span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill me-1" style="font-size:.68rem;" title="${label}: Pendiente"><i class="ri-time-line"></i></span>`;
+                    return `<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill me-1" style="font-size:.68rem;" title="${label}: Sin archivo"><i class="ri-close-line"></i></span>`;
                 };
 
                 const todosVerificados = docs.carnet === 'verificado' &&
@@ -1739,42 +1731,43 @@
                     docs.documento_provision === 'verificado';
 
                 const estadoGeneral = todosVerificados
-                    ? '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size:.62rem;"><i class="ri-check-double-line"></i> OK</span>'
-                    : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill" style="font-size:.62rem;"><i class="ri-alert-line"></i> Incompleto</span>';
+                    ? '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size:.72rem;"><i class="ri-check-double-line"></i> OK</span>'
+                    : '<span class="badge bg-danger-subtle text-danger border border-danger-subtle rounded-pill" style="font-size:.72rem;"><i class="ri-alert-line"></i> Incompleto</span>';
 
                 const pagoInicialBadge = item.pagos_iniciales_completos
-                    ? '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size:.62rem;"><i class="ri-check-line"></i> Completo</span>'
-                    : '<span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill" style="font-size:.62rem;"><i class="ri-time-line"></i> Pendiente</span>';
+                    ? '<span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size:.72rem;"><i class="ri-check-line"></i> Completo</span>'
+                    : '<span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill" style="font-size:.72rem;"><i class="ri-time-line"></i> Pendiente</span>';
 
                 html += `
             <tr>
-                <td class="px-1 py-2 text-muted" style="font-size:.68rem;text-align:center;">${rowNumber}</td>
-                <td class="py-2" style="overflow:hidden;">
-                    <span class="fw-semibold" style="font-size:.74rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;" title="${item.estudiante_nombre || 'N/A'}">${item.estudiante_nombre || 'N/A'}</span>
-                    <span class="text-muted" style="font-size:.63rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;">${item.estudiante_carnet || 'Sin carnet'}</span>
+                <td class="px-3 py-2 text-muted" style="font-size:.78rem;">${rowNumber}</td>
+                <td class="py-2">
+                    <span class="fw-semibold" style="font-size:.82rem;">${item.estudiante_nombre || 'N/A'}</span>
+                    <br><span class="text-muted" style="font-size:.72rem;">${item.estudiante_carnet || 'Sin carnet'}</span>
                 </td>
-                <td class="py-2" style="overflow:hidden;">
-                    <span style="font-size:.72rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;" title="${item.programa_nombre || 'N/A'}">${item.programa_nombre || 'N/A'}</span>
-                    ${item.sucursal_nombre ? `<span class="text-muted" style="font-size:.6rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;">${item.sucursal_nombre}${item.sede_nombre ? ' · ' + item.sede_nombre : ''}</span>` : ''}
+                <td class="py-2">
+                    <span style="font-size:.78rem;">${item.programa_nombre || 'N/A'}</span>
                 </td>
-                <td class="py-2" style="overflow:hidden;">
-                    <div style="display:flex;flex-wrap:wrap;gap:2px;">
-                        ${iconDoc(docs.carnet, 'Carnet')}
-                        ${iconDoc(docs.certificado_nacimiento, 'Cert. Nac.')}
-                        ${iconDoc(docs.documento_academico, 'Doc. Acad.')}
-                        ${iconDoc(docs.documento_provision, 'Provisión')}
-                    </div>
+                <td class="py-2">
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size:.72rem;">${item.sucursal_nombre || 'N/A'}</span>
+                    ${item.sede_nombre ? '<br><span class="text-muted" style="font-size:.72rem;">' + item.sede_nombre + '</span>' : ''}
+                </td>
+                <td class="py-2">
+                    ${iconDoc(docs.carnet, 'Carnet')}
+                    ${iconDoc(docs.certificado_nacimiento, 'Cert. Nacimiento')}
+                    ${iconDoc(docs.documento_academico, 'Doc. Académico')}
+                    ${iconDoc(docs.documento_provision, 'Provisión Nac.')}
                 </td>
                 <td class="py-2 text-center">${estadoGeneral}</td>
                 <td class="py-2 text-center">${pagoInicialBadge}</td>
                 <td class="py-2 text-center">
-                    <button class="btn-subir-respaldo"
-                            style="width:26px;height:26px;border-radius:5px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;cursor:pointer;flex-shrink:0;"
+                    <button class="btn btn-sm btn-outline-primary btn-subir-respaldo"
+                            style="height:28px;min-width:30px;padding:0 7px;"
                             title="Subir comprobante"
                             data-inscripcion-id="${item.id}"
                             data-estudiante="${item.estudiante_nombre}"
                             data-programa="${item.programa_nombre}">
-                        <i class="ri-upload-line"></i>
+                        <i class="ri-upload-line" style="font-size:.82rem;"></i>
                     </button>
                 </td>
             </tr>
