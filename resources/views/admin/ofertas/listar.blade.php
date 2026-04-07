@@ -362,9 +362,17 @@
         }
 
         .badge-preinscritos {
-            font-size: 0.65rem;
-            color: var(--ofertas-text-muted);
             margin-top: 2px;
+        }
+
+        .badge-pre-count {
+            background: #fff7ed;
+            color: #ea580c;
+            padding: 2px 7px;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            border: 1px solid #fed7aa;
         }
 
         .fecha-inicio {

@@ -26,12 +26,10 @@
             error: function() {
                 $('#loadingPlanes').hide();
                 $('#sinPlanes').html(`
-                    <div class="avatar-lg mx-auto mb-3">
-                        <div class="avatar-title bg-danger-subtle text-danger rounded-circle">
-                            <i class="ri-error-warning-line fs-2"></i>
-                        </div>
+                    <div style="width: 72px; height: 72px; margin: 0 auto 16px; background: #fef2f2; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="ri-error-warning-line" style="font-size: 2rem; color: #ef4444;"></i>
                     </div>
-                    <h5 class="text-danger mb-1">Error al cargar</h5>
+                    <h5 class="text-danger mb-1" style="font-family: 'Outfit', sans-serif;">Error al cargar</h5>
                     <p class="text-muted small mb-0">No se pudieron cargar los planes de pago.</p>
                 `).show();
             }
@@ -44,22 +42,26 @@
         return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : d;
     }
 
+    function formatMoney(amount) {
+        if (!amount) return '0.00';
+        const num = parseFloat(String(amount).replace(',', ''));
+        return num.toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
     function renderizarPlanesPago(planes) {
-        const paleta = ['primary', 'success', 'info', 'dark'];
+        const paleta = ['#0f766e', '#2563eb', '#0891b2', '#7c3aed'];
         let html = '<div class="row g-3">';
 
         planes.forEach((plan, idx) => {
-            // Detectar si algún concepto es promoción
             const esPromo   = plan.conceptos.some(c => c.es_promocion);
             const promoVig  = plan.conceptos.some(c => c.promocion_vigente);
             const promoConc = plan.conceptos.find(c => c.es_promocion);
             const fIni      = promoConc?.fecha_inicio_promocion;
             const fFin      = promoConc?.fecha_fin_promocion;
 
-            const color     = esPromo ? 'warning'  : paleta[idx % paleta.length];
+            const color     = paleta[idx % paleta.length];
+            const colorLight = color + '15';
             const iconPlan  = esPromo ? 'ri-price-tag-3-line' : 'ri-bank-card-line';
-            const borderClr = esPromo ? '#fd7e14'  : `var(--bs-${paleta[idx % paleta.length]})`;
-            const headBg    = esPromo ? '#fffbf0'  : '#f8f9fa';
 
             // Totales
             let totalPlan = 0, totalRegular = 0;
@@ -75,111 +77,92 @@
 
             html += `
             <div class="col-md-6">
-                <div class="card border-0 shadow-sm h-100 overflow-hidden"
-                     style="border-left:4px solid ${borderClr}!important;">
+                <div class="card border-0 shadow-sm h-100 overflow-hidden" style="border-radius: 12px; border-left: 4px solid ${color} !important;">
 
                     {{-- Cabecera del plan --}}
-                    <div class="card-header border-0 py-3 px-3 d-flex align-items-center justify-content-between"
-                         style="background:${headBg};">
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="avatar-sm flex-shrink-0">
-                                <div class="avatar-title bg-${color}-subtle text-${color} rounded-2">
-                                    <i class="${iconPlan} fs-18"></i>
+                    <div class="card-header border-0 py-3 px-3" style="background: ${colorLight};">
+                        <div class="d-flex align-items-start justify-content-between">
+                            <div class="d-flex align-items-center gap-2">
+                                <div style="width: 38px; height: 38px; background: ${color}; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <i class="${iconPlan}" style="font-size: 1.1rem; color: white;"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-semibold" style="font-size: 0.9rem; color: #1e293b;">${plan.nombre}</div>
+                                    ${esPromo && fIni ? `
+                                    <div class="text-muted" style="font-size: 0.72rem;">
+                                        <i class="ri-calendar-line me-1"></i>${fmtDate(fIni)} — ${fmtDate(fFin)}
+                                    </div>` : ''}
                                 </div>
                             </div>
-                            <div>
-                                <div class="fw-semibold" style="font-size:.9rem;">${plan.nombre}</div>
-                                ${esPromo && fIni ? `
-                                <div class="text-muted" style="font-size:.72rem;">
-                                    <i class="ri-calendar-line me-1"></i>${fmtDate(fIni)} — ${fmtDate(fFin)}
-                                </div>` : ''}
+                            <div class="d-flex flex-column align-items-end gap-1">
+                                ${esPromo ? `
+                                <span class="badge rounded-pill" style="background: #fef3c7; color: #d97706; font-size: 0.68rem; font-weight: 600;">
+                                    <i class="ri-price-tag-3-line me-1"></i>PROMOCIÓN
+                                </span>
+                                <span class="badge rounded-pill" style="background: ${promoVig ? '#dcfce7' : '#fef2f2'}; color: ${promoVig ? '#16a34a' : '#dc2626'}; font-size: 0.65rem; font-weight: 600;">
+                                    ${promoVig ? '✓ Vigente' : '✗ No vigente'}
+                                </span>` : `
+                                <span class="badge rounded-pill" style="background: ${colorLight}; color: ${color}; font-size: 0.68rem; font-weight: 600;">Plan ${idx + 1}</span>`}
+                                <span class="badge rounded-pill" style="background: #f1f5f9; color: #64748b; font-size: 0.62rem;">${plan.conceptos.length} concepto(s)</span>
                             </div>
-                        </div>
-                        <div class="d-flex flex-column align-items-end gap-1">
-                            ${esPromo ? `
-                            <span class="badge bg-warning text-dark rounded-pill" style="font-size:.7rem;">
-                                <i class="ri-price-tag-3-line me-1"></i>PROMOCIÓN
-                            </span>
-                            <span class="badge ${promoVig
-                                ? 'bg-success-subtle text-success border border-success-subtle'
-                                : 'bg-danger-subtle text-danger border border-danger-subtle'
-                            } rounded-pill" style="font-size:.65rem;">
-                                ${promoVig ? 'Vigente' : 'No vigente'}
-                            </span>` : `
-                            <span class="badge bg-${color}-subtle text-${color} border border-${color}-subtle rounded-pill"
-                                  style="font-size:.7rem;">Plan ${idx + 1}</span>`}
-                            <span class="badge bg-light text-muted border rounded-pill"
-                                  style="font-size:.65rem;">${plan.conceptos.length} concepto(s)</span>
                         </div>
                     </div>
 
-                    {{-- Tabla de conceptos --}}
-                    <div class="card-body p-0">
-                        <table class="table align-middle mb-0" style="font-size:.82rem;">
-                            <thead>
-                                <tr style="background:#fafafa;">
-                                    <th class="border-0 py-2 px-3 text-muted fw-semibold" style="font-size:.7rem;">CONCEPTO</th>
-                                    <th class="border-0 py-2 text-center text-muted fw-semibold" style="font-size:.7rem;">CUOTAS</th>
-                                    <th class="border-0 py-2 pe-3 text-end text-muted fw-semibold" style="font-size:.7rem;">IMPORTE</th>
-                                </tr>
-                            </thead>
-                            <tbody>`;
+                    {{-- Conceptos --}}
+                    <div class="card-body p-0">`;
 
-            plan.conceptos.forEach(c => {
+            plan.conceptos.forEach((c, cIdx) => {
                 const tp      = parseFloat(String(c.total_concepto).replace(',', '')) || 0;
                 const treg    = c.precio_regular ? parseFloat(String(c.precio_regular).replace(',', '')) : null;
                 const dPct    = c.descuento_porcentaje;
                 const dBs     = c.descuento_bs ? parseFloat(String(c.descuento_bs).replace(',', '')) : null;
-                const rowBg   = c.es_promocion ? 'background:#fffbf0;' : '';
-                const iColor  = c.es_promocion ? 'text-warning' : `text-${color}`;
-                const badgeC  = c.es_promocion
-                    ? 'bg-warning-subtle text-warning border border-warning-subtle'
-                    : `bg-${color}-subtle text-${color} border border-${color}-subtle`;
+                const rowBg   = c.es_promocion ? '#fffbeb' : (cIdx % 2 === 0 ? '#fafbfc' : 'white');
+                const iColor  = c.es_promocion ? '#d97706' : color;
 
                 html += `
-                                <tr style="${rowBg}">
-                                    <td class="px-3 py-2">
-                                        <div class="d-flex align-items-center gap-2">
-                                            <i class="ri-price-tag-3-line ${iColor}" style="font-size:.85rem;flex-shrink:0;"></i>
-                                            <div>
-                                                <div class="fw-medium">${c.concepto_nombre}</div>
-                                                ${c.es_promocion ? `
-                                                <div style="font-size:.7rem;" class="d-flex align-items-center gap-1 mt-1 flex-wrap">
-                                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill" style="font-size:.65rem;">Promo</span>
-                                                    ${c.fecha_inicio_promocion ? `<span class="text-muted"><i class="ri-calendar-line me-1"></i>${fmtDate(c.fecha_inicio_promocion)} → ${fmtDate(c.fecha_fin_promocion)}</span>` : ''}
-                                                    ${dPct ? `<span class="badge bg-danger rounded-pill" style="font-size:.65rem;">-${dPct}%</span>` : ''}
-                                                </div>` : ''}
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="text-center py-2">
-                                        <span class="badge ${badgeC} rounded-pill" style="font-size:.72rem;">
-                                            ${c.n_cuotas}x ${c.monto_por_cuota} Bs
-                                        </span>
-                                    </td>
-                                    <td class="text-end pe-3 py-2">
-                                        ${treg && c.es_promocion ? `<div class="text-muted text-decoration-line-through" style="font-size:.74rem;">${c.precio_regular} Bs</div>` : ''}
-                                        <div class="fw-bold ${c.es_promocion ? 'text-warning' : `text-${color}`}">${c.total_concepto} Bs</div>
-                                        ${dBs && dBs > 0 && c.es_promocion ? `<div class="text-success" style="font-size:.7rem;"><i class="ri-arrow-down-line me-1"></i>Ahorro ${c.descuento_bs} Bs</div>` : ''}
-                                    </td>
-                                </tr>`;
+                        <div style="padding: 10px 14px; background: ${rowBg}; ${cIdx < plan.conceptos.length - 1 ? 'border-bottom: 1px solid #f1f5f9;' : ''}">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center gap-2 flex-grow-1" style="min-width: 0;">
+                                    <div style="width: 28px; height: 28px; background: ${iColor}15; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                        <i class="ri-price-tag-3-line" style="font-size: 0.8rem; color: ${iColor};"></i>
+                                    </div>
+                                    <div style="min-width: 0;">
+                                        <div class="fw-medium" style="font-size: 0.82rem; color: #1e293b;">${c.concepto_nombre}</div>
+                                        ${c.es_promocion ? `
+                                        <div class="d-flex align-items-center gap-1 mt-1 flex-wrap">
+                                            <span class="badge rounded-pill" style="background: #fef3c7; color: #d97706; font-size: 0.6rem; font-weight: 600;">Promo</span>
+                                            ${c.fecha_inicio_promocion ? `<span class="text-muted" style="font-size: 0.65rem;"><i class="ri-calendar-line me-1"></i>${fmtDate(c.fecha_inicio_promocion)} → ${fmtDate(c.fecha_fin_promocion)}</span>` : ''}
+                                            ${dPct ? `<span class="badge rounded-pill" style="background: #fef2f2; color: #dc2626; font-size: 0.6rem; font-weight: 600;">-${dPct}%</span>` : ''}
+                                        </div>` : ''}
+                                    </div>
+                                </div>
+                                <div class="text-end flex-shrink-0 ms-2">
+                                    <span class="badge rounded-pill" style="background: ${colorLight}; color: ${color}; font-size: 0.68rem; font-weight: 600;">
+                                        ${c.n_cuotas}x ${c.monto_por_cuota} Bs
+                                    </span>
+                                    <div class="mt-1 fw-bold" style="font-size: 0.85rem; color: ${iColor};">${formatMoney(c.total_concepto)} Bs</div>
+                                    ${treg && c.es_promocion ? `<div class="text-muted text-decoration-line-through" style="font-size: 0.68rem;">${formatMoney(c.precio_regular)} Bs</div>` : ''}
+                                    ${dBs && dBs > 0 && c.es_promocion ? `<div class="text-success" style="font-size: 0.65rem;"><i class="ri-arrow-down-line me-1"></i>Ahorro ${dBs.toFixed(2)} Bs</div>` : ''}
+                                </div>
+                            </div>
+                        </div>`;
             });
 
             html += `
-                            </tbody>
-                            <tfoot>
-                                <tr style="background:#f8f9fa;">
-                                    <td colspan="2" class="text-end fw-semibold text-muted small py-2 px-3">
-                                        ${esPromo && ahorro > 0 ? `<span class="text-success me-2 fw-normal"><i class="ri-discount-percent-line me-1"></i>Ahorro: ${ahorro.toFixed(2)} Bs</span>` : ''}
-                                        Total Inversión:
-                                    </td>
-                                    <td class="text-end pe-3 py-2">
-                                        ${esPromo && ahorro > 0 ? `<div class="text-muted text-decoration-line-through" style="font-size:.74rem;">${totalRegular.toFixed(2)} Bs</div>` : ''}
-                                        <div class="fw-bold text-${color}" style="font-size:.95rem;">${totalPlan.toFixed(2)} Bs</div>
-                                    </td>
-                                </tr>
-                            </tfoot>
-                        </table>
+                    </div>
+
+                    {{-- Footer con total --}}
+                    <div style="padding: 12px 14px; background: #f8fafc; border-top: 1px dashed #e2e8f0;">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <span class="text-muted" style="font-size: 0.78rem;">Total Inversión:</span>
+                                ${esPromo && ahorro > 0 ? `<span class="ms-2 badge rounded-pill" style="background: #dcfce7; color: #16a34a; font-size: 0.65rem; font-weight: 600;"><i class="ri-discount-percent-line me-1"></i>Ahorro: ${ahorro.toFixed(2)} Bs</span>` : ''}
+                            </div>
+                            <div class="text-end">
+                                ${esPromo && ahorro > 0 ? `<div class="text-muted text-decoration-line-through" style="font-size: 0.72rem;">${formatMoney(totalRegular)} Bs</div>` : ''}
+                                <div class="fw-bold" style="font-size: 1.05rem; color: ${color};">${formatMoney(totalPlan)} Bs</div>
+                            </div>
+                        </div>
                     </div>
 
                 </div>

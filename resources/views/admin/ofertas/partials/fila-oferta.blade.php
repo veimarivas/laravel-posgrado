@@ -1,7 +1,7 @@
 @php
     $rowNumber = $loop->iteration;
     $fase      = $oferta->fase;
-    $faseColor = $fase->color ?? '#cccccc';
+    $faseColor = ($fase->n_fase ?? 0) == 4 ? '#f97316' : ($fase->color ?? '#cccccc');
 @endphp
 
 <tr id="oferta-{{ $oferta->id }}" style="transition:background .15s;">
@@ -83,7 +83,9 @@
         </span>
         @if ($oferta->totalPreInscritos() > 0)
             <div class="badge-preinscritos">
-                <i class="ri-user-add-line me-1"></i>{{ $oferta->totalPreInscritos() }} pre
+                <span class="badge-pre-count">
+                    <i class="ri-user-add-line me-1"></i>{{ $oferta->totalPreInscritos() }} pre
+                </span>
             </div>
         @endif
     </td>
