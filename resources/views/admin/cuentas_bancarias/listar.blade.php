@@ -1,439 +1,896 @@
 @extends('admin.dashboard')
 @section('admin')
-    <div class="container-fluid">
-        <!-- Header Section -->
-        <div class="row">
-            <div class="col-12">
-                <div class="page-title-box d-flex align-items-center justify-content-between">
-                    <h4 class="mb-0">Gestión de Cuentas Bancarias</h4>
-                    @if (Auth::guard('web')->user()->can('cuentas-bancarias.registrar'))
-                        <div class="page-title-right">
-                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#registrar">
-                                <i class="ri-add-line align-middle me-1"></i> Registrar Cuenta
-                            </button>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-        <!-- Filters Section -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="row g-3 align-items-center">
-                            <div class="col-md-10">
-                                <div class="search-box">
-                                    <input type="text" id="searchInput" class="form-control"
-                                        placeholder="Buscar por número de cuenta, banco o sucursal...">
-                                    <i class="ri-search-line search-icon"></i>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <button type="button" id="clearFilters" class="btn btn-outline-secondary w-100">
-                                    <i class="ri-refresh-line me-1"></i> Limpiar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Results Section -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Lista de Cuentas Bancarias Registradas</h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="results-container">
-                            <div class="table-responsive">
-                                <table class="table table-hover table-centered align-middle mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th width="5%">ID</th>
-                                            <th>Número de Cuenta</th>
-                                            <th>Banco</th>
-                                            <th>Sucursal</th>
-                                            <th>Tipo</th>
-                                            <th>Moneda</th>
-                                            <th>Saldo Actual</th>
-                                            <th>Estado</th>
-                                            <th width="15%" class="text-center">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    @include('admin.cuentas_bancarias.partials.table-body')
-                                </table>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center mt-3">
-                                <div class="text-muted">
-                                    Mostrando <span id="showing-count">{{ $cuentas->firstItem() ?? 0 }}</span>
-                                    a <span id="to-count">{{ $cuentas->lastItem() ?? 0 }}</span>
-                                    de <span id="total-count">{{ $cuentas->total() ?? 0 }}</span> registros
-                                </div>
-                                <div id="pagination-container">
-                                    {{ $cuentas->links('pagination::bootstrap-5') }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Registrar Cuenta Bancaria -->
-    <div class="modal fade" id="registrar" tabindex="-1" aria-labelledby="registrarLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-primary bg-soft">
-                    <h5 class="modal-title text-white" id="registrarLabel">
-                        <i class="ri-add-line me-2"></i>Registrar Nueva Cuenta Bancaria
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="addForm" class="forms-sample">
-                        @csrf
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Banco <span class="text-danger">*</span></label>
-                                    <select class="form-control" id="banco_id_registro" name="banco_id" required>
-                                        <option value="">Seleccionar Banco</option>
-                                        <!-- Cargado dinámicamente -->
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Sucursal <span class="text-danger">*</span></label>
-                                    <select class="form-control" id="sucursale_id_registro" name="sucursale_id" required>
-                                        <option value="">Seleccionar Sucursal</option>
-                                        <!-- Cargado dinámicamente -->
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <div class="mb-3">
-                                    <label class="form-label">Número de Cuenta <span class="text-danger">*</span></label>
-                                    <input type="text" id="numero_cuenta_registro" name="numero_cuenta"
-                                        class="form-control" placeholder="Ej: 1234567890" required>
-                                    <div id="feedback_numero_cuenta_registro" class="form-text"></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Tipo de Cuenta <span class="text-danger">*</span></label>
-                                    <select class="form-control" id="tipo_cuenta_registro" name="tipo_cuenta" required>
-                                        <option value="">Seleccionar Tipo</option>
-                                        <option value="ahorro">Ahorro</option>
-                                        <option value="corriente">Corriente</option>
-                                        <option value="moneda_extranjera">Moneda Extranjera</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Moneda <span class="text-danger">*</span></label>
-                                    <select class="form-control" id="moneda_registro" name="moneda" required>
-                                        <option value="">Seleccionar Moneda</option>
-                                        <option value="BS">Bolivianos (BS)</option>
-                                        <option value="USD">Dólares (USD)</option>
-                                        <option value="EUR">Euros (EUR)</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <div class="mb-3">
-                                    <label class="form-label">Descripción</label>
-                                    <textarea class="form-control" id="descripcion_registro" name="descripcion" rows="2"
-                                        placeholder="Descripción opcional..."></textarea>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Saldo Inicial <span class="text-danger">*</span></label>
-                                    <input type="number" step="0.01" min="0" id="saldo_inicial_registro"
-                                        name="saldo_inicial" class="form-control" placeholder="0.00" required>
-                                </div>
-                            </div>
-                            <!-- En el formulario de registro -->
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Estado</label>
-                                    <div class="form-check form-switch">
-                                        <input type="hidden" name="activa" value="0">
-                                        <!-- Campo oculto con valor 0 -->
-                                        <input class="form-check-input" type="checkbox" id="activa_registro"
-                                            name="activa" value="1" checked>
-                                        <label class="form-check-label" for="activa_registro">Activa</label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" form="addForm" class="btn btn-primary addBtn" disabled>
-                        <i class="ri-save-line me-1"></i> Registrar Cuenta
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Modificar Cuenta Bancaria -->
-    <div class="modal fade" id="modalModificar" tabindex="-1" aria-labelledby="modalModificarLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-warning bg-soft">
-                    <h5 class="modal-title" id="modalModificarLabel">
-                        <i class="ri-edit-line me-2"></i>Modificar Cuenta Bancaria
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="updateForm" class="forms-sample">
-                        @csrf
-                        @method('PUT')
-                        <input type="hidden" name="id" id="cuentaId">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Banco <span class="text-danger">*</span></label>
-                                    <select class="form-control" id="banco_id_edicion" name="banco_id" required>
-                                        <option value="">Seleccionar Banco</option>
-                                        <!-- Cargado dinámicamente -->
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Sucursal <span class="text-danger">*</span></label>
-                                    <select class="form-control" id="sucursale_id_edicion" name="sucursale_id" required>
-                                        <option value="">Seleccionar Sucursal</option>
-                                        <!-- Cargado dinámicamente -->
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <div class="mb-3">
-                                    <label class="form-label">Número de Cuenta <span class="text-danger">*</span></label>
-                                    <input type="text" id="numero_cuenta_edicion" name="numero_cuenta"
-                                        class="form-control" required>
-                                    <div id="feedback_numero_cuenta_edicion" class="form-text"></div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Tipo de Cuenta <span class="text-danger">*</span></label>
-                                    <select class="form-control" id="tipo_cuenta_edicion" name="tipo_cuenta" required>
-                                        <option value="">Seleccionar Tipo</option>
-                                        <option value="ahorro">Ahorro</option>
-                                        <option value="corriente">Corriente</option>
-                                        <option value="moneda_extranjera">Moneda Extranjera</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Moneda <span class="text-danger">*</span></label>
-                                    <select class="form-control" id="moneda_edicion" name="moneda" required>
-                                        <option value="">Seleccionar Moneda</option>
-                                        <option value="BS">Bolivianos (BS)</option>
-                                        <option value="USD">Dólares (USD)</option>
-                                        <option value="EUR">Euros (EUR)</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-12">
-                                <div class="mb-3">
-                                    <label class="form-label">Descripción</label>
-                                    <textarea class="form-control" id="descripcion_edicion" name="descripcion" rows="2"></textarea>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Saldo Inicial <span class="text-danger">*</span></label>
-                                    <input type="number" step="0.01" min="0" id="saldo_inicial_edicion"
-                                        name="saldo_inicial" class="form-control" required>
-                                </div>
-                            </div>
-                            <!-- En el formulario de edición -->
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Estado</label>
-                                    <div class="form-check form-switch">
-                                        <input type="hidden" name="activa" value="0">
-                                        <!-- Campo oculto con valor 0 -->
-                                        <input class="form-check-input" type="checkbox" id="activa_edicion"
-                                            name="activa" value="1">
-                                        <label class="form-check-label" for="activa_edicion">Activa</label>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" form="updateForm" class="btn btn-warning updateBtn" disabled>
-                        <i class="ri-save-line me-1"></i> Actualizar Cuenta
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Eliminar Cuenta Bancaria -->
-    <div class="modal fade" id="modalEliminar" tabindex="-1" aria-labelledby="modalEliminarLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-danger bg-soft">
-                    <h5 class="modal-title text-white" id="modalEliminarLabel">
-                        <i class="ri-delete-bin-line me-2"></i>Eliminar Cuenta Bancaria
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="deleteForm" class="forms-sample">
-                        @csrf
-                        @method('DELETE')
-                        <input type="hidden" name="id" id="eliminarId">
-                        <div class="text-center mb-4">
-                            <div class="avatar-lg mx-auto mb-4">
-                                <div class="avatar-title bg-danger bg-soft text-danger rounded-circle">
-                                    <i class="ri-error-warning-line fs-2"></i>
-                                </div>
-                            </div>
-                            <h5>¿Está seguro de eliminar esta cuenta bancaria?</h5>
-                            <p class="text-muted">Esta acción no se puede deshacer.</p>
-                            <div class="alert alert-warning mt-3" id="warning-pagos" style="display:none;">
-                                <i class="ri-alert-line me-1"></i> <strong>Advertencia:</strong> Esta cuenta tiene pagos
-                                asociados y no puede ser eliminada.
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" form="deleteForm" class="btn btn-danger btnDelete">
-                        <i class="ri-delete-bin-line me-1"></i> Sí, Eliminar
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <style>
-        .search-box {
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap');
+
+        :root {
+            --plane-primary: #0f766e;
+            --plane-primary-light: #f0fdfa;
+            --plane-primary-dark: #0d5f59;
+            --plane-accent: #f59e0b;
+            --plane-accent-light: #fffbeb;
+            --plane-surface: #f8fafc;
+            --plane-border: #e2e8f0;
+            --plane-text: #1e293b;
+            --plane-text-muted: #64748b;
+            --plane-success: #10b981;
+            --plane-danger: #ef4444;
+            --plane-info: #3b82f6;
+            --plane-warning: #f59e0b;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+            --shadow-lg: 0 10px 25px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+        }
+
+        .cuentas-page {
+            font-family: 'DM Sans', sans-serif;
+            color: var(--plane-text);
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .cuentas-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 28px;
+            padding: 24px 28px;
+            background: linear-gradient(135deg, var(--plane-primary) 0%, var(--plane-primary-dark) 100%);
+            border-radius: var(--radius-lg);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cuentas-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .cuentas-header::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: 20%;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .cuentas-header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.65rem;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.02em;
+            position: relative;
+            z-index: 1;
+            color: white;
+        }
+
+        .cuentas-header h1 i { color: white; }
+
+        .cuentas-header p {
+            margin: 4px 0 0;
+            opacity: 0.85;
+            font-size: 0.9rem;
+            position: relative;
+            z-index: 1;
+            color: white;
+        }
+
+        .btn-new-cuenta {
+            background: white;
+            color: var(--plane-primary);
+            border: none;
+            padding: 10px 24px;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.25s ease;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-new-cuenta:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            background: var(--plane-primary-light);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--plane-border);
+            transition: all 0.25s ease;
+        }
+
+        .stat-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .stat-icon.total { background: var(--plane-primary-light); color: var(--plane-primary); }
+        .stat-icon.active { background: #ecfdf5; color: var(--plane-success); }
+        .stat-icon.inactive { background: #fef2f2; color: var(--plane-danger); }
+        .stat-icon.balance { background: var(--plane-accent-light); color: var(--plane-accent); }
+
+        .stat-info p {
+            margin: 0;
+            font-size: 0.8rem;
+            color: var(--plane-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 500;
+        }
+
+        .stat-info h3 {
+            margin: 2px 0 0;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--plane-text);
+        }
+
+        .filter-bar {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--plane-border);
+        }
+
+        .search-wrapper {
+            flex: 1;
+            min-width: 200px;
             position: relative;
         }
 
-        .search-box .search-icon {
+        .search-wrapper i {
             position: absolute;
-            right: 12px;
+            left: 14px;
             top: 50%;
             transform: translateY(-50%);
-            color: #74788d;
+            color: var(--plane-text-muted);
+            font-size: 1.1rem;
         }
 
-        .table-hover tbody tr:hover {
-            background-color: rgba(85, 110, 230, 0.04);
-        }
-
-        .bg-soft {
-            background-color: rgba(var(--bs-primary-rgb), 0.1) !important;
-        }
-
-        .bg-warning.bg-soft {
-            background-color: rgba(var(--bs-warning-rgb), 0.1) !important;
-        }
-
-        .bg-danger.bg-soft {
-            background-color: rgba(var(--bs-danger-rgb), 0.1) !important;
-        }
-
-        .bg-success.bg-soft {
-            background-color: rgba(var(--bs-success-rgb), 0.1) !important;
-        }
-
-        .avatar-lg {
-            height: 5rem;
-            width: 5rem;
-        }
-
-        .avatar-title {
-            align-items: center;
-            display: flex;
-            height: 100%;
-            justify-content: center;
+        .search-wrapper input {
             width: 100%;
+            padding: 10px 14px 10px 42px;
+            border: 1px solid var(--plane-border);
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.2s ease;
+            background: var(--plane-surface);
         }
 
-        .btn-action {
-            padding: 0.25rem 0.5rem;
+        .search-wrapper input:focus {
+            outline: none;
+            border-color: var(--plane-primary);
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+            background: white;
+        }
+
+        .filter-pills {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .filter-pill {
+            padding: 8px 16px;
+            border: 1px solid var(--plane-border);
+            border-radius: 50px;
+            background: white;
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--plane-text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .filter-pill:hover {
+            border-color: var(--plane-primary);
+            color: var(--plane-primary);
+        }
+
+        .filter-pill.active {
+            background: var(--plane-primary);
+            color: white;
+            border-color: var(--plane-primary);
+        }
+
+        .btn-clear-filters {
+            padding: 8px 16px;
+            border: 1px solid var(--plane-border);
+            border-radius: var(--radius-sm);
+            background: white;
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--plane-text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-clear-filters:hover {
+            background: var(--plane-surface);
+            color: var(--plane-text);
+        }
+
+        .table-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--plane-border);
+            overflow: hidden;
+        }
+
+        .table-card-header {
+            padding: 18px 24px;
+            border-bottom: 1px dashed var(--plane-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .table-card-header h5 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        .table-responsive { overflow-x: visible !important; }
+
+        .cuentas-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .cuentas-table thead th {
+            background: var(--plane-surface);
+            padding: 12px 16px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--plane-text-muted);
+            border-bottom: 1px solid var(--plane-border);
+            vertical-align: middle;
+        }
+
+        .cuentas-table tbody tr {
+            transition: background 0.15s ease;
+        }
+
+        .cuentas-table tbody tr:hover {
+            background: var(--plane-primary-light);
+        }
+
+        .cuentas-table tbody td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--plane-border);
+            vertical-align: middle;
+            font-size: 0.88rem;
+        }
+
+        .cuentas-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .cuenta-name-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .cuenta-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--plane-primary-light);
+            color: var(--plane-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .cuenta-name-text h6 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 0.92rem;
+            color: var(--plane-text);
+        }
+
+        .cuenta-name-text small {
+            color: var(--plane-text-muted);
             font-size: 0.75rem;
         }
 
-        .spin {
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .status-badge.active { background: #ecfdf5; color: #059669; }
+        .status-badge.inactive { background: #fef2f2; color: #dc2626; }
+        .status-badge.ahorro { background: #eff6ff; color: #2563eb; }
+        .status-badge.corriente { background: #f3e8ff; color: #9333ea; }
+        .status-badge.moneda_extranjera { background: #fef3c7; color: #d97706; }
+
+        .action-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: var(--radius-sm);
+            border: 1px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .action-btn.edit {
+            background: var(--plane-accent-light);
+            color: #d97706;
+            border-color: #fde68a;
+        }
+
+        .action-btn.edit:hover {
+            background: #fde68a;
+            transform: translateY(-1px);
+        }
+
+        .action-btn.delete {
+            background: #fef2f2;
+            color: #dc2626;
+            border-color: #fecaca;
+        }
+
+        .action-btn.delete:hover {
+            background: #fecaca;
+            transform: translateY(-1px);
+        }
+
+        .table-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--plane-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            background: var(--plane-surface);
+        }
+
+        .table-footer .results-count {
+            font-size: 0.85rem;
+            color: var(--plane-text-muted);
+        }
+
+        .pagination .page-link {
+            border-radius: var(--radius-sm) !important;
+            border: 1px solid var(--plane-border);
+            color: var(--plane-text-muted);
+            font-size: 0.85rem;
+            padding: 6px 12px;
+            margin: 0 2px;
+        }
+
+        .pagination .page-item.active .page-link {
+            background: var(--plane-primary);
+            border-color: var(--plane-primary);
+            color: white;
+        }
+
+        .pagination .page-link:hover {
+            background: var(--plane-primary-light);
+            border-color: var(--plane-primary);
+            color: var(--plane-primary);
+        }
+
+        .empty-state {
+            padding: 48px 24px;
+            text-align: center;
+        }
+
+        .empty-state i {
+            font-size: 3.5rem;
+            color: #cbd5e1;
+            margin-bottom: 12px;
+        }
+
+        .empty-state p {
+            color: var(--plane-text-muted);
+            margin: 0;
+        }
+
+        .modal-content {
+            border: none;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--plane-border);
+            padding: 16px 24px;
+        }
+
+        .modal-body { padding: 24px; }
+
+        .modal-footer {
+            border-top: 1px solid var(--plane-border);
+            padding: 16px 24px;
+        }
+
+        .form-control, .form-select {
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--plane-border);
+            padding: 10px 14px;
+            font-size: 0.9rem;
+        }
+
+        .form-control:focus {
+            border-color: var(--plane-primary);
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+        }
+
+        .form-label {
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: var(--plane-text);
+            margin-bottom: 6px;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--plane-primary);
+            border-color: var(--plane-primary);
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 999999 !important;
+        }
+
+        .toast {
+            min-width: 300px;
+            max-width: 350px;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            margin-bottom: 10px;
+            animation: slideInRight 0.3s ease-out;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .btn .spin {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
             animation: spin 1s linear infinite;
         }
 
         @keyframes spin {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(360deg);
-            }
+            to { transform: rotate(360deg); }
         }
 
-        .toast {
-            min-width: 250px;
+        .form-switch .form-check-input {
+            width: 2.8em;
+            height: 1.4em;
+        }
+
+        .currency-badge {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .banco-color-box {
+            background-color: var(--plane-primary);
+        }
+
+        @media (max-width: 991.98px) {
+            .cuentas-header { padding: 20px; }
+            .cuentas-header h1 { font-size: 1.35rem; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 767.98px) {
+            .cuentas-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .stats-grid { grid-template-columns: 1fr; }
+            .filter-bar { flex-direction: column; align-items: stretch; }
+            .filter-pills { justify-content: flex-start; }
+            .table-footer { flex-direction: column; align-items: center; }
+            .cuentas-table thead th,
+            .cuentas-table tbody td { padding: 10px; font-size: 0.8rem; }
+            .cuenta-avatar { width: 32px; height: 32px; font-size: 0.9rem; }
+            .cuenta-name-text h6 { font-size: 0.82rem; }
+            .status-badge { font-size: 0.68rem; padding: 3px 8px; }
         }
     </style>
+
+    <div class="container-fluid cuentas-page">
+        <div class="cuentas-header">
+            <div>
+                <h1><i class="ri-bank-line me-2"></i>Gestión de Cuentas Bancarias</h1>
+                <p>Administra las cuentas bancarias de la institución</p>
+            </div>
+            @if (Auth::guard('web')->user()->can('cuentas-bancarias.registrar'))
+                <button type="button" class="btn btn-new-cuenta" data-bs-toggle="modal" data-bs-target="#registrar">
+                    <i class="ri-add-line me-1"></i> Nueva Cuenta
+                </button>
+            @endif
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon total"><i class="ri-file-list-3-line"></i></div>
+                <div class="stat-info">
+                    <p>Total Cuentas</p>
+                    <h3 id="totalCuentasCounter">{{ $cuentas->total() }}</h3>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon active"><i class="ri-checkbox-circle-line"></i></div>
+                <div class="stat-info">
+                    <p>Cuentas Activas</p>
+                    <h3 id="totalActivas">0</h3>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon inactive"><i class="ri-close-circle-line"></i></div>
+                <div class="stat-info">
+                    <p>Cuentas Inactivas</p>
+                    <h3 id="totalInactivas">0</h3>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon balance"><i class="ri-wallet-3-line"></i></div>
+                <div class="stat-info">
+                    <p>Saldo Total</p>
+                    <h3 class="currency-badge" id="totalSaldo">0.00</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="filter-bar">
+            <div class="search-wrapper">
+                <i class="ri-search-line"></i>
+                <input type="text" id="searchInput" class="form-control" placeholder="Buscar por número de cuenta, banco o sucursal..." value="{{ request('search') ?? '' }}">
+            </div>
+            <div class="filter-pills">
+                <span class="filter-pill active" data-filter="all">Todos</span>
+                <span class="filter-pill" data-filter="activa">Activas</span>
+                <span class="filter-pill" data-filter="inactiva">Inactivas</span>
+                <span class="filter-pill" data-filter="ahorro">Ahorro</span>
+                <span class="filter-pill" data-filter="corriente">Corriente</span>
+            </div>
+            <button type="button" id="clearFilters" class="btn-clear-filters">
+                <i class="ri-refresh-line me-1"></i> Limpiar
+            </button>
+        </div>
+
+        <div class="table-card">
+            <div class="table-card-header">
+                <h5><i class="ri-list-check me-2 text-muted"></i>Listado de Cuentas Bancarias</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="cuentas-table">
+                    <thead>
+                        <tr>
+                            <th width="5%">#</th>
+                            <th>Número de Cuenta</th>
+                            <th>Banco</th>
+                            <th>Sucursal</th>
+                            <th width="12%">Tipo</th>
+                            <th width="10%">Moneda</th>
+                            <th width="15%">Saldo</th>
+                            <th width="10%">Estado</th>
+                            <th width="12%" class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cuentasTableBody">
+                        @include('admin.cuentas_bancarias.partials.table-body')
+                    </tbody>
+                </table>
+            </div>
+            @if ($cuentas->total() > 0)
+                <div class="table-footer">
+                    <div class="results-count">
+                        Mostrando <span class="fw-medium" id="showing-count">{{ $cuentas->firstItem() }}</span> a
+                        <span class="fw-medium" id="to-count">{{ $cuentas->lastItem() }}</span> de
+                        <span class="fw-medium" id="total-count">{{ $cuentas->total() }}</span> resultados
+                    </div>
+                    <div class="pagination-container">
+                        {{ $cuentas->appends(request()->input())->links('pagination::bootstrap-5') }}
+                    </div>
+                </div>
+            @endif
+        </div>
+    </div>
+
+    <div class="modal fade" id="registrar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background: var(--plane-primary-light);">
+                    <h5 class="modal-title" style="color: var(--plane-primary); font-weight: 600;">
+                        <i class="ri-add-line me-2"></i>Registrar Nueva Cuenta Bancaria
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="addForm" class="needs-validation" novalidate>
+                    @csrf
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="banco_id_registro" class="form-label">Banco <span class="text-danger">*</span></label>
+                                <select class="form-select" id="banco_id_registro" name="banco_id" required>
+                                    <option value="">Seleccionar Banco</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="sucursale_id_registro" class="form-label">Sucursal <span class="text-danger">*</span></label>
+                                <select class="form-select" id="sucursale_id_registro" name="sucursale_id" required>
+                                    <option value="">Seleccionar Sucursal</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-2">
+                            <div class="col-12">
+                                <label for="numero_cuenta_registro" class="form-label">Número de Cuenta <span class="text-danger">*</span></label>
+                                <input type="text" id="numero_cuenta_registro" name="numero_cuenta" class="form-control" placeholder="Ej: 1234567890" required>
+                                <small id="feedback_numero_cuenta_registro" class="form-text mt-1"></small>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                <label for="tipo_cuenta_registro" class="form-label">Tipo de Cuenta <span class="text-danger">*</span></label>
+                                <select class="form-select" id="tipo_cuenta_registro" name="tipo_cuenta" required>
+                                    <option value="">Seleccionar Tipo</option>
+                                    <option value="ahorro">Ahorro</option>
+                                    <option value="corriente">Corriente</option>
+                                    <option value="moneda_extranjera">Moneda Extranjera</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="moneda_registro" class="form-label">Moneda <span class="text-danger">*</span></label>
+                                <select class="form-select" id="moneda_registro" name="moneda" required>
+                                    <option value="">Seleccionar Moneda</option>
+                                    <option value="BS">Bolivianos (BS)</option>
+                                    <option value="USD">Dólares (USD)</option>
+                                    <option value="EUR">Euros (EUR)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                <label for="saldo_inicial_registro" class="form-label">Saldo Inicial <span class="text-danger">*</span></label>
+                                <input type="number" step="0.01" min="0" id="saldo_inicial_registro" name="saldo_inicial" class="form-control" placeholder="0.00" required>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-center">
+                                <div class="form-check form-switch mt-4">
+                                    <input type="hidden" name="activa" value="0">
+                                    <input class="form-check-input" type="checkbox" id="activa_registro" name="activa" value="1" checked>
+                                    <label class="form-check-label" for="activa_registro">Cuenta Activa</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-2">
+                            <div class="col-12">
+                                <label for="descripcion_registro" class="form-label">Descripción</label>
+                                <textarea class="form-control" id="descripcion_registro" name="descripcion" rows="2" placeholder="Descripción opcional..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn addBtn" style="background: var(--plane-primary); color: white;" disabled>
+                            <i class="ri-save-3-line me-1"></i> Registrar Cuenta
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalModificar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background: var(--plane-accent-light);">
+                    <h5 class="modal-title" style="color: #b45309; font-weight: 600;">
+                        <i class="ri-edit-line me-2"></i>Editar Cuenta Bancaria
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="updateForm" class="needs-validation" novalidate>
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="id" id="cuentaId">
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="banco_id_edicion" class="form-label">Banco <span class="text-danger">*</span></label>
+                                <select class="form-select" id="banco_id_edicion" name="banco_id" required>
+                                    <option value="">Seleccionar Banco</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="sucursale_id_edicion" class="form-label">Sucursal <span class="text-danger">*</span></label>
+                                <select class="form-select" id="sucursale_id_edicion" name="sucursale_id" required>
+                                    <option value="">Seleccionar Sucursal</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-2">
+                            <div class="col-12">
+                                <label for="numero_cuenta_edicion" class="form-label">Número de Cuenta <span class="text-danger">*</span></label>
+                                <input type="text" id="numero_cuenta_edicion" name="numero_cuenta" class="form-control" required>
+                                <small id="feedback_numero_cuenta_edicion" class="form-text mt-1"></small>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                <label for="tipo_cuenta_edicion" class="form-label">Tipo de Cuenta <span class="text-danger">*</span></label>
+                                <select class="form-select" id="tipo_cuenta_edicion" name="tipo_cuenta" required>
+                                    <option value="">Seleccionar Tipo</option>
+                                    <option value="ahorro">Ahorro</option>
+                                    <option value="corriente">Corriente</option>
+                                    <option value="moneda_extranjera">Moneda Extranjera</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="moneda_edicion" class="form-label">Moneda <span class="text-danger">*</span></label>
+                                <select class="form-select" id="moneda_edicion" name="moneda" required>
+                                    <option value="">Seleccionar Moneda</option>
+                                    <option value="BS">Bolivianos (BS)</option>
+                                    <option value="USD">Dólares (USD)</option>
+                                    <option value="EUR">Euros (EUR)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                <label for="saldo_inicial_edicion" class="form-label">Saldo Inicial <span class="text-danger">*</span></label>
+                                <input type="number" step="0.01" min="0" id="saldo_inicial_edicion" name="saldo_inicial" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-center">
+                                <div class="form-check form-switch mt-4">
+                                    <input type="hidden" name="activa" value="0">
+                                    <input class="form-check-input" type="checkbox" id="activa_edicion" name="activa" value="1">
+                                    <label class="form-check-label" for="activa_edicion">Cuenta Activa</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-3 mt-2">
+                            <div class="col-12">
+                                <label for="descripcion_edicion" class="form-label">Descripción</label>
+                                <textarea class="form-control" id="descripcion_edicion" name="descripcion" rows="2"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn updateBtn" style="background: var(--plane-accent); color: white;" disabled>
+                            <i class="ri-refresh-line me-1"></i> Actualizar Cuenta
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalEliminar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" style="background: #fef2f2;">
+                    <h5 class="modal-title" style="color: #dc2626; font-weight: 600;">
+                        <i class="ri-delete-bin-line me-2"></i>Confirmar Eliminación
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="deleteForm">
+                    @csrf
+                    @method('DELETE')
+                    <input type="hidden" name="id" id="eliminarId">
+                    <div class="modal-body text-center">
+                        <div class="mb-3">
+                            <div style="width: 64px; height: 64px; margin: 0 auto; background: #fef2f2; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                <i class="ri-alert-line" style="font-size: 1.8rem; color: #dc2626;"></i>
+                            </div>
+                        </div>
+                        <h5 style="font-weight: 600;">¿Estás seguro de eliminar esta cuenta bancaria?</h5>
+                        <p class="text-muted mb-0">Esta acción no se puede deshacer.</p>
+                        <div class="alert alert-warning mt-3" id="warning-pagos" style="display: none;">
+                            <i class="ri-alert-line me-1"></i> <strong>Advertencia:</strong> Esta cuenta tiene pagos asociados y no puede ser eliminada.
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-center">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btnDelete" style="background: var(--plane-danger); color: white;">
+                            <i class="ri-delete-bin-line me-1"></i> Sí, Eliminar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('script')
     <script>
         $(document).ready(function() {
             let debounceTimer;
+            let currentFilter = 'all';
 
-            // Llamar a las funciones al cargar la página
-            cargarBancos();
-            cargarSucursales();
-
-            // También carga los bancos y sucursales cuando se abre el modal de edición
-            $('#modalModificar').on('show.bs.modal', function() {
-                // Asegurarse de que los selects estén cargados
-                if ($('#banco_id_edicion').children().length <= 1) {
-                    cargarBancos();
-                }
-                if ($('#sucursale_id_edicion').children().length <= 1) {
-                    cargarSucursales();
-                }
-            });
-
-            // Carga bancos y sucursales cuando se abre el modal de registro
-            $('#registrar').on('show.bs.modal', function() {
-                // Asegurarse de que los selects estén cargados
-                if ($('#banco_id_registro').children().length <= 1) {
-                    cargarBancos();
-                }
-                if ($('#sucursale_id_registro').children().length <= 1) {
-                    cargarSucursales();
-                }
-            });
-
-            // Cargar bancos y sucursales en los selects
             function cargarBancos() {
                 $.ajax({
                     url: "{{ route('admin.cuentas-bancarias.obtener-bancos') }}",
@@ -442,18 +899,10 @@
                         if (response.success) {
                             let options = '<option value="">Seleccionar Banco</option>';
                             response.bancos.forEach(banco => {
-                                options +=
-                                    `<option value="${banco.id}">${banco.nombre} (${banco.codigo})</option>`;
+                                options += '<option value="' + banco.id + '">' + banco.nombre + ' (' + banco.codigo + ')</option>';
                             });
                             $('#banco_id_registro, #banco_id_edicion').html(options);
-                        } else {
-                            console.error('Error al cargar bancos:', response.message);
-                            showNotification('error', 'Error al cargar la lista de bancos');
                         }
-                    },
-                    error: function(xhr) {
-                        console.error('Error en la petición de bancos:', xhr);
-                        showNotification('error', 'Error al cargar la lista de bancos');
                     }
                 });
             }
@@ -466,51 +915,70 @@
                         if (response.success) {
                             let options = '<option value="">Seleccionar Sucursal</option>';
                             response.sucursales.forEach(sucursal => {
-                                options +=
-                                    `<option value="${sucursal.id}">${sucursal.nombre} - ${sucursal.direccion}</option>`;
+                                options += '<option value="' + sucursal.id + '">' + sucursal.nombre + ' - ' + sucursal.direccion + '</option>';
                             });
                             $('#sucursale_id_registro, #sucursale_id_edicion').html(options);
-                        } else {
-                            console.error('Error al cargar sucursales:', response.message);
-                            showNotification('error', 'Error al cargar la lista de sucursales');
                         }
-                    },
-                    error: function(xhr) {
-                        console.error('Error en la petición de sucursales:', xhr);
-                        showNotification('error', 'Error al cargar la lista de sucursales');
                     }
                 });
             }
 
+            cargarBancos();
+            cargarSucursales();
 
+            $('#modalModificar, #registrar').on('show.bs.modal', function() {
+                if ($('#banco_id_edicion').children().length <= 1) cargarBancos();
+                if ($('#sucursale_id_edicion').children().length <= 1) cargarSucursales();
+            });
 
-            // Resetear formulario de registro
-            function resetAddForm() {
-                $('#addForm')[0].reset();
-                $('#feedback_numero_cuenta_registro').removeClass('text-success text-danger').text('');
-                $('.addBtn').prop('disabled', true).html('<i class="ri-save-line me-1"></i> Registrar Cuenta');
+            $('#registrar, #modalModificar, #modalEliminar').on('hidden.bs.modal', function() {
+                if (this.id === 'registrar') {
+                    $('#addForm')[0].reset();
+                    $('#activa_registro').prop('checked', true);
+                    $('#feedback_numero_cuenta_registro').removeClass('text-success text-danger').text('');
+                    $('.addBtn').prop('disabled', true);
+                } else if (this.id === 'modalModificar') {
+                    $('#updateForm')[0].reset();
+                    $('#feedback_numero_cuenta_edicion').removeClass('text-success text-danger').text('');
+                    $('.updateBtn').prop('disabled', true);
+                } else if (this.id === 'modalEliminar') {
+                    $('#warning-pagos').hide();
+                    $('#deleteForm')[0].reset();
+                }
+            });
+
+            function validarFormularioRegistro() {
+                const bancoId = $('#banco_id_registro').val();
+                const sucursalId = $('#sucursale_id_registro').val();
+                const numeroCuenta = $('#numero_cuenta_registro').val().trim();
+                const tipoCuenta = $('#tipo_cuenta_registro').val();
+                const moneda = $('#moneda_registro').val();
+                const saldoInicial = $('#saldo_inicial_registro').val();
+                const submitBtn = $('.addBtn');
+                const feedback = $('#feedback_numero_cuenta_registro');
+
+                let valido = bancoId && sucursalId && numeroCuenta && tipoCuenta && moneda && saldoInicial && !feedback.hasClass('text-danger');
+                submitBtn.prop('disabled', !valido);
             }
 
-            // Evento cuando se cierra el modal de registro
-            $('#registrar').on('hidden.bs.modal', resetAddForm);
+            $('#banco_id_registro, #sucursale_id_registro, #tipo_cuenta_registro, #moneda_registro, #saldo_inicial_registro').on('change', validarFormularioRegistro);
+            $('#saldo_inicial_registro').on('input', validarFormularioRegistro);
 
-            // Validar número de cuenta en tiempo real (Registro)
             $('#numero_cuenta_registro').on('input', function() {
                 const numeroCuenta = $(this).val().trim();
                 const bancoId = $('#banco_id_registro').val();
                 const sucursalId = $('#sucursale_id_registro').val();
                 const feedback = $('#feedback_numero_cuenta_registro');
-                const submitBtn = $('.addBtn');
 
                 feedback.removeClass('text-success text-danger').text('');
 
                 if (numeroCuenta.length === 0 || !bancoId || !sucursalId) {
-                    submitBtn.prop('disabled', true);
+                    validarFormularioRegistro();
                     return;
                 }
 
                 clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => {
+                debounceTimer = setTimeout(function() {
                     $.ajax({
                         url: "{{ route('admin.cuentas-bancarias.verificar') }}",
                         type: "POST",
@@ -522,86 +990,47 @@
                         },
                         success: function(res) {
                             if (res.exists) {
-                                feedback.addClass('text-danger').text(
-                                    '⚠️ Esta cuenta ya está registrada en este banco y sucursal.'
-                                );
-                                submitBtn.prop('disabled', true);
+                                feedback.addClass('text-danger').html('<i class="ri-error-warning-line me-1"></i> Esta cuenta ya existe');
+                                $('.addBtn').prop('disabled', true);
                             } else {
-                                feedback.addClass('text-success').text(
-                                    '✅ Número de cuenta disponible.');
+                                feedback.addClass('text-success').html('<i class="ri-checkbox-circle-line me-1"></i> Número disponible');
                                 validarFormularioRegistro();
                             }
-                        },
-                        error: function() {
-                            feedback.addClass('text-danger').text(
-                                '❌ Error al verificar la cuenta.');
-                            submitBtn.prop('disabled', true);
                         }
                     });
                 }, 300);
             });
 
-            // Validar formulario de registro completo
-            function validarFormularioRegistro() {
-                const bancoId = $('#banco_id_registro').val();
-                const sucursalId = $('#sucursale_id_registro').val();
-                const numeroCuenta = $('#numero_cuenta_registro').val().trim();
-                const tipoCuenta = $('#tipo_cuenta_registro').val();
-                const moneda = $('#moneda_registro').val();
-                const saldoInicial = $('#saldo_inicial_registro').val();
-                const submitBtn = $('.addBtn');
-
-                let valido = true;
-
-                if (!bancoId || !sucursalId || !numeroCuenta || !tipoCuenta || !moneda || !saldoInicial) {
-                    valido = false;
-                }
-
-                submitBtn.prop('disabled', !valido);
-            }
-
-            // Escuchar cambios en los campos del formulario de registro
-            $('#banco_id_registro, #sucursale_id_registro, #tipo_cuenta_registro, #moneda_registro, #saldo_inicial_registro')
-                .on('change', validarFormularioRegistro);
-            $('#saldo_inicial_registro').on('input', validarFormularioRegistro);
-
-            // Registro de cuenta bancaria
             $('#addForm').submit(function(e) {
                 e.preventDefault();
                 const submitBtn = $('.addBtn');
-                submitBtn.prop('disabled', true).html(
-                    '<i class="ri-loader-4-line spin me-1"></i> Registrando...');
+                submitBtn.prop('disabled', true).html('<i class="ri-loader-4-line spin me-1"></i> Registrando...');
 
-                var formData = $(this).serialize();
                 $.ajax({
                     url: "{{ route('admin.cuentas-bancarias.registrar') }}",
                     type: "POST",
-                    data: formData,
+                    data: $(this).serialize(),
                     success: function(res) {
                         if (res.success) {
                             showNotification('success', res.msg);
                             $('#registrar').modal('hide');
-                            loadResults($('#searchInput').val().trim());
-                            resetAddForm();
+                            loadResults();
                         } else {
                             showNotification('error', res.msg);
-                            submitBtn.prop('disabled', false).html(
-                                '<i class="ri-save-line me-1"></i> Registrar Cuenta');
                         }
+                        submitBtn.prop('disabled', false).html('<i class="ri-save-3-line me-1"></i> Registrar Cuenta');
                     },
                     error: function(xhr) {
                         let errorMsg = 'Error al registrar la cuenta bancaria.';
-                        if (xhr.responseJSON?.errors) {
+                        if (xhr.responseJSON && xhr.responseJSON.errors) {
                             errorMsg = Object.values(xhr.responseJSON.errors)[0][0];
                         }
                         showNotification('error', errorMsg);
-                        submitBtn.prop('disabled', false).html(
-                            '<i class="ri-save-line me-1"></i> Registrar Cuenta');
+                        submitBtn.prop('disabled', false).html('<i class="ri-save-3-line me-1"></i> Registrar Cuenta');
                     }
                 });
             });
 
-            // Editar cuenta bancaria - abrir modal
             $(document).on('click', '.editBtn', function() {
                 var data = $(this).data('bs-obj');
                 $('#cuentaId').val(data.id);
@@ -613,30 +1042,43 @@
                 $('#descripcion_edicion').val(data.descripcion || '');
                 $('#saldo_inicial_edicion').val(data.saldo_inicial);
                 $('#activa_edicion').prop('checked', data.activa);
-
-                // Resetear feedback
                 $('#feedback_numero_cuenta_edicion').removeClass('text-success text-danger').text('');
                 $('.updateBtn').prop('disabled', false);
             });
 
-            // Validar número de cuenta en tiempo real (Edición)
+            function validarFormularioEdicion() {
+                const bancoId = $('#banco_id_edicion').val();
+                const sucursalId = $('#sucursale_id_edicion').val();
+                const numeroCuenta = $('#numero_cuenta_edicion').val().trim();
+                const tipoCuenta = $('#tipo_cuenta_edicion').val();
+                const moneda = $('#moneda_edicion').val();
+                const saldoInicial = $('#saldo_inicial_edicion').val();
+                const submitBtn = $('.updateBtn');
+                const feedback = $('#feedback_numero_cuenta_edicion');
+
+                let valido = bancoId && sucursalId && numeroCuenta && tipoCuenta && moneda && saldoInicial && !feedback.hasClass('text-danger');
+                submitBtn.prop('disabled', !valido);
+            }
+
+            $('#banco_id_edicion, #sucursale_id_edicion, #tipo_cuenta_edicion, #moneda_edicion, #saldo_inicial_edicion').on('change', validarFormularioEdicion);
+            $('#saldo_inicial_edicion').on('input', validarFormularioEdicion);
+
             $('#numero_cuenta_edicion').on('input', function() {
                 const numeroCuenta = $(this).val().trim();
                 const bancoId = $('#banco_id_edicion').val();
                 const sucursalId = $('#sucursale_id_edicion').val();
                 const cuentaId = $('#cuentaId').val();
                 const feedback = $('#feedback_numero_cuenta_edicion');
-                const submitBtn = $('.updateBtn');
 
                 feedback.removeClass('text-success text-danger').text('');
 
                 if (numeroCuenta.length === 0 || !bancoId || !sucursalId) {
-                    submitBtn.prop('disabled', true);
+                    validarFormularioEdicion();
                     return;
                 }
 
                 clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => {
+                debounceTimer = setTimeout(function() {
                     $.ajax({
                         url: "{{ route('admin.cuentas-bancarias.verificar') }}",
                         type: "POST",
@@ -649,205 +1091,116 @@
                         },
                         success: function(res) {
                             if (res.exists) {
-                                feedback.addClass('text-danger').text(
-                                    '⚠️ Esta cuenta ya está registrada en este banco y sucursal.'
-                                );
-                                submitBtn.prop('disabled', true);
+                                feedback.addClass('text-danger').html('<i class="ri-error-warning-line me-1"></i> Esta cuenta ya existe');
+                                $('.updateBtn').prop('disabled', true);
                             } else {
-                                feedback.addClass('text-success').text(
-                                    '✅ Número de cuenta disponible.');
+                                feedback.addClass('text-success').html('<i class="ri-checkbox-circle-line me-1"></i> Número disponible');
                                 validarFormularioEdicion();
                             }
-                        },
-                        error: function() {
-                            feedback.addClass('text-danger').text(
-                                '❌ Error al verificar la cuenta.');
-                            submitBtn.prop('disabled', true);
                         }
                     });
                 }, 300);
             });
 
-            // Validar formulario de edición completo
-            function validarFormularioEdicion() {
-                const bancoId = $('#banco_id_edicion').val();
-                const sucursalId = $('#sucursale_id_edicion').val();
-                const numeroCuenta = $('#numero_cuenta_edicion').val().trim();
-                const tipoCuenta = $('#tipo_cuenta_edicion').val();
-                const moneda = $('#moneda_edicion').val();
-                const saldoInicial = $('#saldo_inicial_edicion').val();
-                const submitBtn = $('.updateBtn');
-
-                let valido = true;
-
-                if (!bancoId || !sucursalId || !numeroCuenta || !tipoCuenta || !moneda || !saldoInicial) {
-                    valido = false;
-                }
-
-                submitBtn.prop('disabled', !valido);
-            }
-
-            // Escuchar cambios en los campos del formulario de edición
-            $('#banco_id_edicion, #sucursale_id_edicion, #tipo_cuenta_edicion, #moneda_edicion, #saldo_inicial_edicion')
-                .on('change', validarFormularioEdicion);
-            $('#saldo_inicial_edicion').on('input', validarFormularioEdicion);
-
-            // Actualizar cuenta bancaria
             $('#updateForm').submit(function(e) {
                 e.preventDefault();
                 const submitBtn = $('.updateBtn');
-                submitBtn.prop('disabled', true).html(
-                    '<i class="ri-loader-4-line spin me-1"></i> Actualizando...');
+                submitBtn.prop('disabled', true).html('<i class="ri-loader-4-line spin me-1"></i> Actualizando...');
 
-                var formData = $(this).serialize();
                 $.ajax({
                     url: "{{ route('admin.cuentas-bancarias.modificar') }}",
                     type: "POST",
-                    data: formData,
+                    data: $(this).serialize(),
                     success: function(res) {
                         if (res.success) {
                             showNotification('success', res.msg);
                             $('#modalModificar').modal('hide');
-                            loadResults($('#searchInput').val().trim());
+                            loadResults();
                         } else {
                             showNotification('error', res.msg);
-                            submitBtn.prop('disabled', false).html(
-                                '<i class="ri-save-line me-1"></i> Actualizar Cuenta');
                         }
+                        submitBtn.prop('disabled', false).html('<i class="ri-refresh-line me-1"></i> Actualizar Cuenta');
                     },
-                    error: function(xhr) {
-                        let errorMsg = 'Error al actualizar la cuenta bancaria.';
-                        if (xhr.responseJSON?.errors) {
-                            errorMsg = Object.values(xhr.responseJSON.errors)[0][0];
-                        }
-                        showNotification('error', errorMsg);
-                        submitBtn.prop('disabled', false).html(
-                            '<i class="ri-save-line me-1"></i> Actualizar Cuenta');
+                    error: function() {
+                        showNotification('error', 'Error al actualizar la cuenta bancaria.');
+                        submitBtn.prop('disabled', false).html('<i class="ri-refresh-line me-1"></i> Actualizar Cuenta');
                     }
                 });
             });
 
-            // Eliminar cuenta bancaria - abrir modal
             $(document).on('click', '.deleteBtn', function() {
                 var data = $(this).data('bs-obj');
                 $('#eliminarId').val(data.id);
-
-                // Resetear estado
                 $('#warning-pagos').hide();
-                $('.btnDelete').prop('disabled', false).removeClass('disabled');
+                $('.btnDelete').prop('disabled', false);
             });
 
-            // Confirmar eliminación de cuenta bancaria
-            // Eliminar cuenta bancaria - AJAX
             $('#deleteForm').submit(function(e) {
                 e.preventDefault();
                 const submitBtn = $('.btnDelete');
-                const cuentaId = $('#eliminarId').val();
-
-                if (!cuentaId || cuentaId <= 0) {
-                    showNotification('error', 'ID de cuenta no válido');
-                    return;
-                }
-
-                submitBtn.prop('disabled', true).html(
-                    '<i class="ri-loader-4-line spin me-1"></i> Eliminando...'
-                );
-
-                // Crear objeto de datos simple (no FormData)
-                var data = {
-                    id: cuentaId,
-                    _token: "{{ csrf_token() }}"
-                };
-
-                console.log('Enviando datos para eliminar:', data); // Para debug
+                submitBtn.prop('disabled', true).html('<i class="ri-loader-4-line spin me-1"></i> Eliminando...');
 
                 $.ajax({
                     url: "{{ route('admin.cuentas-bancarias.eliminar') }}",
                     type: "POST",
-                    data: data,
-                    dataType: 'json',
+                    data: { id: $('#eliminarId').val(), _token: "{{ csrf_token() }}" },
                     success: function(res) {
-                        console.log('Respuesta eliminar:', res); // Para debug
                         if (res.success) {
                             showNotification('success', res.msg);
                             $('#modalEliminar').modal('hide');
-                            loadResults($('#searchInput').val().trim());
+                            loadResults();
                         } else {
-                            // Mostrar advertencia si tiene pagos asociados
-                            if (res.msg && res.msg.includes('pagos asociados')) {
-                                $('#warning-pagos').show();
-                                $('#warning-pagos').html(
-                                    `<i class="ri-alert-line me-1"></i> <strong>Advertencia:</strong> ${res.msg}`
-                                );
+                            if (res.msg && res.msg.indexOf('pagos') !== -1) {
+                                $('#warning-pagos').show().html('<i class="ri-alert-line me-1"></i> <strong>Advertencia:</strong> ' + res.msg);
                             } else {
-                                showNotification('error', res.msg ||
-                                    'No se pudo eliminar la cuenta bancaria');
+                                showNotification('error', res.msg || 'No se pudo eliminar');
                             }
-                            submitBtn.prop('disabled', false).html(
-                                '<i class="ri-delete-bin-line me-1"></i> Sí, Eliminar');
                         }
+                        submitBtn.prop('disabled', false).html('<i class="ri-delete-bin-line me-1"></i> Sí, Eliminar');
                     },
-                    error: function(xhr) {
-                        console.log('Error eliminar:', xhr); // Para debug
-                        let errorMsg = 'Error al eliminar la cuenta bancaria.';
-                        if (xhr.responseJSON?.msg) {
-                            errorMsg = xhr.responseJSON.msg;
-                        } else if (xhr.responseJSON?.message) {
-                            errorMsg = xhr.responseJSON.message;
-                        } else if (xhr.status === 405) {
-                            errorMsg = 'Método no permitido. Verifica la ruta.';
-                        }
-                        showNotification('error', errorMsg);
-                        submitBtn.prop('disabled', false).html(
-                            '<i class="ri-delete-bin-line me-1"></i> Sí, Eliminar');
+                    error: function() {
+                        showNotification('error', 'Error al eliminar la cuenta bancaria.');
+                        submitBtn.prop('disabled', false).html('<i class="ri-delete-bin-line me-1"></i> Sí, Eliminar');
                     }
                 });
             });
 
-            // Funciones auxiliares
             function showNotification(type, message) {
                 let toastContainer = $('#toast-container');
                 if (toastContainer.length === 0) {
-                    toastContainer = $(
-                        '<div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999"></div>'
-                    );
+                    toastContainer = $('<div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999"></div>');
                     $('body').append(toastContainer);
                 }
 
-                const toast = $(`
-            <div class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="d-flex">
-                    <div class="toast-body">${message}</div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                </div>
-            </div>
-        `);
+                const toast = $(
+                    '<div class="toast align-items-center text-white bg-' + type + ' border-0" role="alert">' +
+                        '<div class="d-flex">' +
+                            '<div class="toast-body">' + message + '</div>' +
+                            '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>' +
+                        '</div>' +
+                    '</div>'
+                );
 
                 toastContainer.append(toast);
                 const bsToast = new bootstrap.Toast(toast[0]);
                 bsToast.show();
-
-                toast.on('hidden.bs.toast', function() {
-                    $(this).remove();
-                });
+                toast.on('hidden.bs.toast', function() { $(this).remove(); });
             }
 
-            function loadResults(search = '') {
+            function loadResults() {
+                var search = $('#searchInput').val().trim();
                 $.ajax({
-                    url: '{{ route('admin.cuentas-bancarias.listar') }}',
-                    method: 'GET',
-                    data: {
-                        search: search
-                    },
-                    dataType: 'json',
+                    url: "{{ route('admin.cuentas-bancarias.listar') }}",
+                    method: "GET",
+                    data: { search: search, filter: currentFilter },
+                    dataType: "json",
                     success: function(response) {
-                        $('#results-container .table-responsive table').find('tbody').replaceWith(
-                            response.html);
-                        $('#pagination-container').html(response.pagination);
-                        if (response.total !== undefined) {
-                            $('#showing-count').text(response.from || 0);
-                            $('#to-count').text(response.to || 0);
-                            $('#total-count').text(response.total || 0);
+                        $('#cuentasTableBody').replaceWith(response.html);
+                        $('.pagination-container').html(response.pagination);
+                        if (response.from !== undefined) {
+                            $('#showing-count').text(response.from);
+                            $('#to-count').text(response.to);
+                            $('#total-count').text(response.total);
                         }
                         initTooltips();
                     },
@@ -858,68 +1211,56 @@
             }
 
             function initTooltips() {
-                const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-                tooltipTriggerList.forEach(tooltipTriggerEl => {
-                    if (tooltipTriggerEl._tooltip) {
-                        tooltipTriggerEl._tooltip.dispose();
-                    }
+                $('[data-bs-toggle="tooltip"]').each(function() {
+                    if (this._tooltip) this._tooltip.dispose();
                 });
-                tooltipTriggerList.forEach(tooltipTriggerEl => {
-                    new bootstrap.Tooltip(tooltipTriggerEl, {
-                        container: 'body',
-                        trigger: 'hover'
-                    });
-                });
+                $('[data-bs-toggle="tooltip"]').tooltip({ container: 'body' });
             }
 
-            // Búsqueda
             $('#searchInput').on('input', function() {
-                const searchTerm = $(this).val().trim();
                 clearTimeout(debounceTimer);
-                debounceTimer = setTimeout(() => {
-                    loadResults(searchTerm);
+                debounceTimer = setTimeout(function() {
+                    loadResults();
                 }, 300);
             });
 
-            // Limpiar filtros
             $('#clearFilters').on('click', function() {
                 $('#searchInput').val('');
+                currentFilter = 'all';
+                $('.filter-pill').removeClass('active').filter('[data-filter="all"]').addClass('active');
                 loadResults();
             });
 
-            // Manejar paginación
-            $(document).on('click', '#pagination-container .pagination a', function(e) {
-                e.preventDefault();
-                const url = $(this).attr('href');
-                const search = $('#searchInput').val().trim();
+            $('.filter-pill').on('click', function() {
+                currentFilter = $(this).data('filter');
+                $('.filter-pill').removeClass('active');
+                $(this).addClass('active');
+                loadResults();
+            });
 
+            $(document).on('click', '.pagination-container .pagination a', function(e) {
+                e.preventDefault();
+                var url = $(this).attr('href');
                 if (!url) return;
 
                 $.ajax({
                     url: url,
-                    method: 'GET',
-                    data: {
-                        search: search
-                    },
-                    dataType: 'json',
+                    method: "GET",
+                    data: { search: $('#searchInput').val().trim(), filter: currentFilter },
+                    dataType: "json",
                     success: function(response) {
-                        $('#results-container .table-responsive table').find('tbody')
-                            .replaceWith(response.html);
-                        $('#pagination-container').html(response.pagination);
-                        if (response.total !== undefined) {
-                            $('#showing-count').text(response.from || 0);
-                            $('#to-count').text(response.to || 0);
-                            $('#total-count').text(response.total || 0);
+                        $('#cuentasTableBody').replaceWith(response.html);
+                        $('.pagination-container').html(response.pagination);
+                        if (response.from !== undefined) {
+                            $('#showing-count').text(response.from);
+                            $('#to-count').text(response.to);
+                            $('#total-count').text(response.total);
                         }
                         initTooltips();
-                    },
-                    error: function() {
-                        showNotification('error', 'Error al cargar la página');
                     }
                 });
             });
 
-            // Inicializar tooltips
             initTooltips();
         });
     </script>

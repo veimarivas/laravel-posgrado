@@ -468,6 +468,8 @@
                 }
             },
             error: function(xhr) {
+                console.error('Error al registrar persona:', xhr);
+                console.error('Response:', xhr.responseText);
                 let errorMsg = 'Error al registrar la persona.';
                 if (xhr.responseJSON) {
                     if (xhr.responseJSON.msg) {
@@ -478,6 +480,10 @@
                         if (xhr.responseJSON.errors.carnet) $('#feedback_carnet_nuevo_inscripcion').addClass('text-danger').text('❌ ' + xhr.responseJSON.errors.carnet[0]);
                         if (xhr.responseJSON.errors.correo) $('#feedback_correo_nuevo_inscripcion').addClass('text-danger').text('❌ ' + xhr.responseJSON.errors.correo[0]);
                         if (xhr.responseJSON.errors.apellidos) $('#feedback_apellidos_nuevo_inscripcion').text('⚠️ ' + xhr.responseJSON.errors.apellidos[0]);
+                        if (xhr.responseJSON.errors.celular) $('#celular_nuevo_inscripcion').addClass('is-invalid');
+                        if (xhr.responseJSON.errors.ciudade_id) $('#ciudad_nuevo_inscripcion').addClass('is-invalid');
+                        if (xhr.responseJSON.errors.sexo) $('select[name="sexo"]').addClass('is-invalid');
+                        if (xhr.responseJSON.errors.estado_civil) $('select[name="estado_civil"]').addClass('is-invalid');
                     }
                 }
                 mostrarToast('error', errorMsg);

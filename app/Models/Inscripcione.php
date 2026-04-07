@@ -29,6 +29,11 @@ class Inscripcione extends Model
         return $this->belongsTo(OfertasAcademica::class, 'ofertas_academica_id');
     }
 
+    public function oferta()
+    {
+        return $this->belongsTo(OfertasAcademica::class, 'ofertas_academica_id');
+    }
+
     public function estudiante()
     {
         return $this->belongsTo(Estudiante::class, 'estudiante_id');

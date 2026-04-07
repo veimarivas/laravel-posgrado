@@ -1,106 +1,113 @@
 @extends('admin.dashboard')
 <meta name="csrf-token" content="{{ csrf_token() }}">
+<!-- En la sección <head> -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
-
-@push('style')
-<style>
-.dash-nav-tabs .nav-link { border:none; color:#6c757d; font-weight:500; border-bottom:3px solid transparent; white-space:nowrap; padding:.75rem 1rem; font-size:.85rem; }
-.dash-nav-tabs .nav-link.active { color:#0d6efd; border-bottom:3px solid #0d6efd; background:transparent; }
-.dash-nav-tabs .nav-link:hover:not(.active) { color:#0d6efd; border-bottom:3px solid rgba(13,110,253,.25); }
-.dash-nav-tabs::-webkit-scrollbar { display:none; }
-.stat-mini { border-radius:10px; padding:12px 14px; }
-.card-section-header { font-size:.72rem; text-transform:uppercase; letter-spacing:.5px; font-weight:600; color:#6c757d; }
-.tbl-compact { font-size:.79rem; }
-.tbl-compact th { font-size:.68rem; text-transform:uppercase; font-weight:600; color:#6c757d; padding:6px 8px !important; border:none !important; background:#f8f9fa; }
-.tbl-compact td { padding:6px 8px !important; vertical-align:middle; }
-.tbl-compact .badge { font-size:.68rem; }
-</style>
-@endpush
 
 @section('admin')
 
-    {{-- Header --}}
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
-        <div>
-            <ol class="breadcrumb mb-1" style="font-size:.8rem;">
-                <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}" class="text-decoration-none">Dashboard</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('admin.ofertas.listar') }}" class="text-decoration-none">Ofertas</a></li>
-                <li class="breadcrumb-item active text-muted">{{ $oferta->codigo }}</li>
-            </ol>
-            <div class="d-flex align-items-center gap-2">
-                <h4 class="mb-0 fw-bold">Dashboard Académico</h4>
-                <span class="badge rounded-pill px-2 py-1"
-                    style="background:{{ $oferta->color }}18;color:{{ $oferta->color }};border:1px solid {{ $oferta->color }}40;font-size:.72rem;">
-                    <i class="ri-bookmark-fill me-1"></i>{{ $oferta->fase->nombre ?? 'Sin fase' }}
-                </span>
+    <!-- Encabezado de la Oferta -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+                <div>
+                    <h4 class="mb-1">Dashboard Académico</h4>
+                    <div class="page-title-right">
+                        <ol class="breadcrumb m-0">
+                            <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('admin.ofertas.listar') }}">Ofertas</a></li>
+                            <li class="breadcrumb-item active">{{ $oferta->codigo }}</li>
+                        </ol>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge rounded-pill fs-12 p-2"
+                        style="background-color: {{ $oferta->color }}20; color: {{ $oferta->color }}; border: 1px solid {{ $oferta->color }}40;">
+                        <i class="ri-bookmark-fill align-middle me-1"></i> {{ $oferta->fase->nombre ?? 'Sin fase' }}
+                    </span>
+                    <a href="{{ route('admin.ofertas.vermodulos', $oferta->id) }}" class="btn btn-light btn-sm">
+                        <i class="ri-calendar-2-line align-middle me-1"></i> Módulos
+                    </a>
+                    <a href="{{ route('admin.ofertas.planes-pago', $oferta->id) }}" class="btn btn-light btn-sm">
+                        <i class="ri-money-dollar-circle-line align-middle me-1"></i> Planes de Pago
+                    </a>
+                </div>
             </div>
-        </div>
-        <div class="d-flex align-items-center gap-2">
-            <a href="{{ route('admin.ofertas.vermodulos', $oferta->id) }}" class="btn btn-outline-secondary btn-sm">
-                <i class="ri-calendar-2-line me-1"></i>Módulos
-            </a>
-            <a href="{{ route('admin.ofertas.planes-pago', $oferta->id) }}" class="btn btn-outline-primary btn-sm">
-                <i class="ri-money-dollar-circle-line me-1"></i>Planes de Pago
-            </a>
         </div>
     </div>
 
-    {{-- Info Principal --}}
-    <div class="row g-3 mb-4">
+    <!-- Información Principal de la Oferta -->
+    <div class="row mb-4">
         <div class="col-lg-8">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body p-4">
-                    <div class="d-flex align-items-start gap-3">
-                        <div class="flex-shrink-0">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div>
+                            <h3 class="card-title mb-1">{{ $oferta->programa->nombre ?? 'Programa' }}</h3>
+                            <p class="text-muted mb-0">
+                                <i class="ri-code-s-slash-line align-middle me-1"></i>
+                                <strong>Código:</strong> {{ $oferta->codigo }}
+                                <span class="mx-2">•</span>
+                                <i class="ri-building-line align-middle me-1"></i>
+                                {{ $oferta->sucursal->nombre ?? 'Sin sucursal' }}
+                            </p>
+                        </div>
+                        <div class="avatar-xl">
                             @if ($oferta->portada)
-                                <img src="{{ asset($oferta->portada) }}" alt="Portada" class="rounded"
-                                     style="width:70px;height:70px;object-fit:cover;">
+                                <img src="{{ asset($oferta->portada) }}" alt="Portada" class="img-fluid rounded"
+                                    style="max-height: 80px;">
                             @else
-                                <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary-subtle text-primary"
-                                     style="width:70px;height:70px;flex-shrink:0;">
-                                    <i class="ri-book-2-line fs-24"></i>
+                                <div class="avatar-title bg-light rounded" style="width: 80px; height: 80px;">
+                                    <i class="ri-book-2-line fs-24 text-primary"></i>
                                 </div>
                             @endif
                         </div>
-                        <div class="flex-grow-1">
-                            <h5 class="fw-bold mb-1">{{ $oferta->programa->nombre ?? 'Programa' }}</h5>
-                            <div class="d-flex flex-wrap gap-3 text-muted mb-3" style="font-size:.82rem;">
-                                <span><i class="ri-code-s-slash-line me-1"></i>{{ $oferta->codigo }}</span>
-                                <span><i class="ri-building-line me-1"></i>{{ $oferta->sucursal->nombre ?? 'Sin sucursal' }}</span>
-                            </div>
-                            <div class="row g-3">
-                                <div class="col-sm-4">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="d-flex align-items-center justify-content-center rounded bg-primary-subtle text-primary flex-shrink-0" style="width:34px;height:34px;">
+                    </div>
+
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="avatar-xs">
+                                        <div class="avatar-title bg-primary-subtle text-primary rounded fs-16">
                                             <i class="ri-calendar-event-line"></i>
                                         </div>
-                                        <div>
-                                            <p class="mb-0 card-section-header">Inicio</p>
-                                            <span style="font-size:.83rem;">{{ $oferta->fecha_inicio_programa?->format('d/m/Y') ?? 'No definido' }}</span>
-                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-sm-4">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="d-flex align-items-center justify-content-center rounded bg-info-subtle text-info flex-shrink-0" style="width:34px;height:34px;">
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-0 fs-13">Inicio de Programa</h6>
+                                    <p class="text-muted mb-0 fs-12">
+                                        {{ $oferta->fecha_inicio_programa?->format('d/m/Y') ?? 'No definido' }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="avatar-xs">
+                                        <div class="avatar-title bg-info-subtle text-info rounded fs-16">
                                             <i class="ri-group-line"></i>
                                         </div>
-                                        <div>
-                                            <p class="mb-0 card-section-header">Modalidad</p>
-                                            <span style="font-size:.83rem;">{{ $oferta->modalidad->nombre ?? 'No definida' }}</span>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-0 fs-13">Modalidad</h6>
+                                    <p class="text-muted mb-0 fs-12">{{ $oferta->modalidad->nombre ?? 'No definida' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="avatar-xs">
+                                        <div class="avatar-title bg-warning-subtle text-warning rounded fs-16">
+                                            <i class="ri-bar-chart-line"></i>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-sm-4">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="d-flex align-items-center justify-content-center rounded bg-warning-subtle text-warning flex-shrink-0" style="width:34px;height:34px;">
-                                            <i class="ri-bar-chart-line"></i>
-                                        </div>
-                                        <div>
-                                            <p class="mb-0 card-section-header">Nota Mínima</p>
-                                            <span style="font-size:.83rem;">{{ $oferta->nota_minima ?? 61 }} pts</span>
-                                        </div>
-                                    </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-0 fs-13">Nota Mínima</h6>
+                                    <p class="text-muted mb-0 fs-12">{{ $oferta->nota_minima ?? 61 }} pts</p>
                                 </div>
                             </div>
                         </div>
@@ -108,37 +115,43 @@
                 </div>
             </div>
         </div>
+
         <div class="col-lg-4">
-            <div class="row g-3 h-100">
-                <div class="col-6">
-                    <div class="card border-0 shadow-sm h-100" style="border-left:4px solid #28a745!important;">
-                        <div class="card-body p-3 text-center">
-                            <h3 class="mb-0 text-success fw-bold">{{ $totalInscritos }}</h3>
-                            <p class="text-muted mb-0" style="font-size:.75rem;">Inscritos</p>
+            <div class="card bg-primary bg-opacity-10 border-0">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0 text-primary">Resumen Académico</h5>
+                        <div class="avatar-sm">
+                            <div class="avatar-title bg-primary-subtle text-primary rounded-circle">
+                                <i class="ri-graduation-cap-line"></i>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="col-6">
-                    <div class="card border-0 shadow-sm h-100" style="border-left:4px solid #ffc107!important;">
-                        <div class="card-body p-3 text-center">
-                            <h3 class="mb-0 text-warning fw-bold">{{ $totalPreInscritos }}</h3>
-                            <p class="text-muted mb-0" style="font-size:.75rem;">Pre-Inscritos</p>
+
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="border rounded p-2 text-center">
+                                <h3 class="mb-0 text-success">{{ $totalInscritos }}</h3>
+                                <p class="text-muted mb-0 fs-12">Inscritos Activos</p>
+                            </div>
                         </div>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="card border-0 shadow-sm h-100" style="border-left:4px solid #0dcaf0!important;">
-                        <div class="card-body p-3 text-center">
-                            <h3 class="mb-0 text-info fw-bold">{{ $oferta->modulos->count() }}</h3>
-                            <p class="text-muted mb-0" style="font-size:.75rem;">Módulos</p>
+                        <div class="col-6">
+                            <div class="border rounded p-2 text-center">
+                                <h3 class="mb-0 text-warning">{{ $totalPreInscritos }}</h3>
+                                <p class="text-muted mb-0 fs-12">Pre-Inscritos</p>
+                            </div>
                         </div>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="card border-0 shadow-sm h-100" style="border-left:4px solid #4361ee!important;">
-                        <div class="card-body p-3 text-center">
-                            <h3 class="mb-0 fw-bold" style="color:#4361ee;">{{ $hombres + $mujeres }}</h3>
-                            <p class="text-muted mb-0" style="font-size:.75rem;">Estudiantes</p>
+                        <div class="col-6">
+                            <div class="border rounded p-2 text-center">
+                                <h6 class="mb-0">{{ $oferta->modulos->count() }}</h6>
+                                <p class="text-muted mb-0 fs-12">Módulos</p>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="border rounded p-2 text-center">
+                                <h6 class="mb-0">{{ $hombres + $mujeres }}</h6>
+                                <p class="text-muted mb-0 fs-12">Total Estudiantes</p>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -146,55 +159,56 @@
         </div>
     </div>
 
-    {{-- Tabs --}}
-    <div class="card border-0 shadow-sm">
-        <div class="card-header border-bottom bg-transparent p-0">
-            <ul class="nav dash-nav-tabs px-3" role="tablist"
-                style="flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;">
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link active" data-bs-toggle="tab" href="#tab-resumen" role="tab">
-                        <i class="ri-dashboard-line me-1"></i>Resumen
-                    </a>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link" data-bs-toggle="tab" href="#tab-participantes" role="tab">
-                        <i class="ri-user-search-line me-1"></i>Participantes
-                    </a>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link" data-bs-toggle="tab" href="#tab-finanzas" role="tab">
-                        <i class="ri-money-dollar-circle-line me-1"></i>Finanzas
-                    </a>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link" data-bs-toggle="tab" href="#tab-academico" role="tab">
-                        <i class="ri-book-open-line me-1"></i>Académico
-                    </a>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link" data-bs-toggle="tab" href="#tab-demografico" role="tab">
-                        <i class="ri-user-line me-1"></i>Demográfico
-                    </a>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link" data-bs-toggle="tab" href="#tab-gestion" role="tab">
-                        <i class="ri-settings-line me-1"></i>Gestión
-                    </a>
-                </li>
-            </ul>
-        </div>
-        <div class="card-body p-4">
-            <div class="tab-content">
+    <!-- Pestañas de Navegación -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <ul class="nav nav-tabs nav-tabs-custom nav-justified mb-3" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#tab-resumen" role="tab">
+                                <i class="ri-dashboard-line align-middle me-1"></i> Resumen
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" data-bs-toggle="tab" href="#tab-participantes" role="tab">
+                                <i class="ri-user-search-line align-middle me-1"></i> Participantes
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" data-bs-toggle="tab" href="#tab-finanzas" role="tab">
+                                <i class="ri-money-dollar-circle-line align-middle me-1"></i> Finanzas
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" data-bs-toggle="tab" href="#tab-academico" role="tab">
+                                <i class="ri-book-open-line align-middle me-1"></i> Académico
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" data-bs-toggle="tab" href="#tab-demografico" role="tab">
+                                <i class="ri-user-line align-middle me-1"></i> Demográfico
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" data-bs-toggle="tab" href="#tab-gestion" role="tab">
+                                <i class="ri-settings-line align-middle me-1"></i> Gestión
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
                         <!-- Pestaña 1: Resumen - MODIFICADA -->
                         <div class="tab-pane fade show active" id="tab-resumen" role="tabpanel">
                             <div class="row">
                                 <!-- Estadísticas Rápidas -->
                                 <div class="col-lg-3">
-                                    <div class="card border-0 shadow-sm">
-                                        <div class="card-header border-bottom bg-transparent py-2 px-3">
-                                            <h6 class="mb-0 fw-semibold" style="font-size:.85rem;">
-                                                <i class="ri-dashboard-line me-2 text-primary"></i>Resumen Rápido
-                                            </h6>
+                                    <div class="card border">
+                                        <div class="card-header border-bottom bg-light">
+                                            <h5 class="card-title mb-0 fs-16">
+                                                <i class="ri-dashboard-line align-middle me-2"></i>
+                                                Resumen Rápido
+                                            </h5>
                                         </div>
                                         <div class="card-body">
                                             <div class="row g-2">
@@ -231,11 +245,12 @@
 
                                 <!-- Gráfico de Inscripciones por Mes -->
                                 <div class="col-lg-5">
-                                    <div class="card border-0 shadow-sm">
-                                        <div class="card-header border-bottom bg-transparent py-2 px-3">
-                                            <h6 class="mb-0 fw-semibold" style="font-size:.85rem;">
-                                                <i class="ri-bar-chart-line me-2 text-primary"></i>Inscripciones Mensuales
-                                            </h6>
+                                    <div class="card border">
+                                        <div class="card-header border-bottom bg-light">
+                                            <h5 class="card-title mb-0 fs-16">
+                                                <i class="ri-bar-chart-line align-middle me-2"></i>
+                                                Inscripciones Mensuales
+                                            </h5>
                                         </div>
                                         <div class="card-body">
                                             <canvas id="inscripcionesChart" height="150"></canvas>
@@ -245,11 +260,12 @@
 
                                 <!-- Distribución por Estado -->
                                 <div class="col-lg-4">
-                                    <div class="card border-0 shadow-sm">
-                                        <div class="card-header border-bottom bg-transparent py-2 px-3">
-                                            <h6 class="mb-0 fw-semibold" style="font-size:.85rem;">
-                                                <i class="ri-pie-chart-line me-2 text-primary"></i>Distribución por Estado
-                                            </h6>
+                                    <div class="card border">
+                                        <div class="card-header border-bottom bg-light">
+                                            <h5 class="card-title mb-0 fs-16">
+                                                <i class="ri-pie-chart-line align-middle me-2"></i>
+                                                Distribución por Estado
+                                            </h5>
                                         </div>
                                         <div class="card-body">
                                             <div class="row align-items-center">
@@ -306,26 +322,30 @@
                             <!-- Tabla de Pre-Inscritos con Asesor -->
                             <div class="row mt-4">
                                 <div class="col-12">
-                                    <div class="card border-0 shadow-sm">
-                                        <div class="card-header border-bottom bg-transparent py-2 px-3 d-flex justify-content-between align-items-center">
-                                            <h6 class="mb-0 fw-semibold" style="font-size:.85rem;">
-                                                <i class="ri-user-add-line me-2 text-warning"></i>Pre-Inscritos y sus Asesores
-                                            </h6>
-                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill" style="font-size:.72rem;">{{ count($preInscritosConAsesor) }} registros</span>
+                                    <div class="card border">
+                                        <div
+                                            class="card-header border-bottom bg-light d-flex justify-content-between align-items-center">
+                                            <h5 class="card-title mb-0 fs-16">
+                                                <i class="ri-user-add-line align-middle me-2"></i>
+                                                Pre-Inscritos y sus Asesores
+                                            </h5>
+                                            <span class="badge bg-warning">{{ count($preInscritosConAsesor) }}
+                                                registros</span>
                                         </div>
                                         <div class="card-body">
                                             @if (count($preInscritosConAsesor) > 0)
-                                                    <table class="table table-hover align-middle mb-0 tbl-compact">
-                                                        <thead>
+                                                <div class="table-responsive">
+                                                    <table class="table table-hover align-middle mb-0">
+                                                        <thead class="table-light">
                                                             <tr>
-                                                                <th style="width:4%;">#</th>
-                                                                <th style="width:22%;">ESTUDIANTE</th>
-                                                                <th style="width:10%;">CARNET</th>
-                                                                <th style="width:16%;">ASESOR</th>
-                                                                <th style="width:14%;">PLAN DE PAGO</th>
-                                                                <th style="width:10%;">ADELANTO</th>
-                                                                <th style="width:14%;">F. REGISTRO</th>
-                                                                <th style="width:10%;" class="text-center">ACCIONES</th>
+                                                                <th width="5%">#</th>
+                                                                <th width="20%">Estudiante</th>
+                                                                <th width="10%">Carnet</th>
+                                                                <th width="15%">Asesor</th>
+                                                                <th width="15%">Plan de Pago</th>
+                                                                <th width="10%">Adelanto (Bs)</th>
+                                                                <th width="15%">Fecha de Registro</th>
+                                                                <th width="10%" class="text-center">Acciones</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
@@ -346,7 +366,7 @@
                                                                     </td>
                                                                     <td>
                                                                         <span
-                                                                            class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill" style="font-size:.72rem;">{{ $preInscrito['carnet'] }}</span>
+                                                                            class="badge bg-secondary">{{ $preInscrito['carnet'] }}</span>
                                                                     </td>
                                                                     <td>
                                                                         @if ($preInscrito['asesor_persona_id'])
@@ -367,7 +387,7 @@
                                                                     </td>
                                                                     <td>
                                                                         <span
-                                                                            class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size:.72rem;">{{ $preInscrito['plan_pago'] }}</span>
+                                                                            class="badge bg-primary">{{ $preInscrito['plan_pago'] }}</span>
                                                                     </td>
                                                                     <td>
                                                                         @if ($preInscrito['adelanto_bs'] > 0)
@@ -420,13 +440,18 @@
                                                             @endforeach
                                                         </tbody>
                                                     </table>
+                                                </div>
                                             @else
-                                                <div class="text-center py-4 text-muted">
-                                                    <i class="ri-user-line fs-2 d-block mb-2"></i>
-                                                    <span style="font-size:.85rem;">No hay pre-inscritos en esta oferta</span>
+                                                <div class="text-center py-5">
+                                                    <div class="avatar-lg mx-auto mb-3">
+                                                        <div class="avatar-title bg-light text-warning rounded-circle">
+                                                            <i class="ri-user-line fs-24"></i>
+                                                        </div>
+                                                    </div>
+                                                    <h5 class="text-muted">No hay pre-inscritos en esta oferta</h5>
                                                 </div>
                                             @endif
-                                    </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -438,36 +463,39 @@
                         <div class="tab-pane fade" id="tab-participantes" role="tabpanel">
                             <div class="row">
                                 <div class="col-12">
-                                    <div class="card border-0 shadow-sm">
-                                        <div class="card-header border-bottom bg-transparent py-2 px-3 d-flex justify-content-between align-items-center">
-                                            <h6 class="mb-0 fw-semibold" style="font-size:.85rem;">
-                                                <i class="ri-user-search-line me-2 text-primary"></i>Participantes Inscritos
-                                            </h6>
-                                            <div class="d-flex align-items-center gap-2">
-                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size:.72rem;">{{ count($detalleParticipantes) }} participantes</span>
+                                    <div class="card border">
+                                        <div
+                                            class="card-header border-bottom bg-light d-flex justify-content-between align-items-center">
+                                            <h5 class="card-title mb-0 fs-16">
+                                                <i class="ri-user-search-line align-middle me-2"></i>
+                                                Detalle de Participantes Inscritos
+                                            </h5>
+                                            <div>
+                                                <span class="badge bg-primary me-2">{{ count($detalleParticipantes) }}
+                                                    participantes</span>
                                                 <a href="{{ route('admin.ofertas.exportar-detalle-participantes', $oferta->id) }}"
-                                                    class="btn btn-outline-secondary btn-sm" id="exportarParticipantes">
-                                                    <i class="ri-download-line me-1"></i>Excel
+                                                    class="btn btn-light btn-sm" id="exportarParticipantes">
+                                                    <i class="ri-download-line align-middle me-1"></i> Exportar Excel
                                                 </a>
                                             </div>
                                         </div>
                                         <div class="card-body">
                                             <div class="table-responsive">
-                                                <table class="table table-hover align-middle mb-0 tbl-compact"
+                                                <table class="table table-hover align-middle mb-0"
                                                     id="tablaParticipantes">
-                                                    <thead>
+                                                    <thead class="table-light">
                                                         <tr>
-                                                            <th style="width:3%;">#</th>
-                                                            <th style="width:9%;">CARNET</th>
-                                                            <th style="width:10%;">AP. PATERNO</th>
-                                                            <th style="width:10%;">AP. MATERNO</th>
-                                                            <th style="width:11%;">NOMBRES</th>
-                                                            <th style="width:11%;">CORREO</th>
-                                                            <th style="width:8%;">CELULAR</th>
-                                                            <th style="width:10%;">DIRECCIÓN</th>
-                                                            <th style="width:8%;">CIUDAD</th>
-                                                            <th style="width:8%;">DEPTO.</th>
-                                                            <th style="width:12%;">PROFESIÓN</th>
+                                                            <th width="3%">#</th>
+                                                            <th width="10%">Carnet/CI</th>
+                                                            <th width="12%">Apellido Paterno</th>
+                                                            <th width="12%">Apellido Materno</th>
+                                                            <th width="12%">Nombres</th>
+                                                            <th width="10%">Correo</th>
+                                                            <th width="8%">Celular</th>
+                                                            <th width="10%">Dirección</th>
+                                                            <th width="10%">Ciudad</th>
+                                                            <th width="8%">Departamento</th>
+                                                            <th width="5%">Profesión</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -633,14 +661,16 @@
                             <!-- Sección: Resumen por Concepto -->
                             <div class="row mb-4">
                                 <div class="col-12">
-                                    <div class="card border-0 shadow-sm">
-                                        <div class="card-header border-bottom bg-transparent py-2 px-3 d-flex justify-content-between align-items-center">
-                                            <h6 class="mb-0 fw-semibold" style="font-size:.85rem;">
-                                                <i class="ri-money-dollar-circle-line me-2 text-primary"></i>Resumen Financiero por Concepto
-                                            </h6>
+                                    <div class="card border">
+                                        <div class="card-header border-bottom bg-light">
+                                            <h5 class="card-title mb-0 fs-16">
+                                                <i class="ri-money-dollar-circle-line align-middle me-2"></i>
+                                                Resumen Financiero por Concepto
+                                            </h5>
+                                            <!-- En la sección de acciones o en un lugar visible -->
                                             <a href="{{ route('admin.ofertas.contabilidad.planes-pago', $oferta->id) }}"
-                                                class="btn btn-outline-info btn-sm">
-                                                <i class="ri-money-dollar-circle-line me-1"></i>Gestión Contable
+                                                class="btn btn-info btn-sm">
+                                                <i class="ri-money-dollar-circle-line me-1"></i> Gestión Contable
                                             </a>
                                         </div>
                                         <div class="card-body">
@@ -659,51 +689,87 @@
                                                             'Certificación' => 'ri-award-line',
                                                             default => 'ri-money-dollar-circle-line',
                                                         };
-                                                        $borderColor = match ($color) {
-                                                            'primary' => '#0d6efd',
-                                                            'info'    => '#0dcaf0',
-                                                            'warning' => '#ffc107',
-                                                            default   => '#6c757d',
-                                                        };
                                                     @endphp
                                                     <div class="col-lg-4">
-                                                        <div class="card border-0 shadow-sm h-100"
-                                                             style="border-left:4px solid {{ $borderColor }}!important;">
-                                                            <div class="card-body p-3">
-                                                                <div class="d-flex align-items-center justify-content-between mb-3">
-                                                                    <div class="d-flex align-items-center gap-2">
-                                                                        <div class="d-flex align-items-center justify-content-center rounded bg-{{ $color }}-subtle text-{{ $color }}"
-                                                                             style="width:36px;height:36px;flex-shrink:0;">
-                                                                            <i class="{{ $icono }}"></i>
+                                                        <div
+                                                            class="card border border-{{ $color }} bg-{{ $color }}-subtle">
+                                                            <div class="card-body">
+                                                                <div
+                                                                    class="d-flex justify-content-between align-items-center mb-3">
+                                                                    <div class="d-flex align-items-center">
+                                                                        <div class="avatar-xs me-3">
+                                                                            <div
+                                                                                class="avatar-title bg-{{ $color }} text-white rounded">
+                                                                                <i class="{{ $icono }}"></i>
+                                                                            </div>
                                                                         </div>
-                                                                        <div>
-                                                                            <p class="mb-0 text-muted" style="font-size:.7rem;text-transform:uppercase;font-weight:600;">{{ $concepto }}</p>
-                                                                            <span class="fw-bold" style="font-size:.95rem;">{{ number_format($datos['total'], 2) }} <small class="text-muted fw-normal">Bs</small></span>
+                                                                        <h5 class="mb-0 text-{{ $color }}">
+                                                                            {{ $concepto }}</h5>
+                                                                    </div>
+                                                                    <span class="badge bg-{{ $color }}">
+                                                                        {{ number_format($datos['porcentaje'], 1) }}%
+                                                                    </span>
+                                                                </div>
+
+                                                                <!-- Montos -->
+                                                                <div class="row g-2">
+                                                                    <div class="col-12">
+                                                                        <div class="border rounded p-2 bg-white">
+                                                                            <div
+                                                                                class="d-flex justify-content-between align-items-center">
+                                                                                <span class="text-muted fs-12">Total</span>
+                                                                                <span
+                                                                                    class="fw-bold fs-13">{{ number_format($datos['total'], 2) }}
+                                                                                    Bs</span>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
-                                                                    <span class="badge bg-{{ $color }}-subtle text-{{ $color }} border border-{{ $color }}-subtle rounded-pill" style="font-size:.72rem;">{{ number_format($datos['porcentaje'], 1) }}%</span>
-                                                                </div>
-                                                                <div class="row g-2 mb-2">
                                                                     <div class="col-6">
-                                                                        <div class="rounded p-2 bg-success-subtle text-center">
-                                                                            <p class="mb-0 text-success" style="font-size:.68rem;font-weight:600;text-transform:uppercase;">Pagado</p>
-                                                                            <span class="fw-bold text-success" style="font-size:.85rem;">{{ number_format($datos['pagado'], 2) }}</span>
+                                                                        <div class="border rounded p-2 bg-success-subtle">
+                                                                            <div
+                                                                                class="d-flex justify-content-between align-items-center">
+                                                                                <span
+                                                                                    class="text-success fs-12">Pagado</span>
+                                                                                <span
+                                                                                    class="fw-bold text-success fs-13">{{ number_format($datos['pagado'], 2) }}
+                                                                                    Bs</span>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                     <div class="col-6">
-                                                                        <div class="rounded p-2 bg-danger-subtle text-center">
-                                                                            <p class="mb-0 text-danger" style="font-size:.68rem;font-weight:600;text-transform:uppercase;">Pendiente</p>
-                                                                            <span class="fw-bold text-danger" style="font-size:.85rem;">{{ number_format($datos['pendiente'], 2) }}</span>
+                                                                        <div class="border rounded p-2 bg-danger-subtle">
+                                                                            <div
+                                                                                class="d-flex justify-content-between align-items-center">
+                                                                                <span
+                                                                                    class="text-danger fs-12">Pendiente</span>
+                                                                                <span
+                                                                                    class="fw-bold text-danger fs-13">{{ number_format($datos['pendiente'], 2) }}
+                                                                                    Bs</span>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
-                                                                <div class="progress" style="height:6px;border-radius:3px;">
-                                                                    <div class="progress-bar bg-success" role="progressbar" style="width:{{ $datos['porcentaje'] }}%;"></div>
-                                                                    <div class="progress-bar bg-danger" role="progressbar" style="width:{{ 100 - $datos['porcentaje'] }}%;"></div>
-                                                                </div>
-                                                                <div class="d-flex justify-content-between mt-1">
-                                                                    <small class="text-success" style="font-size:.68rem;">{{ number_format($datos['porcentaje'], 1) }}% cobrado</small>
-                                                                    <small class="text-danger" style="font-size:.68rem;">{{ number_format(100 - $datos['porcentaje'], 1) }}% pendiente</small>
+
+                                                                <!-- Barra de progreso -->
+                                                                <div class="mt-3">
+                                                                    <div class="progress" style="height: 8px;">
+                                                                        <div class="progress-bar bg-success"
+                                                                            role="progressbar"
+                                                                            style="width: {{ $datos['porcentaje'] }}%">
+                                                                        </div>
+                                                                        <div class="progress-bar bg-danger"
+                                                                            role="progressbar"
+                                                                            style="width: {{ 100 - $datos['porcentaje'] }}%">
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="d-flex justify-content-between mt-1">
+                                                                        <small
+                                                                            class="text-success">{{ number_format($datos['porcentaje'], 1) }}%
+                                                                            Cobrado</small>
+                                                                        <small
+                                                                            class="text-danger">{{ number_format(100 - $datos['porcentaje'], 1) }}%
+                                                                            Pendiente</small>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -716,33 +782,31 @@
                             </div>
 
                             <!-- Sección: Gráficos por Concepto -->
-                            <div class="row mb-4 g-3">
-                                <div class="col-xl-4 col-lg-5">
-                                    <div class="card border-0 shadow-sm h-100">
-                                        <div class="card-header border-bottom bg-transparent py-2 px-3">
-                                            <h6 class="mb-0 fw-semibold" style="font-size:.85rem;">
-                                                <i class="ri-pie-chart-line me-2 text-primary"></i>Distribución por Concepto
-                                            </h6>
+                            <div class="row mb-4">
+                                <div class="col-lg-6">
+                                    <div class="card border">
+                                        <div class="card-header border-bottom bg-light">
+                                            <h5 class="card-title mb-0 fs-16">
+                                                <i class="ri-pie-chart-line align-middle me-2"></i>
+                                                Distribución de Ingresos por Concepto
+                                            </h5>
                                         </div>
-                                        <div class="card-body p-3 d-flex align-items-center justify-content-center">
-                                            <div style="position:relative;width:100%;max-width:320px;">
-                                                <canvas id="ingresosConceptoChart"></canvas>
-                                            </div>
+                                        <div class="card-body">
+                                            <canvas id="ingresosConceptoChart" height="250"></canvas>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div class="col-xl-8 col-lg-7">
-                                    <div class="card border-0 shadow-sm h-100">
-                                        <div class="card-header border-bottom bg-transparent py-2 px-3">
-                                            <h6 class="mb-0 fw-semibold" style="font-size:.85rem;">
-                                                <i class="ri-bar-chart-horizontal-line me-2 text-primary"></i>Estado de Cobranza por Concepto
-                                            </h6>
+                                <div class="col-lg-6">
+                                    <div class="card border">
+                                        <div class="card-header border-bottom bg-light">
+                                            <h5 class="card-title mb-0 fs-16">
+                                                <i class="ri-bar-chart-horizontal-line align-middle me-2"></i>
+                                                Estado de Cobranza por Concepto
+                                            </h5>
                                         </div>
-                                        <div class="card-body p-3">
-                                            <div style="position:relative;height:240px;">
-                                                <canvas id="cobranzaConceptoChart"></canvas>
-                                            </div>
+                                        <div class="card-body">
+                                            <canvas id="cobranzaConceptoChart" height="250"></canvas>
                                         </div>
                                     </div>
                                 </div>
@@ -751,37 +815,50 @@
                             <!-- Tabla de Participantes con Estado Financiero -->
                             <div class="row">
                                 <div class="col-12">
-                                    <div class="card border-0 shadow-sm">
-                                        <div class="card-header border-bottom bg-transparent py-2 px-3">
+                                    <div class="card border">
+                                        <div class="card-header border-bottom bg-light">
                                             <div class="d-flex justify-content-between align-items-center">
-                                                <h6 class="mb-0 fw-semibold" style="font-size:.85rem;">
-                                                    <i class="ri-user-line me-2 text-primary"></i>Estado Financiero de Participantes
-                                                </h6>
+                                                <h5 class="card-title mb-0 fs-16">
+                                                    <i class="ri-user-line align-middle me-2"></i>
+                                                    Estado Financiero de Participantes
+                                                </h5>
+                                                {{-- Reemplaza el botón actual --}}
                                                 <a href="{{ route('admin.ofertas.exportar-estado-financiero', $oferta->id) }}"
-                                                    class="btn btn-outline-secondary btn-sm" id="exportarTabla" target="_blank">
-                                                    <i class="ri-download-line me-1"></i>Excel
+                                                    class="btn btn-light btn-sm" id="exportarTabla" target="_blank">
+                                                    <i class="ri-download-line align-middle me-1"></i> Exportar Excel
                                                 </a>
                                             </div>
                                         </div>
                                         <div class="card-body">
                                             <div class="table-responsive">
-                                                <table class="table table-hover align-middle mb-0 tbl-compact" id="tablaFinanzas">
-                                                    <thead>
+                                                <table class="table table-hover align-middle mb-0" id="tablaFinanzas">
+                                                    <!-- Modifica los encabezados de la tabla -->
+                                                    <thead class="table-light">
                                                         <tr>
-                                                            <th class="text-center" style="width:3%;">#</th>
-                                                            <th style="width:19%;">ESTUDIANTE</th>
-                                                            <th class="text-center" style="width:7%;">CARNET</th>
-                                                            <th class="text-center" style="width:9%;">PLAN</th>
-                                                            <th class="text-center" style="width:8%;">ASESOR</th>
-                                                            <th class="text-center" style="width:6%;">F.INSCR.</th>
-                                                            <th class="text-end" style="width:6%;">TOTAL Bs</th>
-                                                            <th class="text-end" style="width:8%;">MATRÍCULA</th>
-                                                            <th class="text-end" style="width:8%;">COLEGIATURA</th>
-                                                            <th class="text-end" style="width:8%;">CERTIFICACIÓN</th>
-                                                            <th class="text-end" style="width:6%;">PAGADO Bs</th>
-                                                            <th class="text-end" style="width:6%;">DEUDA Bs</th>
-                                                            <th class="text-center" style="width:4%;">%</th>
-                                                            <th style="width:6%;">PROGR.</th>
+                                                            <th class="text-center" width="3%">#</th>
+                                                            <th width="8%">Apellido Paterno</th>
+                                                            <th width="8%">Apellido Materno</th>
+                                                            <th width="10%">Nombres</th>
+                                                            <th class="text-center" width="7%">Carnet</th>
+                                                            <th class="text-center" width="10%">Plan de Pago</th>
+                                                            <th class="text-center" width="10%">Vendedor</th>
+                                                            <!-- NUEVAS COLUMNAS -->
+                                                            <th class="text-center" width="8%">Fecha Inscripción</th>
+                                                            <th class="text-center" width="10%">Profesión</th>
+                                                            <th class="text-center" width="8%">Celular</th>
+                                                            <th class="text-center" width="12%">Correo</th>
+                                                            <!-- FIN NUEVAS COLUMNAS -->
+                                                            <th class="text-end" width="8%">Total Plan (Bs)</th>
+
+                                                            <!-- Columnas en ORDEN FIJO -->
+                                                            <th class="text-end" width="9%">Matrícula (Bs)</th>
+                                                            <th class="text-end" width="9%">Colegiatura (Bs)</th>
+                                                            <th class="text-end" width="9%">Certificación (Bs)</th>
+
+                                                            <th class="text-end" width="8%">Total Pagado (Bs)</th>
+                                                            <th class="text-end" width="8%">Saldo Deuda (Bs)</th>
+                                                            <th class="text-center" width="6%">% Pagado</th>
+                                                            <th width="7%">Progreso</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -798,154 +875,322 @@
                                                             @endphp
                                                             <tr>
                                                                 <td class="text-center">{{ $index + 1 }}</td>
+                                                                <!-- Apellidos y Nombres separados -->
+                                                                <td>
+                                                                    <span
+                                                                        class="fw-medium">{{ $participante['apellido_paterno'] }}</span>
+                                                                </td>
+                                                                <td>
+                                                                    <span
+                                                                        class="fw-medium">{{ $participante['apellido_materno'] }}</span>
+                                                                </td>
                                                                 <td>
                                                                     <a href="{{ route('admin.estudiantes.detalle', $participante['estudiante_id']) }}"
-                                                                        class="text-decoration-none d-flex align-items-center gap-2">
-                                                                        <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary-subtle text-primary fw-semibold flex-shrink-0"
-                                                                             style="width:28px;height:28px;font-size:.75rem;">
-                                                                            {{ substr(trim($participante['nombre_completo']), 0, 1) }}
-                                                                        </div>
-                                                                        <div>
-                                                                            <div class="fw-semibold text-dark" style="font-size:.79rem;line-height:1.2;">{{ $participante['nombre_completo'] }}</div>
-                                                                            <small class="text-muted" style="font-size:.68rem;">{{ $participante['profesion'] ?? '' }}</small>
+                                                                        class="text-decoration-none">
+                                                                        <div class="d-flex align-items-center">
+                                                                            <div class="avatar-xs">
+                                                                                <div
+                                                                                    class="avatar-title bg-light text-primary rounded-circle">
+                                                                                    {{ substr(trim($participante['nombre_completo']), 0, 1) }}
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="ms-2">
+                                                                                <h6 class="mb-0 fs-14">
+                                                                                    {{ $participante['nombre_completo'] }}
+                                                                                </h6>
+                                                                            </div>
                                                                         </div>
                                                                     </a>
                                                                 </td>
                                                                 <td class="text-center">
-                                                                    <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill" style="font-size:.68rem;">{{ $participante['carnet'] }}</span>
+                                                                    <span
+                                                                        class="badge bg-secondary">{{ $participante['carnet'] }}</span>
                                                                 </td>
                                                                 <td class="text-center">
-                                                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size:.68rem;">{{ $participante['plan_pago'] }}</span>
+                                                                    <span
+                                                                        class="badge bg-primary">{{ $participante['plan_pago'] }}</span>
                                                                 </td>
                                                                 <td class="text-center">
                                                                     @if ($participante['vendedor_persona_id'] ?? null)
                                                                         <a href="{{ route('admin.vendedor.inscripciones', $participante['vendedor_persona_id']) }}"
-                                                                            class="text-info text-decoration-none" style="font-size:.75rem;" title="{{ $participante['vendedor'] ?? 'N/A' }}">
-                                                                            <i class="ri-user-line me-1"></i>{{ Str::limit($participante['vendedor'] ?? 'N/A', 12) }}
+                                                                            class="badge bg-info d-flex align-items-center justify-content-center gap-1"
+                                                                            title="Ver inscripciones del vendedor">
+                                                                            <i class="ri-user-line"></i>
+                                                                            {{ $participante['vendedor'] ?? 'N/A' }}
                                                                         </a>
                                                                     @else
-                                                                        <span class="text-muted" style="font-size:.75rem;">{{ Str::limit($participante['vendedor'] ?? 'N/A', 12) }}</span>
+                                                                        <span class="badge bg-info"
+                                                                            title="Vendedor que realizó la inscripción">
+                                                                            {{ $participante['vendedor'] ?? 'N/A' }}
+                                                                        </span>
                                                                     @endif
                                                                 </td>
-                                                                <td class="text-center text-muted" style="font-size:.75rem;">
-                                                                    {{ \Carbon\Carbon::parse($participante['fecha_inscripcion'])->format('d/m/Y') }}
+                                                                <!-- NUEVAS COLUMNAS -->
+                                                                <td class="text-center">
+                                                                    <span
+                                                                        class="text-muted">{{ \Carbon\Carbon::parse($participante['fecha_inscripcion'])->format('d/m/Y') }}</span>
                                                                 </td>
+                                                                <td class="text-center">
+                                                                    <span
+                                                                        class="badge bg-warning-subtle text-warning">{{ $participante['profesion'] }}</span>
+                                                                </td>
+                                                                <td class="text-center">
+                                                                    @if ($participante['celular'] != 'Sin celular')
+                                                                        <a href="tel:{{ $participante['celular'] }}"
+                                                                            class="text-decoration-none d-flex align-items-center justify-content-center">
+                                                                            <i class="ri-phone-line me-1"></i>
+                                                                            <span>{{ $participante['celular'] }}</span>
+                                                                        </a>
+                                                                    @else
+                                                                        <span class="text-muted">Sin celular</span>
+                                                                    @endif
+                                                                </td>
+                                                                <td class="text-center">
+                                                                    @if ($participante['correo'] != 'Sin correo')
+                                                                        <a href="mailto:{{ $participante['correo'] }}"
+                                                                            class="text-decoration-none d-flex align-items-center justify-content-center">
+                                                                            <i class="ri-mail-line me-1"></i>
+                                                                            <span class="text-truncate"
+                                                                                style="max-width: 150px;">{{ $participante['correo'] }}</span>
+                                                                        </a>
+                                                                    @else
+                                                                        <span class="text-muted">Sin correo</span>
+                                                                    @endif
+                                                                </td>
+                                                                <!-- FIN NUEVAS COLUMNAS -->
+                                                                <!-- Resto de las columnas financieras (se mantienen igual) -->
                                                                 <td class="text-end fw-bold">
                                                                     {{ number_format($participante['total_plan'], 2) }}
                                                                 </td>
 
-                                                                {{-- Matrícula --}}
-                                                                @php $matricula = $participante['conceptos']['Matrícula']; @endphp
+                                                                <!-- Matrícula -->
                                                                 <td class="text-end">
-                                                                    @if ($matricula['total'] > 0)
-                                                                        <span class="fw-semibold text-success d-block" style="font-size:.75rem;">{{ number_format($matricula['pagado'], 2) }}</span>
-                                                                        <span class="text-muted d-block" style="font-size:.68rem;">/ {{ number_format($matricula['total'], 2) }}</span>
-                                                                        @if ($matricula['pendiente'] > 0)
-                                                                            <span class="text-danger d-block" style="font-size:.65rem;">-{{ number_format($matricula['pendiente'], 2) }}</span>
+                                                                    @php $matricula = $participante['conceptos']['Matrícula']; @endphp
+                                                                    <div class="d-flex flex-column">
+                                                                        @if ($matricula['total'] > 0)
+                                                                            <span class="text-success fw-bold">
+                                                                                {{ number_format($matricula['pagado'], 2) }}
+                                                                            </span>
+                                                                            <div class="d-flex justify-content-between">
+                                                                                <small class="text-muted">Total:</small>
+                                                                                <small
+                                                                                    class="text-muted">{{ number_format($matricula['total'], 2) }}</small>
+                                                                            </div>
+                                                                            @if ($matricula['pendiente'] > 0)
+                                                                                <div
+                                                                                    class="d-flex justify-content-between">
+                                                                                    <small
+                                                                                        class="text-danger">Pendiente:</small>
+                                                                                    <small
+                                                                                        class="text-danger">{{ number_format($matricula['pendiente'], 2) }}</small>
+                                                                                </div>
+                                                                            @endif
+                                                                        @else
+                                                                            <span class="text-muted">-</span>
                                                                         @endif
-                                                                    @else
-                                                                        <span class="text-muted">—</span>
-                                                                    @endif
+                                                                    </div>
                                                                 </td>
 
-                                                                {{-- Colegiatura --}}
-                                                                @php $colegiatura = $participante['conceptos']['Colegiatura']; @endphp
+                                                                <!-- Colegiatura -->
                                                                 <td class="text-end">
-                                                                    @if ($colegiatura['total'] > 0)
-                                                                        <span class="fw-semibold text-success d-block" style="font-size:.75rem;">{{ number_format($colegiatura['pagado'], 2) }}</span>
-                                                                        <span class="text-muted d-block" style="font-size:.68rem;">/ {{ number_format($colegiatura['total'], 2) }}</span>
-                                                                        @if ($colegiatura['pendiente'] > 0)
-                                                                            <span class="text-danger d-block" style="font-size:.65rem;">-{{ number_format($colegiatura['pendiente'], 2) }}</span>
+                                                                    @php $colegiatura = $participante['conceptos']['Colegiatura']; @endphp
+                                                                    <div class="d-flex flex-column">
+                                                                        @if ($colegiatura['total'] > 0)
+                                                                            <span class="text-success fw-bold">
+                                                                                {{ number_format($colegiatura['pagado'], 2) }}
+                                                                            </span>
+                                                                            <div class="d-flex justify-content-between">
+                                                                                <small class="text-muted">Total:</small>
+                                                                                <small
+                                                                                    class="text-muted">{{ number_format($colegiatura['total'], 2) }}</small>
+                                                                            </div>
+                                                                            @if ($colegiatura['pendiente'] > 0)
+                                                                                <div
+                                                                                    class="d-flex justify-content-between">
+                                                                                    <small
+                                                                                        class="text-danger">Pendiente:</small>
+                                                                                    <small
+                                                                                        class="text-danger">{{ number_format($colegiatura['pendiente'], 2) }}</small>
+                                                                                </div>
+                                                                            @endif
+                                                                        @else
+                                                                            <span class="text-muted">-</span>
                                                                         @endif
-                                                                    @else
-                                                                        <span class="text-muted">—</span>
-                                                                    @endif
+                                                                    </div>
                                                                 </td>
 
-                                                                {{-- Certificación --}}
-                                                                @php $certificacion = $participante['conceptos']['Certificación']; @endphp
+                                                                <!-- Certificación -->
                                                                 <td class="text-end">
-                                                                    @if ($certificacion['total'] > 0)
-                                                                        <span class="fw-semibold text-success d-block" style="font-size:.75rem;">{{ number_format($certificacion['pagado'], 2) }}</span>
-                                                                        <span class="text-muted d-block" style="font-size:.68rem;">/ {{ number_format($certificacion['total'], 2) }}</span>
-                                                                        @if ($certificacion['pendiente'] > 0)
-                                                                            <span class="text-danger d-block" style="font-size:.65rem;">-{{ number_format($certificacion['pendiente'], 2) }}</span>
+                                                                    @php $certificacion = $participante['conceptos']['Certificación']; @endphp
+                                                                    <div class="d-flex flex-column">
+                                                                        @if ($certificacion['total'] > 0)
+                                                                            <span class="text-success fw-bold">
+                                                                                {{ number_format($certificacion['pagado'], 2) }}
+                                                                            </span>
+                                                                            <div class="d-flex justify-content-between">
+                                                                                <small class="text-muted">Total:</small>
+                                                                                <small
+                                                                                    class="text-muted">{{ number_format($certificacion['total'], 2) }}</small>
+                                                                            </div>
+                                                                            @if ($certificacion['pendiente'] > 0)
+                                                                                <div
+                                                                                    class="d-flex justify-content-between">
+                                                                                    <small
+                                                                                        class="text-danger">Pendiente:</small>
+                                                                                    <small
+                                                                                        class="text-danger">{{ number_format($certificacion['pendiente'], 2) }}</small>
+                                                                                </div>
+                                                                            @endif
+                                                                        @else
+                                                                            <span class="text-muted">-</span>
                                                                         @endif
-                                                                    @else
-                                                                        <span class="text-muted">—</span>
-                                                                    @endif
+                                                                    </div>
                                                                 </td>
 
-                                                                <td class="text-end fw-bold text-success" style="font-size:.79rem;">
-                                                                    {{ number_format($participante['total_pagado'], 2) }}
+                                                                <td class="text-end">
+                                                                    <span class="fw-bold text-success">
+                                                                        {{ number_format($participante['total_pagado'], 2) }}
+                                                                    </span>
                                                                 </td>
-                                                                <td class="text-end fw-bold text-danger" style="font-size:.79rem;">
-                                                                    {{ number_format($participante['saldo'], 2) }}
+                                                                <td class="text-end">
+                                                                    <span class="fw-bold text-danger">
+                                                                        {{ number_format($participante['saldo'], 2) }}
+                                                                    </span>
                                                                 </td>
                                                                 <td class="text-center">
-                                                                    <span class="badge bg-{{ $color }}-subtle text-{{ $color }} border border-{{ $color }}-subtle rounded-pill" style="font-size:.68rem;">
+                                                                    <span
+                                                                        class="badge bg-{{ $color }}-subtle text-{{ $color }}">
                                                                         {{ number_format($participante['porcentaje_pagado'], 1) }}%
                                                                     </span>
                                                                 </td>
-                                                                <td style="min-width:55px;">
-                                                                    <div class="progress" style="height:5px;border-radius:3px;">
+                                                                <td>
+                                                                    <div class="progress" style="height: 6px;">
                                                                         <div class="progress-bar bg-{{ $color }}"
-                                                                            style="width:{{ $participante['porcentaje_pagado'] }}%;"></div>
+                                                                            role="progressbar"
+                                                                            style="width: {{ $participante['porcentaje_pagado'] }}%;"
+                                                                            aria-valuenow="{{ $participante['porcentaje_pagado'] }}"
+                                                                            aria-valuemin="0" aria-valuemax="100">
+                                                                        </div>
                                                                     </div>
                                                                 </td>
                                                             </tr>
                                                         @endforeach
                                                     </tbody>
-                                                    <tfoot style="background:#f8f9fa;font-size:.75rem;">
+                                                    <!-- En la sección de tfoot, reemplaza los cálculos con: -->
+                                                    <tfoot class="table-light">
                                                         <tr>
-                                                            <td colspan="6" class="fw-bold text-end py-2" style="font-size:.75rem;">TOTALES:</td>
+                                                            <td colspan="11" class="fw-bold text-end">TOTALES:</td>
                                                             <td class="text-end fw-bold">
                                                                 {{ number_format(collect($participantesFinanzas)->sum('total_plan'), 2) }}
                                                             </td>
 
-                                                            {{-- Totales Matrícula --}}
+                                                            <!-- Totales Matrícula -->
                                                             @php
-                                                                $totalMatricula = 0; $pagadoMatricula = 0; $pendienteMatricula = 0;
-                                                                foreach ($participantesFinanzas as $p) {
-                                                                    $totalMatricula += $p['conceptos']['Matrícula']['total'];
-                                                                    $pagadoMatricula += $p['conceptos']['Matrícula']['pagado'];
-                                                                    $pendienteMatricula += $p['conceptos']['Matrícula']['pendiente'];
+                                                                $totalMatricula = 0;
+                                                                $pagadoMatricula = 0;
+                                                                $pendienteMatricula = 0;
+                                                                $cuotasMatricula = 0;
+
+                                                                foreach ($participantesFinanzas as $participante) {
+                                                                    $matricula =
+                                                                        $participante['conceptos']['Matrícula'];
+                                                                    $totalMatricula += $matricula['total'];
+                                                                    $pagadoMatricula += $matricula['pagado'];
+                                                                    $pendienteMatricula += $matricula['pendiente'];
+                                                                    $cuotasMatricula += $matricula['n_cuotas'];
                                                                 }
                                                             @endphp
                                                             <td class="text-end fw-bold">
-                                                                <span class="text-success d-block">{{ number_format($pagadoMatricula, 2) }}</span>
-                                                                <span class="text-muted d-block" style="font-size:.68rem;">/ {{ number_format($totalMatricula, 2) }}</span>
-                                                                @if ($pendienteMatricula > 0)<span class="text-danger d-block" style="font-size:.65rem;">-{{ number_format($pendienteMatricula, 2) }}</span>@endif
+                                                                <div class="d-flex flex-column">
+                                                                    <span class="text-success">
+                                                                        {{ number_format($pagadoMatricula, 2) }}
+                                                                    </span>
+                                                                    <div class="d-flex justify-content-between">
+                                                                        <small class="text-muted">Total:</small>
+                                                                        <small
+                                                                            class="text-muted">{{ number_format($totalMatricula, 2) }}</small>
+                                                                    </div>
+                                                                    @if ($pendienteMatricula > 0)
+                                                                        <div class="d-flex justify-content-between">
+                                                                            <small class="text-danger">Pendiente:</small>
+                                                                            <small
+                                                                                class="text-danger">{{ number_format($pendienteMatricula, 2) }}</small>
+                                                                        </div>
+                                                                    @endif
+                                                                </div>
                                                             </td>
 
-                                                            {{-- Totales Colegiatura --}}
+                                                            <!-- Totales Colegiatura -->
                                                             @php
-                                                                $totalColegiatura = 0; $pagadoColegiatura = 0; $pendienteColegiatura = 0;
-                                                                foreach ($participantesFinanzas as $p) {
-                                                                    $totalColegiatura += $p['conceptos']['Colegiatura']['total'];
-                                                                    $pagadoColegiatura += $p['conceptos']['Colegiatura']['pagado'];
-                                                                    $pendienteColegiatura += $p['conceptos']['Colegiatura']['pendiente'];
+                                                                $totalColegiatura = 0;
+                                                                $pagadoColegiatura = 0;
+                                                                $pendienteColegiatura = 0;
+                                                                $cuotasColegiatura = 0;
+
+                                                                foreach ($participantesFinanzas as $participante) {
+                                                                    $colegiatura =
+                                                                        $participante['conceptos']['Colegiatura'];
+                                                                    $totalColegiatura += $colegiatura['total'];
+                                                                    $pagadoColegiatura += $colegiatura['pagado'];
+                                                                    $pendienteColegiatura += $colegiatura['pendiente'];
+                                                                    $cuotasColegiatura += $colegiatura['n_cuotas'];
                                                                 }
                                                             @endphp
                                                             <td class="text-end fw-bold">
-                                                                <span class="text-success d-block">{{ number_format($pagadoColegiatura, 2) }}</span>
-                                                                <span class="text-muted d-block" style="font-size:.68rem;">/ {{ number_format($totalColegiatura, 2) }}</span>
-                                                                @if ($pendienteColegiatura > 0)<span class="text-danger d-block" style="font-size:.65rem;">-{{ number_format($pendienteColegiatura, 2) }}</span>@endif
+                                                                <div class="d-flex flex-column">
+                                                                    <span class="text-success">
+                                                                        {{ number_format($pagadoColegiatura, 2) }}
+                                                                    </span>
+                                                                    <div class="d-flex justify-content-between">
+                                                                        <small class="text-muted">Total:</small>
+                                                                        <small
+                                                                            class="text-muted">{{ number_format($totalColegiatura, 2) }}</small>
+                                                                    </div>
+                                                                    @if ($pendienteColegiatura > 0)
+                                                                        <div class="d-flex justify-content-between">
+                                                                            <small class="text-danger">Pendiente:</small>
+                                                                            <small
+                                                                                class="text-danger">{{ number_format($pendienteColegiatura, 2) }}</small>
+                                                                        </div>
+                                                                    @endif
+                                                                </div>
                                                             </td>
 
-                                                            {{-- Totales Certificación --}}
+                                                            <!-- Totales Certificación -->
                                                             @php
-                                                                $totalCertificacion = 0; $pagadoCertificacion = 0; $pendienteCertificacion = 0;
-                                                                foreach ($participantesFinanzas as $p) {
-                                                                    $totalCertificacion += $p['conceptos']['Certificación']['total'];
-                                                                    $pagadoCertificacion += $p['conceptos']['Certificación']['pagado'];
-                                                                    $pendienteCertificacion += $p['conceptos']['Certificación']['pendiente'];
+                                                                $totalCertificacion = 0;
+                                                                $pagadoCertificacion = 0;
+                                                                $pendienteCertificacion = 0;
+                                                                $cuotasCertificacion = 0;
+
+                                                                foreach ($participantesFinanzas as $participante) {
+                                                                    $certificacion =
+                                                                        $participante['conceptos']['Certificación'];
+                                                                    $totalCertificacion += $certificacion['total'];
+                                                                    $pagadoCertificacion += $certificacion['pagado'];
+                                                                    $pendienteCertificacion +=
+                                                                        $certificacion['pendiente'];
+                                                                    $cuotasCertificacion += $certificacion['n_cuotas'];
                                                                 }
                                                             @endphp
                                                             <td class="text-end fw-bold">
-                                                                <span class="text-success d-block">{{ number_format($pagadoCertificacion, 2) }}</span>
-                                                                <span class="text-muted d-block" style="font-size:.68rem;">/ {{ number_format($totalCertificacion, 2) }}</span>
-                                                                @if ($pendienteCertificacion > 0)<span class="text-danger d-block" style="font-size:.65rem;">-{{ number_format($pendienteCertificacion, 2) }}</span>@endif
+                                                                <div class="d-flex flex-column">
+                                                                    <span class="text-success">
+                                                                        {{ number_format($pagadoCertificacion, 2) }}
+                                                                    </span>
+                                                                    <div class="d-flex justify-content-between">
+                                                                        <small class="text-muted">Total:</small>
+                                                                        <small
+                                                                            class="text-muted">{{ number_format($totalCertificacion, 2) }}</small>
+                                                                    </div>
+                                                                    @if ($pendienteCertificacion > 0)
+                                                                        <div class="d-flex justify-content-between">
+                                                                            <small class="text-danger">Pendiente:</small>
+                                                                            <small
+                                                                                class="text-danger">{{ number_format($pendienteCertificacion, 2) }}</small>
+                                                                        </div>
+                                                                    @endif
+                                                                </div>
                                                             </td>
 
                                                             <td class="text-end fw-bold text-success">
@@ -968,7 +1213,7 @@
                                                                             : 0;
                                                                 @endphp
                                                                 <span
-                                                                    class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size:.72rem;">{{ number_format($porcentajeGeneral, 1) }}%</span>
+                                                                    class="badge bg-primary">{{ number_format($porcentajeGeneral, 1) }}%</span>
                                                             </td>
                                                             <td>
                                                                 <div class="progress" style="height: 6px;">
@@ -988,21 +1233,25 @@
 
                         <!-- Pestaña 3: Académico -->
                         <div class="tab-pane fade" id="tab-academico" role="tabpanel">
-                            <div class="card border-0 shadow-sm">
-                                <div class="card-header border-bottom bg-transparent py-2 px-3">
+                            <div class="card border">
+                                <div class="card-header border-bottom bg-light">
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <h6 class="mb-0 fw-semibold" style="font-size:.85rem;">
-                                            <i class="ri-book-open-line me-2 text-primary"></i>Rendimiento Académico
-                                        </h6>
-                                        <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill" style="font-size:.72rem;">
-                                            <i class="ri-information-line me-1"></i>Nota mínima: {{ $oferta->nota_minima ?? 61 }}
-                                        </span>
+                                        <h5 class="card-title mb-0 fs-16">
+                                            <i class="ri-book-open-line align-middle me-2"></i>
+                                            Rendimiento Académico
+                                        </h5>
+                                        <div>
+                                            <span class="badge bg-info-subtle text-info">
+                                                <i class="ri-information-line align-middle me-1"></i>
+                                                Nota mínima: {{ $oferta->nota_minima ?? 61 }}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
-                                        <table class="table table-bordered table-hover align-middle mb-0 tbl-compact">
-                                            <thead style="background:#343a40;color:#fff;">
+                                        <table class="table table-bordered table-hover align-middle mb-0">
+                                            <thead class="table-dark">
                                                 <tr>
                                                     <th rowspan="2" class="text-center align-middle" width="5%">#
                                                     </th>
@@ -1078,7 +1327,7 @@
                                                             </a>
                                                         </td>
                                                         <td class="text-center">
-                                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill" style="font-size:.72rem;">{{ $fila['carnet'] }}</span>
+                                                            <span class="badge bg-secondary">{{ $fila['carnet'] }}</span>
                                                         </td>
                                                         @foreach ($oferta->modulos as $modulo)
                                                             @php
@@ -1225,13 +1474,16 @@
                             <div class="row">
                                 <!-- Distribución por Sexo -->
                                 <div class="col-lg-4">
-                                    <div class="card border-0 shadow-sm">
-                                        <div class="card-header border-bottom bg-transparent py-2 px-3">
+                                    <div class="card border">
+                                        <div class="card-header border-bottom bg-light">
                                             <div class="d-flex justify-content-between align-items-center">
-                                                <h6 class="mb-0 fw-semibold" style="font-size:.85rem;">
-                                                    <i class="ri-user-line me-2 text-primary"></i>Distribución por Género
-                                                </h6>
-                                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size:.72rem;">{{ $estadisticasDemograficas['totalEstudiantes'] }} est.</span>
+                                                <h5 class="card-title mb-0 fs-16">
+                                                    <i class="ri-user-line align-middle me-2"></i>
+                                                    Distribución por Género
+                                                </h5>
+                                                <span
+                                                    class="badge bg-primary">{{ $estadisticasDemograficas['totalEstudiantes'] }}
+                                                    estudiantes</span>
                                             </div>
                                         </div>
                                         <div class="card-body">
@@ -1272,13 +1524,16 @@
 
                                 <!-- Edad Promedio -->
                                 <div class="col-lg-4">
-                                    <div class="card border-0 shadow-sm">
-                                        <div class="card-header border-bottom bg-transparent py-2 px-3">
+                                    <div class="card border">
+                                        <div class="card-header border-bottom bg-light">
                                             <div class="d-flex justify-content-between align-items-center">
-                                                <h6 class="mb-0 fw-semibold" style="font-size:.85rem;">
-                                                    <i class="ri-calendar-line me-2 text-primary"></i>Estadísticas de Edad
-                                                </h6>
-                                                <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill" style="font-size:.72rem;">{{ $estadisticasDemograficas['totalEstudiantes'] }} est.</span>
+                                                <h5 class="card-title mb-0 fs-16">
+                                                    <i class="ri-calendar-line align-middle me-2"></i>
+                                                    Estadísticas de Edad
+                                                </h5>
+                                                <span
+                                                    class="badge bg-info">{{ $estadisticasDemograficas['totalEstudiantes'] }}
+                                                    estudiantes</span>
                                             </div>
                                         </div>
                                         <div class="card-body">
@@ -1327,13 +1582,16 @@
 
                                 <!-- Top Departamentos -->
                                 <div class="col-lg-4">
-                                    <div class="card border-0 shadow-sm">
-                                        <div class="card-header border-bottom bg-transparent py-2 px-3">
+                                    <div class="card border">
+                                        <div class="card-header border-bottom bg-light">
                                             <div class="d-flex justify-content-between align-items-center">
-                                                <h6 class="mb-0 fw-semibold" style="font-size:.85rem;">
-                                                    <i class="ri-map-pin-2-line me-2 text-primary"></i>Por Departamento
-                                                </h6>
-                                                <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size:.72rem;">{{ count($estadisticasDemograficas['topDepartamentos']) }} deptos.</span>
+                                                <h5 class="card-title mb-0 fs-16">
+                                                    <i class="ri-map-pin-2-line align-middle me-2"></i>
+                                                    Distribución por Departamento
+                                                </h5>
+                                                <span
+                                                    class="badge bg-success">{{ count($estadisticasDemograficas['topDepartamentos']) }}
+                                                    departamentos</span>
                                             </div>
                                         </div>
                                         <div class="card-body">
@@ -1373,11 +1631,12 @@
                             <!-- Estadísticas Adicionales -->
                             <div class="row mt-4">
                                 <div class="col-12">
-                                    <div class="card border-0 shadow-sm">
-                                        <div class="card-header border-bottom bg-transparent py-2 px-3">
-                                            <h6 class="mb-0 fw-semibold" style="font-size:.85rem;">
-                                                <i class="ri-bar-chart-grouped-line me-2 text-primary"></i>Resumen Demográfico
-                                            </h6>
+                                    <div class="card border">
+                                        <div class="card-header border-bottom bg-light">
+                                            <h5 class="card-title mb-0 fs-16">
+                                                <i class="ri-bar-chart-grouped-line align-middle me-2"></i>
+                                                Resumen Demográfico
+                                            </h5>
                                         </div>
                                         <div class="card-body">
                                             <div class="row">
@@ -1445,32 +1704,30 @@
                         <div class="tab-pane fade" id="tab-gestion" role="tabpanel">
                             <div class="row">
                                 <div class="col-12">
-                                    <div class="card border-0 shadow-sm">
-                                        <div class="card-header border-bottom bg-transparent py-2 px-3">
-                                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-                                                <h6 class="mb-0 fw-semibold" style="font-size:.85rem;">
-                                                    <i class="ri-user-settings-line me-2 text-primary"></i>Gestión de Inscripciones
-                                                </h6>
-                                                <span class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill" style="font-size:.72rem;">
-                                                    <i class="ri-shield-keyhole-line me-1"></i>Solo Administrador
-                                                </span>
-                                            </div>
-                                            <div class="alert alert-warning border-0 mt-2 mb-0 py-2 rounded-2" style="font-size:.8rem;">
-                                                <i class="ri-alert-line me-2"></i>Esta sección permite eliminar o transferir inscripciones.
+                                    <div class="card border">
+                                        <div class="card-header border-bottom bg-light">
+                                            <h5 class="card-title mb-0 fs-16">
+                                                <i class="ri-user-settings-line align-middle me-2"></i>
+                                                Gestión de Inscripciones (Solo Administrador)
+                                            </h5>
+                                            <div class="alert alert-warning mt-2 mb-0 py-2">
+                                                <i class="ri-alert-line me-2"></i>
+                                                Esta sección es solo para administradores. Permite eliminar o transferir
+                                                inscripciones.
                                             </div>
                                         </div>
                                         <div class="card-body">
                                             <div class="table-responsive">
-                                                <table class="table table-hover align-middle mb-0 tbl-compact" id="tablaGestion">
-                                                    <thead>
+                                                <table class="table table-hover align-middle mb-0" id="tablaGestion">
+                                                    <thead class="table-light">
                                                         <tr>
-                                                            <th style="width:4%;">#</th>
-                                                            <th style="width:28%;">ESTUDIANTE</th>
-                                                            <th style="width:14%;">CARNET</th>
-                                                            <th style="width:18%;">PLAN ACTUAL</th>
-                                                            <th style="width:10%;">ESTADO</th>
-                                                            <th style="width:14%;">F. INSCRIPCIÓN</th>
-                                                            <th style="width:12%;" class="text-center">ACCIONES</th>
+                                                            <th width="5%">#</th>
+                                                            <th width="20%">Estudiante</th>
+                                                            <th width="15%">Carnet</th>
+                                                            <th width="15%">Plan Actual</th>
+                                                            <th width="10%">Estado</th>
+                                                            <th width="15%">Fecha Inscripción</th>
+                                                            <th width="20%" class="text-center">Acciones</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -1507,21 +1764,21 @@
                                                                     </td>
                                                                     <td>
                                                                         <span
-                                                                            class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill" style="font-size:.72rem;">{{ $participante['carnet'] }}</span>
+                                                                            class="badge bg-secondary">{{ $participante['carnet'] }}</span>
                                                                     </td>
                                                                     <td>
                                                                         <span
-                                                                            class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size:.72rem;">{{ $participante['plan_pago'] }}</span>
+                                                                            class="badge bg-primary">{{ $participante['plan_pago'] }}</span>
                                                                     </td>
                                                                     <td>
                                                                         @if ($inscripcion->estado == 'Inscrito')
-                                                                            <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill" style="font-size:.72rem;">Inscrito</span>
+                                                                            <span class="badge bg-success">Inscrito</span>
                                                                         @elseif($inscripcion->estado == 'Pre-Inscrito')
                                                                             <span
-                                                                                class="badge bg-warning-subtle text-warning border border-warning-subtle rounded-pill" style="font-size:.72rem;">Pre-Inscrito</span>
+                                                                                class="badge bg-warning">Pre-Inscrito</span>
                                                                         @else
                                                                             <span
-                                                                                class="badge bg-info-subtle text-info border border-info-subtle rounded-pill" style="font-size:.72rem;">{{ $inscripcion->estado }}</span>
+                                                                                class="badge bg-info">{{ $inscripcion->estado }}</span>
                                                                         @endif
                                                                     </td>
                                                                     <td>
@@ -1549,7 +1806,7 @@
                                                                                 </button>
                                                                             </div>
                                                                         @else
-                                                                            <span class="badge bg-info-subtle text-info border border-info-subtle rounded-pill" style="font-size:.72rem;">Transferido</span>
+                                                                            <span class="badge bg-info">Transferido</span>
                                                                         @endif
 
                                                                     </td>
@@ -1565,6 +1822,7 @@
                             </div>
                         </div>
                     </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1927,181 +2185,159 @@
         });
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script>
-        // ── Helpers ───────────────────────────────────────────────────────
-        function fmtBs(v, compact) {
-            if (compact) {
-                if (v >= 1000000) return 'Bs ' + (v / 1000000).toFixed(1) + 'M';
-                if (v >= 1000)    return 'Bs ' + (v / 1000).toFixed(1) + 'k';
-            }
-            return 'Bs ' + v.toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        }
-
-        // ── Doughnut: Distribución de Ingresos ────────────────────────────
+        // Gráfico de distribución de ingresos por concepto
         const ingresosConceptoChart = document.getElementById('ingresosConceptoChart');
         if (ingresosConceptoChart) {
             const conceptos = @json(array_keys($resumenPorConcepto));
-            const totales   = @json(array_column($resumenPorConcepto, 'total'));
-            const bgColors  = [
-                'rgba(13, 110, 253, 0.85)',
-                'rgba(25, 135, 84,  0.85)',
-                'rgba(255, 193, 7,  0.85)',
-                'rgba(108, 117, 125,0.85)'
+            const totales = @json(array_column($resumenPorConcepto, 'total'));
+
+            // Colores personalizados para cada concepto
+            const backgroundColors = [
+                'rgba(13, 110, 253, 0.8)', // Matrícula - Azul
+                'rgba(25, 135, 84, 0.8)', // Colegiatura - Verde
+                'rgba(255, 193, 7, 0.8)' // Certificación - Amarillo
             ];
 
             new Chart(ingresosConceptoChart, {
                 type: 'doughnut',
-                plugins: [ChartDataLabels],
                 data: {
                     labels: conceptos,
                     datasets: [{
                         data: totales,
-                        backgroundColor: bgColors,
-                        borderColor: '#fff',
-                        borderWidth: 3,
-                        hoverOffset: 10
+                        backgroundColor: backgroundColors,
+                        borderColor: backgroundColors.map(color => color.replace('0.8', '1')),
+                        borderWidth: 1,
+                        hoverOffset: 15
                     }]
                 },
                 options: {
                     responsive: true,
-                    cutout: '58%',
                     plugins: {
-                        datalabels: {
-                            color: '#fff',
-                            font: { weight: 'bold', size: 12 },
-                            formatter: function(value, ctx) {
-                                const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                                const pct   = total > 0 ? Math.round((value / total) * 100) : 0;
-                                return pct >= 5 ? pct + '%' : '';
-                            }
-                        },
                         legend: {
                             position: 'bottom',
                             labels: {
-                                padding: 10,
+                                padding: 20,
                                 usePointStyle: true,
-                                pointStyleWidth: 10,
-                                font: { size: 10 },
-                                generateLabels: function(chart) {
-                                    const d = chart.data;
-                                    const totalSum = d.datasets[0].data.reduce((a, b) => a + b, 0);
-                                    return d.labels.map(function(label, i) {
-                                        const val = d.datasets[0].data[i];
-                                        const pct = totalSum > 0 ? Math.round((val / totalSum) * 100) : 0;
-                                        return {
-                                            text: label + ': ' + fmtBs(val, true) + ' (' + pct + '%)',
-                                            fillStyle: d.datasets[0].backgroundColor[i],
-                                            strokeStyle: d.datasets[0].backgroundColor[i],
-                                            lineWidth: 0,
-                                            hidden: false,
-                                            index: i
-                                        };
-                                    });
+                                font: {
+                                    size: 12
                                 }
                             }
                         },
                         tooltip: {
                             callbacks: {
-                                label: function(ctx) {
-                                    const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                                    const pct   = total > 0 ? Math.round((ctx.parsed / total) * 100) : 0;
-                                    return ' ' + ctx.label + ': ' + fmtBs(ctx.parsed, false) + ' (' + pct + '%)';
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return label + ': Bs ' + value.toLocaleString('es-BO', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    }) + ' (' + percentage + '%)';
                                 }
                             }
                         }
-                    }
+                    },
+                    cutout: '60%'
                 }
             });
         }
 
-        // ── Bar: Estado de Cobranza ───────────────────────────────────────
+        // Gráfico de estado de cobranza por concepto
         const cobranzaConceptoChart = document.getElementById('cobranzaConceptoChart');
         if (cobranzaConceptoChart) {
             const conceptos = @json(array_keys($resumenPorConcepto));
-            const pagado    = @json(array_column($resumenPorConcepto, 'pagado'));
+            const pagado = @json(array_column($resumenPorConcepto, 'pagado'));
             const pendiente = @json(array_column($resumenPorConcepto, 'pendiente'));
 
             new Chart(cobranzaConceptoChart, {
                 type: 'bar',
-                plugins: [ChartDataLabels],
                 data: {
                     labels: conceptos,
-                    datasets: [
-                        {
-                            label: 'Pagado',
+                    datasets: [{
+                            label: 'Pagado (Bs)',
                             data: pagado,
-                            backgroundColor: 'rgba(25, 135, 84, 0.8)',
-                            borderColor:     'rgba(25, 135, 84, 1)',
+                            backgroundColor: 'rgba(25, 135, 84, 0.7)',
+                            borderColor: 'rgba(25, 135, 84, 1)',
                             borderWidth: 1,
-                            borderRadius: 5,
-                            barPercentage: 0.65
+                            borderRadius: 4,
+                            barPercentage: 0.6
                         },
                         {
-                            label: 'Pendiente',
+                            label: 'Pendiente (Bs)',
                             data: pendiente,
-                            backgroundColor: 'rgba(220, 53, 69, 0.75)',
-                            borderColor:     'rgba(220, 53, 69, 1)',
+                            backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                            borderColor: 'rgba(220, 53, 69, 1)',
                             borderWidth: 1,
-                            borderRadius: 5,
-                            barPercentage: 0.65
+                            borderRadius: 4,
+                            barPercentage: 0.6
                         }
                     ]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
                     plugins: {
-                        datalabels: {
-                            anchor: 'end',
-                            align: 'end',
-                            offset: 2,
-                            font: { size: 10, weight: '600' },
-                            color: function(ctx) {
-                                return ctx.datasetIndex === 0 ? '#198754' : '#dc3545';
-                            },
-                            formatter: function(value) {
-                                if (!value || value === 0) return '';
-                                return fmtBs(value, true);
-                            }
-                        },
                         legend: {
                             position: 'top',
-                            labels: {
-                                usePointStyle: true,
-                                pointStyleWidth: 10,
-                                font: { size: 11 },
-                                padding: 16
-                            }
                         },
                         tooltip: {
                             mode: 'index',
                             intersect: false,
                             callbacks: {
-                                label: function(ctx) {
-                                    const total = pagado[ctx.dataIndex] + pendiente[ctx.dataIndex];
-                                    const pct   = total > 0 ? Math.round((ctx.parsed.y / total) * 100) : 0;
-                                    return ' ' + ctx.dataset.label + ': ' + fmtBs(ctx.parsed.y, false) + ' (' + pct + '%)';
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += 'Bs ' + context.parsed.y.toLocaleString('es-BO', {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2
+                                    });
+
+                                    // Calcular porcentaje
+                                    const total = pagado[context.dataIndex] + pendiente[context.dataIndex];
+                                    if (total > 0) {
+                                        const percentage = Math.round((context.parsed.y / total) * 100);
+                                        label += ' (' + percentage + '%)';
+                                    }
+
+                                    return label;
                                 }
                             }
                         }
                     },
                     scales: {
                         x: {
-                            grid: { display: false },
-                            ticks: { font: { size: 11 } }
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                font: {
+                                    size: 12
+                                }
+                            }
                         },
                         y: {
                             beginAtZero: true,
-                            grid: { color: 'rgba(0,0,0,.05)' },
                             ticks: {
-                                font: { size: 10 },
-                                callback: function(v) { return fmtBs(v, true); }
+                                callback: function(value) {
+                                    return 'Bs ' + value.toLocaleString('es-BO');
+                                },
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Monto en Bolivianos (Bs)'
                             }
                         }
                     },
-                    layout: { padding: { top: 22 } },
-                    interaction: { intersect: false, mode: 'index' }
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
                 }
             });
             // Inicializar popovers para mostrar estudios

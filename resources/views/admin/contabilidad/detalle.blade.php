@@ -2,91 +2,1026 @@
 
 @section('admin')
 
-    @php
-        $persona = $estudiante->persona;
-        $totalDeuda   = 0;
-        $totalPagado  = 0;
-        $totalCuotas  = 0;
-        $cuotasPagTot = 0;
-        $cuotasPenTot = 0;
-        foreach ($estudiante->inscripciones as $ins) {
-            foreach ($ins->cuotas as $c) {
-                $totalCuotas++;
-                $totalPagado += $c->pago_total_bs - $c->pago_pendiente_bs;
-                $totalDeuda  += $c->pago_pendiente_bs;
-                if ($c->pago_terminado == 'si') { $cuotasPagTot++; } else { $cuotasPenTot++; }
-            }
-        }
-        $pctGlobal = ($totalPagado + $totalDeuda) > 0
-            ? ($totalPagado / ($totalPagado + $totalDeuda)) * 100 : 0;
-        $colorGlobal = match(true) {
-            $pctGlobal == 100 => 'success',
-            $pctGlobal >= 75  => 'primary',
-            $pctGlobal >= 50  => 'warning',
-            default           => 'danger',
-        };
-    @endphp
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
-    {{-- Page title --}}
-    <div class="row">
-        <div class="col-12">
-            <div class="page-title-box d-sm-flex align-items-center justify-content-between">
-                <div>
-                    <h4 class="mb-1">Detalle Contable</h4>
-                    <ol class="breadcrumb m-0">
-                        <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('admin.contabilidad.buscar') }}">Contabilidad</a></li>
-                        <li class="breadcrumb-item active">{{ $persona->carnet ?? '' }}</li>
-                    </ol>
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                    <a href="{{ route('admin.contabilidad.buscar') }}" class="btn btn-light btn-sm">
-                        <i class="ri-arrow-left-line me-1"></i>Volver
-                    </a>
-                    <a href="{{ route('admin.estudiantes.detalle', $estudiante->id) }}" class="btn btn-info btn-sm">
-                        <i class="ri-user-line me-1"></i>Ver Perfil
-                    </a>
-                </div>
-            </div>
+    :root {
+        --cont-primary: #0f766e;
+        --cont-primary-light: #f0fdfa;
+        --cont-primary-dark: #0d5f59;
+        --cont-accent: #f59e0b;
+        --cont-accent-light: #fffbeb;
+        --cont-surface: #f8fafc;
+        --cont-border: #e2e8f0;
+        --cont-text: #1e293b;
+        --cont-text-muted: #64748b;
+        --cont-success: #10b981;
+        --cont-success-light: #ecfdf5;
+        --cont-danger: #ef4444;
+        --cont-danger-light: #fef2f2;
+        --cont-info: #0891b2;
+        --cont-info-light: #ecfeff;
+        --cont-warning: #f59e0b;
+        --cont-warning-light: #fffbeb;
+        --radius-sm: 8px;
+        --radius-md: 12px;
+        --radius-lg: 16px;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+        --shadow-md: 0 4px 8px -2px rgba(0,0,0,0.08), 0 2px 4px -2px rgba(0,0,0,0.04);
+        --shadow-lg: 0 10px 25px -4px rgba(0,0,0,0.1), 0 4px 8px -4px rgba(0,0,0,0.06);
+    }
+
+    .cont-detalle-page {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        color: var(--cont-text);
+        animation: contFadeIn 0.5s ease-out;
+    }
+
+    @keyframes contFadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Page Header */
+    .cont-detalle-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 24px;
+        padding: 20px 28px;
+        background: linear-gradient(135deg, var(--cont-primary) 0%, var(--cont-primary-dark) 100%);
+        border-radius: var(--radius-lg);
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .cont-detalle-header::before {
+        content: '';
+        position: absolute;
+        top: -40%;
+        right: -5%;
+        width: 260px;
+        height: 260px;
+        background: radial-gradient(circle, rgba(245,158,11,0.12) 0%, transparent 70%);
+        border-radius: 50%;
+    }
+
+    .cont-detalle-header h1 {
+        font-family: 'Outfit', sans-serif;
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 0;
+        letter-spacing: -0.02em;
+        position: relative;
+        z-index: 1;
+        color: white;
+    }
+
+    .cont-detalle-header p {
+        margin: 4px 0 0;
+        opacity: 0.8;
+        font-size: 0.85rem;
+        position: relative;
+        z-index: 1;
+        color: white;
+    }
+
+    .cont-header-actions {
+        display: flex;
+        gap: 8px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .btn-cont-header {
+        background: rgba(255,255,255,0.15);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.25);
+        padding: 8px 18px;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+        font-size: 0.82rem;
+        transition: all 0.25s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        backdrop-filter: blur(4px);
+    }
+
+    .btn-cont-header:hover {
+        background: white;
+        color: var(--cont-primary);
+        border-color: white;
+        transform: translateY(-1px);
+    }
+
+    /* Student Card */
+    .student-card {
+        background: white;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--cont-border);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+        margin-bottom: 24px;
+    }
+
+    .student-card-body {
+        padding: 24px;
+    }
+
+    .student-info {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .student-avatar {
+        width: 64px;
+        height: 64px;
+        border-radius: var(--radius-md);
+        background: linear-gradient(135deg, var(--cont-primary) 0%, var(--cont-primary-dark) 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Outfit', sans-serif;
+        font-weight: 700;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(15, 118, 110, 0.2);
+    }
+
+    .student-name {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 700;
+        font-size: 1.2rem;
+        color: var(--cont-text);
+        margin: 0 0 6px;
+    }
+
+    .student-badges {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 6px;
+    }
+
+    .student-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 12px;
+        border-radius: 50px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        background: var(--cont-surface);
+        color: var(--cont-text-muted);
+        border: 1px solid var(--cont-border);
+    }
+
+    .student-address {
+        font-size: 0.8rem;
+        color: var(--cont-text-muted);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* Financial Summary */
+    .fin-summary {
+        background: var(--cont-surface);
+        border-radius: var(--radius-md);
+        border: 1px solid var(--cont-border);
+        padding: 18px 20px;
+    }
+
+    .fin-summary-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+
+    .fin-summary-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--cont-text-muted);
+    }
+
+    .fin-summary-pct {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 700;
+        font-size: 0.88rem;
+        padding: 3px 12px;
+        border-radius: 50px;
+    }
+
+    .fin-summary-pct.val-success { background: var(--cont-success-light); color: var(--cont-success); }
+    .fin-summary-pct.val-primary { background: var(--cont-primary-light); color: var(--cont-primary); }
+    .fin-summary-pct.val-warning { background: var(--cont-warning-light); color: var(--cont-warning); }
+    .fin-summary-pct.val-danger { background: var(--cont-danger-light); color: var(--cont-danger); }
+
+    .fin-summary-bar {
+        height: 8px;
+        border-radius: 4px;
+        background: var(--cont-border);
+        overflow: hidden;
+        margin-bottom: 14px;
+    }
+
+    .fin-summary-bar-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.6s ease;
+    }
+
+    .fin-summary-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+
+    .fin-stat {
+        text-align: center;
+    }
+
+    .fin-stat-value {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 700;
+        font-size: 1rem;
+        line-height: 1.2;
+    }
+
+    .fin-stat-label {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--cont-text-muted);
+        font-weight: 600;
+    }
+
+    /* Section Header */
+    .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .section-title {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 600;
+        font-size: 1.05rem;
+        color: var(--cont-text);
+        margin: 0;
+    }
+
+    .section-subtitle {
+        font-size: 0.82rem;
+        color: var(--cont-text-muted);
+        margin: 2px 0 0;
+    }
+
+    .section-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: var(--cont-primary-light);
+        color: var(--cont-primary);
+        border: 1px solid rgba(15, 118, 110, 0.15);
+    }
+
+    /* Accordion */
+    .cont-accordion {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .cont-accordion-item {
+        background: white;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--cont-border);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+        position: relative;
+        transition: all 0.25s ease;
+    }
+
+    .cont-accordion-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 5px;
+        height: 100%;
+    }
+
+    .cont-accordion-item.color-success::before { background: var(--cont-success); }
+    .cont-accordion-item.color-primary::before { background: var(--cont-primary); }
+    .cont-accordion-item.color-warning::before { background: var(--cont-warning); }
+    .cont-accordion-item.color-danger::before { background: var(--cont-danger); }
+
+    .cont-accordion-item:hover {
+        box-shadow: var(--shadow-md);
+    }
+
+    .cont-accordion-btn {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 16px 20px;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        gap: 14px;
+        transition: background 0.2s ease;
+    }
+
+    .cont-accordion-btn:hover {
+        background: var(--cont-surface);
+    }
+
+    .cont-accordion-btn.collapsed {
+        background: transparent;
+    }
+
+    .prog-avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Outfit', sans-serif;
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .prog-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .prog-name {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: var(--cont-text);
+        margin: 0 0 4px;
+    }
+
+    .prog-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        font-size: 0.75rem;
+        color: var(--cont-text-muted);
+    }
+
+    .prog-meta-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .prog-meta-item i {
+        color: var(--cont-primary);
+    }
+
+    .prog-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .prog-badges {
+        display: flex;
+        gap: 6px;
+    }
+
+    .prog-badge-paid {
+        padding: 3px 10px;
+        border-radius: 50px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        background: var(--cont-success-light);
+        color: var(--cont-success);
+    }
+
+    .prog-badge-debt {
+        padding: 3px 10px;
+        border-radius: 50px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        background: var(--cont-danger-light);
+        color: var(--cont-danger);
+    }
+
+    .prog-progress {
+        width: 110px;
+    }
+
+    .prog-progress-header {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.65rem;
+        margin-bottom: 3px;
+    }
+
+    .prog-progress-label {
+        color: var(--cont-text-muted);
+        font-weight: 600;
+    }
+
+    .prog-progress-value {
+        font-weight: 700;
+    }
+
+    .prog-progress-bar {
+        height: 5px;
+        border-radius: 3px;
+        background: var(--cont-border);
+        overflow: hidden;
+    }
+
+    .prog-progress-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.6s ease;
+    }
+
+    .cont-accordion-body {
+        border-top: 1px solid var(--cont-border);
+    }
+
+    /* Multi-pay bar */
+    .multi-pay-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 20px;
+        background: var(--cont-primary-light);
+        border-top: 1px solid var(--cont-border);
+        border-bottom: 1px solid var(--cont-border);
+    }
+
+    .multi-pay-text {
+        font-size: 0.82rem;
+        color: var(--cont-text-muted);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .multi-pay-text strong {
+        color: var(--cont-primary);
+    }
+
+    .btn-multi-pay {
+        background: var(--cont-primary);
+        color: white;
+        border: none;
+        padding: 7px 16px;
+        border-radius: var(--radius-sm);
+        font-weight: 600;
+        font-size: 0.82rem;
+        transition: all 0.25s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-multi-pay:hover {
+        background: var(--cont-primary-dark);
+        transform: translateY(-1px);
+        color: white;
+    }
+
+    /* Program Summary */
+    .prog-summary {
+        padding: 14px 20px;
+        background: var(--cont-surface);
+        border-bottom: 1px solid var(--cont-border);
+    }
+
+    .prog-summary-stats {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+    }
+
+    .prog-summary-stat .ps-label {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--cont-text-muted);
+        font-weight: 700;
+    }
+
+    .prog-summary-stat .ps-value {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    /* Concept Cards */
+    .concept-section {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--cont-border);
+    }
+
+    .concept-section:last-child {
+        border-bottom: none;
+    }
+
+    .concept-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .concept-title {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 600;
+        font-size: 0.88rem;
+        color: var(--cont-text);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .concept-title i {
+        color: var(--cont-accent);
+    }
+
+    .concept-badges {
+        display: flex;
+        gap: 6px;
+    }
+
+    .concept-badge-paid {
+        padding: 3px 10px;
+        border-radius: 50px;
+        font-size: 0.68rem;
+        font-weight: 600;
+        background: var(--cont-success-light);
+        color: var(--cont-success);
+    }
+
+    .concept-badge-debt {
+        padding: 3px 10px;
+        border-radius: 50px;
+        font-size: 0.68rem;
+        font-weight: 600;
+        background: var(--cont-danger-light);
+        color: var(--cont-danger);
+    }
+
+    .concept-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+    }
+
+    .concept-stat {
+        text-align: center;
+        padding: 8px 10px;
+        border-radius: var(--radius-sm);
+        background: white;
+        border: 1px solid var(--cont-border);
+    }
+
+    .concept-stat-label {
+        font-size: 0.6rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--cont-text-muted);
+        font-weight: 700;
+    }
+
+    .concept-stat-value {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 700;
+        font-size: 0.85rem;
+    }
+
+    /* Cuotas Table */
+    .cuotas-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .cuotas-table thead th {
+        background: var(--cont-surface);
+        padding: 10px 14px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--cont-text-muted);
+        border-bottom: 1px solid var(--cont-border);
+    }
+
+    .cuotas-table tbody td {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--cont-border);
+        vertical-align: middle;
+        font-size: 0.84rem;
+    }
+
+    .cuotas-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .cuotas-table tbody tr:hover {
+        background: var(--cont-primary-light);
+    }
+
+    .cuotas-table tbody tr.row-pagado {
+        background: var(--cont-success-light);
+    }
+
+    .cuotas-table tbody tr.row-pagado:hover {
+        background: #d1fae5;
+    }
+
+    .cuotas-table tbody tr.row-parcial {
+        background: var(--cont-warning-light);
+    }
+
+    .cuotas-table tbody tr.row-parcial:hover {
+        background: #fef3c7;
+    }
+
+    .cuotas-table tfoot td {
+        padding: 10px 14px;
+        background: var(--cont-surface);
+        font-weight: 700;
+        font-size: 0.82rem;
+        border-top: 2px solid var(--cont-border);
+    }
+
+    .cuota-num-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 28px;
+        border-radius: var(--radius-sm);
+        background: var(--cont-surface);
+        color: var(--cont-text-muted);
+        font-weight: 700;
+        font-size: 0.78rem;
+        border: 1px solid var(--cont-border);
+    }
+
+    .cuota-name {
+        font-weight: 600;
+        font-size: 0.86rem;
+    }
+
+    .cuota-payments {
+        font-size: 0.72rem;
+        color: var(--cont-text-muted);
+    }
+
+    .cuota-progress {
+        height: 3px;
+        border-radius: 2px;
+        background: var(--cont-border);
+        overflow: hidden;
+        margin-top: 4px;
+    }
+
+    .cuota-progress-fill {
+        height: 100%;
+        border-radius: 2px;
+        transition: width 0.4s ease;
+    }
+
+    .estado-badge-cont {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 12px;
+        border-radius: 50px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+
+    .estado-badge-cont.pagado {
+        background: var(--cont-success-light);
+        color: var(--cont-success);
+    }
+
+    .estado-badge-cont.pendiente {
+        background: var(--cont-warning-light);
+        color: var(--cont-warning);
+    }
+
+    .cuota-action-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: var(--radius-sm);
+        border: 1px solid transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.88rem;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .cuota-action-btn.pay {
+        background: var(--cont-success-light);
+        color: var(--cont-success);
+        border-color: rgba(16, 185, 129, 0.2);
+    }
+
+    .cuota-action-btn.pay:hover {
+        background: var(--cont-success);
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    .cuota-action-btn.receipts {
+        background: var(--cont-info-light);
+        color: var(--cont-info);
+        border-color: rgba(8, 145, 178, 0.2);
+        position: relative;
+    }
+
+    .cuota-action-btn.receipts:hover {
+        background: var(--cont-info);
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    .cuota-action-btn.receipts .receipt-count {
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        background: var(--cont-info);
+        color: white;
+        font-size: 0.55rem;
+        font-weight: 700;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1.5px solid white;
+    }
+
+    /* Footer Summary */
+    .footer-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        padding: 18px 24px;
+        background: white;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--cont-border);
+        box-shadow: var(--shadow-sm);
+        margin-top: 20px;
+    }
+
+    .footer-stat {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .footer-stat-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+
+    .footer-stat-value {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 700;
+        font-size: 0.95rem;
+        line-height: 1.2;
+    }
+
+    .footer-stat-label {
+        font-size: 0.68rem;
+        color: var(--cont-text-muted);
+        font-weight: 600;
+    }
+
+    /* Empty State */
+    .empty-state-cont {
+        padding: 56px 24px;
+        text-align: center;
+        background: white;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--cont-border);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .empty-state-cont-icon {
+        width: 72px;
+        height: 72px;
+        margin: 0 auto 16px;
+        background: var(--cont-surface);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .empty-state-cont-icon i {
+        font-size: 2rem;
+        color: #cbd5e1;
+    }
+
+    .empty-state-cont h5 {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 600;
+        color: var(--cont-text);
+        margin-bottom: 4px;
+    }
+
+    .empty-state-cont p {
+        color: var(--cont-text-muted);
+        font-size: 0.85rem;
+        margin: 0;
+    }
+
+    /* Modals */
+    .modal-cont .modal-content {
+        border: none;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .modal-cont .modal-header {
+        background: linear-gradient(135deg, var(--cont-primary) 0%, var(--cont-primary-dark) 100%);
+        color: white;
+        border-bottom: none;
+        padding: 18px 24px;
+    }
+
+    .modal-cont .modal-header h5 {
+        font-family: 'Outfit', sans-serif;
+        font-weight: 600;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: white;
+    }
+
+    .modal-cont .modal-body {
+        padding: 22px 24px;
+    }
+
+    .modal-cont .modal-footer {
+        border-top: 1px solid var(--cont-border);
+        padding: 14px 24px;
+        background: var(--cont-surface);
+    }
+
+    /* Toast */
+    .toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 999999 !important;
+    }
+
+    /* Responsive */
+    @media (max-width: 767.98px) {
+        .cont-detalle-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .student-info {
+            flex-direction: column;
+            text-align: center;
+        }
+        .student-badges {
+            justify-content: center;
+        }
+        .fin-summary-stats {
+            grid-template-columns: 1fr;
+        }
+        .prog-summary-stats {
+            grid-template-columns: 1fr;
+        }
+        .cont-accordion-btn {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .prog-right {
+            align-items: flex-start;
+            width: 100%;
+        }
+        .prog-progress {
+            width: 100%;
+        }
+        .footer-summary {
+            flex-direction: column;
+        }
+    }
+</style>
+
+@php
+    $persona = $estudiante->persona;
+    $totalDeuda   = 0;
+    $totalPagado  = 0;
+    $totalCuotas  = 0;
+    $cuotasPagTot = 0;
+    $cuotasPenTot = 0;
+    foreach ($estudiante->inscripciones as $ins) {
+        foreach ($ins->cuotas as $c) {
+            $totalCuotas++;
+            $totalPagado += $c->pago_total_bs - $c->pago_pendiente_bs;
+            $totalDeuda  += $c->pago_pendiente_bs;
+            if ($c->pago_terminado == 'si') { $cuotasPagTot++; } else { $cuotasPenTot++; }
+        }
+    }
+    $pctGlobal = ($totalPagado + $totalDeuda) > 0
+        ? ($totalPagado / ($totalPagado + $totalDeuda)) * 100 : 0;
+    $colorGlobal = match(true) {
+        $pctGlobal == 100 => 'success',
+        $pctGlobal >= 75  => 'primary',
+        $pctGlobal >= 50  => 'warning',
+        default           => 'danger',
+    };
+@endphp
+
+<div class="container-fluid cont-detalle-page">
+    <!-- Page Header -->
+    <div class="cont-detalle-header">
+        <div>
+            <h1><i class="ri-calculator-line me-2"></i>Detalle Contable</h1>
+            <p>{{ $persona->nombres }} {{ $persona->apellido_paterno }} {{ $persona->apellido_materno }}</p>
+        </div>
+        <div class="cont-header-actions">
+            <a href="{{ route('admin.contabilidad.buscar') }}" class="btn-cont-header">
+                <i class="ri-arrow-left-line"></i> Volver
+            </a>
+            <a href="{{ route('admin.estudiantes.detalle', $estudiante->id) }}" class="btn-cont-header">
+                <i class="ri-user-line"></i> Ver Perfil
+            </a>
         </div>
     </div>
 
-    {{-- Header del participante --}}
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body p-4">
+    <!-- Student Card -->
+    <div class="student-card">
+        <div class="student-card-body">
             <div class="row align-items-center g-3">
-
-                {{-- Avatar + datos personales --}}
                 <div class="col-md-7">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="avatar-lg flex-shrink-0">
-                            <div class="avatar-title bg-primary text-white rounded-3 fw-bold fs-2">
-                                {{ strtoupper(mb_substr($persona->nombres ?? 'P', 0, 1, 'UTF-8')) }}
-                            </div>
+                    <div class="student-info">
+                        <div class="student-avatar">
+                            {{ strtoupper(mb_substr($persona->nombres ?? 'P', 0, 1, 'UTF-8')) }}
                         </div>
                         <div>
-                            <h4 class="mb-1 fw-semibold">
-                                {{ $persona->nombres }}
-                                {{ $persona->apellido_paterno }}
-                                {{ $persona->apellido_materno }}
+                            <h4 class="student-name">
+                                {{ $persona->nombres }} {{ $persona->apellido_paterno }} {{ $persona->apellido_materno }}
                             </h4>
-                            <div class="d-flex flex-wrap gap-2 mb-2">
-                                <span class="badge bg-secondary rounded-pill">
-                                    <i class="ri-id-card-line me-1"></i>{{ $persona->carnet }}
-                                </span>
+                            <div class="student-badges">
+                                <span class="student-badge"><i class="ri-id-card-line"></i>{{ $persona->carnet }}</span>
                                 @if($persona->correo)
-                                <span class="badge bg-info rounded-pill">
-                                    <i class="ri-mail-line me-1"></i>{{ $persona->correo }}
-                                </span>
+                                <span class="student-badge"><i class="ri-mail-line"></i>{{ $persona->correo }}</span>
                                 @endif
                                 @if($persona->celular)
-                                <span class="badge bg-light text-dark border rounded-pill">
-                                    <i class="ri-phone-line me-1"></i>{{ $persona->celular }}
-                                </span>
+                                <span class="student-badge"><i class="ri-phone-line"></i>{{ $persona->celular }}</span>
                                 @endif
                             </div>
-                            <div class="text-muted small">
-                                <i class="ri-map-pin-line me-1"></i>
+                            <div class="student-address">
+                                <i class="ri-map-pin-line"></i>
                                 {{ $persona->direccion ?? 'Sin dirección' }}
                                 @if($persona->ciudad)
                                     · {{ $persona->ciudad->nombre ?? '' }},
@@ -96,55 +1031,52 @@
                         </div>
                     </div>
                 </div>
-
-                {{-- Resumen financiero rápido --}}
                 <div class="col-md-5">
-                    <div class="rounded-3 border p-3" style="background:#f8f9fa;">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="text-muted small fw-medium">Estado financiero general</span>
-                            <span class="badge bg-{{ $colorGlobal }} rounded-pill">{{ number_format($pctGlobal, 1) }}%</span>
+                    <div class="fin-summary">
+                        <div class="fin-summary-header">
+                            <span class="fin-summary-label">Estado financiero general</span>
+                            <span class="fin-summary-pct val-{{ $colorGlobal }}">{{ number_format($pctGlobal, 1) }}%</span>
                         </div>
-                        <div class="progress rounded-pill mb-3" style="height:8px;">
-                            <div class="progress-bar bg-{{ $colorGlobal }}" style="width:{{ $pctGlobal }}%"></div>
+                        <div class="fin-summary-bar">
+                            <div class="fin-summary-bar-fill bg-{{ $colorGlobal }}" style="width:{{ $pctGlobal }}%"></div>
                         </div>
-                        <div class="row g-2 text-center">
-                            <div class="col-4">
-                                <div class="fw-bold text-success">{{ number_format($totalPagado, 2) }}</div>
-                                <div class="text-muted" style="font-size:.7rem;">Bs Pagado</div>
+                        <div class="fin-summary-stats">
+                            <div class="fin-stat">
+                                <div class="fin-stat-value" style="color:var(--cont-success);">{{ number_format($totalPagado, 2) }}</div>
+                                <div class="fin-stat-label">Bs Pagado</div>
                             </div>
-                            <div class="col-4">
-                                <div class="fw-bold text-danger">{{ number_format($totalDeuda, 2) }}</div>
-                                <div class="text-muted" style="font-size:.7rem;">Bs Pendiente</div>
+                            <div class="fin-stat">
+                                <div class="fin-stat-value" style="color:var(--cont-danger);">{{ number_format($totalDeuda, 2) }}</div>
+                                <div class="fin-stat-label">Bs Pendiente</div>
                             </div>
-                            <div class="col-4">
-                                <div class="fw-bold text-primary">{{ $totalCuotas }}</div>
-                                <div class="text-muted" style="font-size:.7rem;">Cuotas</div>
+                            <div class="fin-stat">
+                                <div class="fin-stat-value" style="color:var(--cont-primary);">{{ $totalCuotas }}</div>
+                                <div class="fin-stat-label">Cuotas</div>
                             </div>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
 
-    {{-- Programas y cuotas --}}
+    <!-- Programs and Cuotas -->
     @if ($estudiante->inscripciones->count() > 0)
 
-        <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="section-header">
             <div>
-                <h5 class="mb-0 fw-semibold">Programas y Estado de Cuotas</h5>
-                <p class="text-muted small mb-0">
+                <h5 class="section-title">Programas y Estado de Cuotas</h5>
+                <p class="section-subtitle">
                     {{ $estudiante->inscripciones->count() }} programa(s) ·
                     {{ $cuotasPagTot }} pagadas · {{ $cuotasPenTot }} pendientes
                 </p>
             </div>
-            <span class="badge bg-primary rounded-pill px-3 py-2 fs-12">
-                <i class="ri-graduation-cap-line me-1"></i>{{ $estudiante->inscripciones->count() }} Programas
+            <span class="section-badge">
+                <i class="ri-graduation-cap-line"></i>{{ $estudiante->inscripciones->count() }} Programas
             </span>
         </div>
 
-        <div class="accordion" id="accordionContable" style="display:flex; flex-direction:column; gap:.75rem;">
+        <div class="cont-accordion" id="accordionContable">
             @foreach ($estudiante->inscripciones->sortByDesc('fecha_registro') as $index => $inscripcion)
                 @php
                     $oferta   = $inscripcion->ofertaAcademica;
@@ -160,7 +1092,7 @@
                     foreach ($cuotas as $cuota) {
                         $deudaPrograma  += $cuota->pago_pendiente_bs;
                         $pagadoPrograma += $cuota->pago_total_bs - $cuota->pago_pendiente_bs;
-                        if ($cuota->pago_terminado == 'si') { $cuotasPagadas++; } else { $cuotasPendientes++; }
+                        if ($cuota->pago_terminado == 'si') { $cuotasPagadas++; }
                     }
 
                     $totalPrograma    = $deudaPrograma + $pagadoPrograma;
@@ -173,232 +1105,259 @@
                         $porcentajePagado >= 50  => 'warning',
                         default                  => 'danger',
                     };
-                    $avatarColors = ['bg-primary','bg-success','bg-info','bg-warning','bg-danger'];
+                    $avatarColors = ['#0f766e','#10b981','#0891b2','#f59e0b','#ef4444'];
                     $avatarColor  = $avatarColors[$index % count($avatarColors)];
                     $inicial      = strtoupper(mb_substr($programa->nombre ?? 'P', 0, 1, 'UTF-8'));
                 @endphp
 
-                <div class="accordion-item border-0 rounded-3 overflow-hidden"
-                     style="box-shadow:0 2px 8px rgba(0,0,0,.08); border-left:4px solid var(--bs-{{ $colorProg }}) !important;">
-
-                    {{-- Header --}}
+                <div class="cont-accordion-item color-{{ $colorProg }}">
                     <h2 class="accordion-header" id="contableHeading{{ $index }}">
-                        <button class="accordion-button {{ $index > 0 ? 'collapsed' : '' }} py-3 px-4"
+                        <button class="cont-accordion-btn {{ $index > 0 ? 'collapsed' : '' }}"
                                 type="button"
                                 data-bs-toggle="collapse"
                                 data-bs-target="#contableCollapse{{ $index }}"
                                 aria-expanded="{{ $index === 0 ? 'true' : 'false' }}"
-                                aria-controls="contableCollapse{{ $index }}"
-                                style="background:transparent;">
-                            <div class="d-flex align-items-center w-100 me-2 gap-3">
+                                aria-controls="contableCollapse{{ $index }}">
 
-                                {{-- Avatar inicial --}}
-                                <div class="avatar-sm flex-shrink-0">
-                                    <div class="avatar-title {{ $avatarColor }} text-white rounded-2 fw-bold fs-16">
-                                        {{ $inicial }}
-                                    </div>
+                            <div class="prog-avatar" style="background:{{ $avatarColor }};">{{ $inicial }}</div>
+
+                            <div class="prog-info">
+                                <h6 class="prog-name">{{ $programa->nombre ?? 'Programa no especificado' }}</h6>
+                                <div class="prog-meta">
+                                    @if(optional($oferta->modalidad)->nombre)
+                                    <span class="prog-meta-item"><i class="ri-book-open-line"></i>{{ $oferta->modalidad->nombre }}</span>
+                                    @endif
+                                    @if(optional($oferta->sucursal)->nombre)
+                                    <span class="prog-meta-item"><i class="ri-map-pin-line"></i>{{ $oferta->sucursal->nombre }}</span>
+                                    @endif
+                                    <span class="prog-meta-item"><i class="ri-file-list-3-line"></i>{{ optional($inscripcion->planesPago)->nombre ?? 'N/A' }}</span>
+                                    <span class="prog-meta-item"><i class="ri-stack-line"></i>{{ $cuotasPagadas }}/{{ $cuotasTotales }} cuotas</span>
                                 </div>
-
-                                {{-- Info principal --}}
-                                <div class="flex-grow-1 min-w-0">
-                                    <h6 class="mb-1 fw-semibold text-truncate">
-                                        {{ $programa->nombre ?? 'Programa no especificado' }}
-                                    </h6>
-                                    <div class="d-flex flex-wrap align-items-center gap-3 text-muted" style="font-size:.77rem;">
-                                        @if(optional($oferta->modalidad)->nombre)
-                                        <span>
-                                            <i class="ri-book-open-line me-1 text-primary"></i>
-                                            {{ $oferta->modalidad->nombre }}
-                                        </span>
-                                        @endif
-                                        @if(optional($oferta->sucursal)->nombre)
-                                        <span>
-                                            <i class="ri-map-pin-line me-1 text-primary"></i>
-                                            {{ $oferta->sucursal->nombre }}
-                                        </span>
-                                        @endif
-                                        <span>
-                                            <i class="ri-file-list-3-line me-1 text-primary"></i>
-                                            {{ optional($inscripcion->planesPago)->nombre ?? 'N/A' }}
-                                        </span>
-                                        <span>
-                                            <i class="ri-stack-line me-1 text-primary"></i>
-                                            {{ $cuotasPagadas }}/{{ $cuotasTotales }} cuotas
-                                        </span>
-                                    </div>
-                                </div>
-
-                                {{-- Derecha: montos + barra --}}
-                                <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
-                                    <div class="d-flex gap-1">
-                                        <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:.72rem;">
-                                            {{ number_format($pagadoPrograma, 2) }} Bs
-                                        </span>
-                                        <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size:.72rem;">
-                                            {{ number_format($deudaPrograma, 2) }} Bs
-                                        </span>
-                                    </div>
-                                    <div style="width:100px;">
-                                        <div class="d-flex justify-content-between" style="font-size:.65rem;">
-                                            <span class="text-muted">Avance</span>
-                                            <span class="fw-semibold text-{{ $colorProg }}">{{ number_format($porcentajePagado, 0) }}%</span>
-                                        </div>
-                                        <div class="progress rounded-pill" style="height:5px;">
-                                            <div class="progress-bar bg-{{ $colorProg }}" style="width:{{ $porcentajePagado }}%"></div>
-                                        </div>
-                                    </div>
-                                </div>
-
                             </div>
+
+                            <div class="prog-right">
+                                <div class="prog-badges">
+                                    <span class="prog-badge-paid">{{ number_format($pagadoPrograma, 2) }} Bs</span>
+                                    <span class="prog-badge-debt">{{ number_format($deudaPrograma, 2) }} Bs</span>
+                                </div>
+                                <div class="prog-progress">
+                                    <div class="prog-progress-header">
+                                        <span class="prog-progress-label">Avance</span>
+                                        <span class="prog-progress-value" style="color:var(--cont-{{ $colorProg }});">{{ number_format($porcentajePagado, 0) }}%</span>
+                                    </div>
+                                    <div class="prog-progress-bar">
+                                        <div class="prog-progress-fill bg-{{ $colorProg }}" style="width:{{ $porcentajePagado }}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+
                         </button>
                     </h2>
 
-                    {{-- Body --}}
                     <div id="contableCollapse{{ $index }}"
                          class="accordion-collapse collapse {{ $index === 0 ? 'show' : '' }}"
                          aria-labelledby="contableHeading{{ $index }}">
-                        <div class="accordion-body p-0">
+                        <div class="cont-accordion-body">
 
-                            {{-- Barra "Pagar Múltiples" --}}
                             @if ($cuotasPendientes > 0)
-                                <div class="px-4 py-2 border-top border-bottom d-flex align-items-center justify-content-between"
-                                     style="background:#f0f8ff;">
-                                    <span class="small text-muted">
-                                        <i class="ri-list-check-2 me-1 text-primary"></i>
+                                <div class="multi-pay-bar">
+                                    <span class="multi-pay-text">
+                                        <i class="ri-list-check-2" style="color:var(--cont-primary);"></i>
                                         <strong>{{ $cuotasPendientes }}</strong> cuota(s) con saldo pendiente
                                     </span>
                                     <button type="button"
-                                            class="btn btn-sm btn-primary btn-pagar-multiple"
+                                            class="btn-multi-pay btn-pagar-multiple"
                                             data-estudiante-id="{{ $estudiante->id }}">
-                                        <i class="ri-stack-line me-1"></i>Pagar Múltiples Cuotas
+                                        <i class="ri-stack-line"></i> Pagar Múltiples
                                     </button>
                                 </div>
                             @endif
 
-                            {{-- Resumen financiero del programa --}}
-                            <div class="px-4 py-3 bg-light border-bottom">
-                                <div class="row g-2">
-                                    <div class="col-4">
-                                        <div class="text-muted" style="font-size:.7rem;">TOTAL PROGRAMA</div>
-                                        <div class="fw-bold fs-6">{{ number_format($totalPrograma, 2) }} Bs</div>
+                            <div class="prog-summary">
+                                <div class="prog-summary-stats">
+                                    <div class="prog-summary-stat">
+                                        <div class="ps-label">Total Programa</div>
+                                        <div class="ps-value">{{ number_format($totalPrograma, 2) }} Bs</div>
                                     </div>
-                                    <div class="col-4">
-                                        <div class="text-muted" style="font-size:.7rem;">PAGADO</div>
-                                        <div class="fw-bold fs-6 text-success">{{ number_format($pagadoPrograma, 2) }} Bs</div>
+                                    <div class="prog-summary-stat">
+                                        <div class="ps-label">Pagado</div>
+                                        <div class="ps-value" style="color:var(--cont-success);">{{ number_format($pagadoPrograma, 2) }} Bs</div>
                                     </div>
-                                    <div class="col-4">
-                                        <div class="text-muted" style="font-size:.7rem;">PENDIENTE</div>
-                                        <div class="fw-bold fs-6 text-danger">{{ number_format($deudaPrograma, 2) }} Bs</div>
+                                    <div class="prog-summary-stat">
+                                        <div class="ps-label">Pendiente</div>
+                                        <div class="ps-value" style="color:var(--cont-danger);">{{ number_format($deudaPrograma, 2) }} Bs</div>
                                     </div>
                                 </div>
                             </div>
 
-                            {{-- Tabla de cuotas --}}
-                            <div class="px-3 py-3">
-                                <div class="table-responsive">
-                                    <table class="table table-hover align-middle mb-0" style="font-size:.84rem;">
-                                        <thead>
-                                            <tr style="background:#f8f9fa;">
-                                                <th width="5%" class="text-center border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;">#</th>
-                                                <th width="26%" class="border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;">CUOTA</th>
-                                                <th width="12%" class="text-center border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;">TOTAL</th>
-                                                <th width="12%" class="text-center border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;">PAGADO</th>
-                                                <th width="12%" class="text-center border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;">PENDIENTE</th>
-                                                <th width="13%" class="text-center border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;">FECHA</th>
-                                                <th width="11%" class="text-center border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;">ESTADO</th>
-                                                <th width="9%" class="text-center border-0 py-2 text-muted fw-semibold" style="font-size:.7rem;">ACCIÓN</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach ($cuotas as $cuota)
-                                                @php
-                                                    $pagado       = $cuota->pago_total_bs - $cuota->pago_pendiente_bs;
-                                                    $tienePagos   = $cuota->pagos_cuotas->count() > 0;
-                                                    $pctCuota     = $cuota->pago_total_bs > 0
-                                                        ? ($pagado / $cuota->pago_total_bs) * 100 : 0;
-                                                @endphp
-                                                <tr>
-                                                    <td class="text-center">
-                                                        <span class="badge bg-light text-dark border">{{ $cuota->n_cuota }}</span>
-                                                    </td>
-                                                    <td>
-                                                        <div class="fw-medium">{{ $cuota->nombre }}</div>
-                                                        @if ($tienePagos)
-                                                            <div class="text-muted" style="font-size:.72rem;">
-                                                                <i class="ri-receipt-line me-1"></i>{{ $cuota->pagos_cuotas->count() }} pago(s)
-                                                            </div>
-                                                        @endif
-                                                        <div class="progress mt-1 rounded-pill" style="height:3px;">
-                                                            <div class="progress-bar {{ $cuota->pago_terminado == 'si' ? 'bg-success' : 'bg-warning' }}"
-                                                                 style="width:{{ $pctCuota }}%"></div>
+                            {{-- Desglose por conceptos --}}
+                            @php
+                                $conceptos = [];
+                                foreach ($cuotas as $cuota) {
+                                    $tipo = $cuota->tipo ?? 'Otros';
+                                    if (!isset($conceptos[$tipo])) {
+                                        $conceptos[$tipo] = ['total' => 0, 'pagado' => 0, 'pendiente' => 0, 'cuotas' => 0];
+                                    }
+                                    $conceptos[$tipo]['total'] += $cuota->pago_total_bs;
+                                    $conceptos[$tipo]['pagado'] += ($cuota->pago_total_bs - $cuota->pago_pendiente_bs);
+                                    $conceptos[$tipo]['pendiente'] += $cuota->pago_pendiente_bs;
+                                    $conceptos[$tipo]['cuotas']++;
+                                }
+                                $conceptoIcons = [
+                                    'Matrícula'    => 'ri-graduation-cap-line',
+                                    'Colegiatura'  => 'ri-book-open-line',
+                                    'Certificación'=> 'ri-award-line',
+                                    'Otros'        => 'ri-file-list-line',
+                                ];
+                            @endphp
+
+                            @if (count($conceptos) > 1)
+                                <div class="concept-section">
+                                    <div class="concept-header">
+                                        <div class="concept-title">
+                                            <i class="ri-pie-chart-2-line"></i>
+                                            Desglose por Concepto
+                                        </div>
+                                    </div>
+                                    <div class="row g-2">
+                                        @foreach ($conceptos as $nombre => $datos)
+                                            @php
+                                                $cIcon = $conceptoIcons[$nombre] ?? 'ri-file-list-line';
+                                                $cPct = $datos['total'] > 0 ? ($datos['pagado'] / $datos['total']) * 100 : 0;
+                                                $cColor = match(true) {
+                                                    $cPct == 100 => 'success',
+                                                    $cPct >= 75  => 'primary',
+                                                    $cPct >= 50  => 'warning',
+                                                    default      => 'danger',
+                                                };
+                                            @endphp
+                                            <div class="col-md-6">
+                                                <div class="concept-stat" style="border-left:3px solid var(--cont-{{ $cColor }});">
+                                                    <div class="concept-header" style="margin-bottom:6px;">
+                                                        <div class="concept-title" style="font-size:0.82rem;">
+                                                            <i class="{{ $cIcon }}"></i>{{ $nombre }}
                                                         </div>
-                                                    </td>
-                                                    <td class="text-center fw-medium">{{ number_format($cuota->pago_total_bs, 2) }}</td>
-                                                    <td class="text-center">
-                                                        <span class="text-success fw-medium">{{ number_format($pagado, 2) }}</span>
-                                                    </td>
-                                                    <td class="text-center">
-                                                        @if ($cuota->pago_pendiente_bs > 0)
-                                                            <span class="text-danger fw-medium">{{ number_format($cuota->pago_pendiente_bs, 2) }}</span>
-                                                        @else
-                                                            <span class="text-muted">—</span>
-                                                        @endif
-                                                    </td>
-                                                    <td class="text-center text-muted small">
-                                                        @if ($cuota->fecha_pago)
-                                                            {{ \Carbon\Carbon::parse($cuota->fecha_pago)->format('d/m/Y') }}
-                                                        @else
-                                                            <span class="text-muted">—</span>
-                                                        @endif
-                                                    </td>
-                                                    <td class="text-center">
-                                                        @if ($cuota->pago_terminado == 'si')
-                                                            <span class="badge bg-success-subtle text-success border border-success-subtle">
-                                                                <i class="ri-check-line me-1"></i>Pagado
-                                                            </span>
-                                                        @else
-                                                            <span class="badge bg-warning-subtle text-warning border border-warning-subtle">
-                                                                <i class="ri-time-line me-1"></i>Pendiente
-                                                            </span>
-                                                        @endif
-                                                    </td>
-                                                    <td class="text-center">
-                                                        <div class="d-flex justify-content-center gap-1">
-                                                            @if ($cuota->pago_pendiente_bs > 0)
-                                                                <button class="btn btn-sm btn-success btn-pagar-cuota"
-                                                                        data-cuota-id="{{ $cuota->id }}"
-                                                                        data-estudiante-id="{{ $estudiante->id }}"
-                                                                        title="Pagar cuota"
-                                                                        style="padding:.2rem .5rem;">
-                                                                    <i class="ri-money-dollar-circle-line"></i>
-                                                                </button>
-                                                            @endif
-                                                            @if ($tienePagos)
-                                                                <button class="btn btn-sm btn-info btn-ver-recibos"
-                                                                        data-cuota-id="{{ $cuota->id }}"
-                                                                        data-cuota-nombre="{{ $cuota->nombre }}"
-                                                                        title="Ver recibos ({{ $cuota->pagos_cuotas->count() }})"
-                                                                        style="padding:.2rem .5rem;">
-                                                                    <i class="ri-receipt-line"></i>
-                                                                    <span class="badge bg-white text-info ms-1" style="font-size:.65rem;">{{ $cuota->pagos_cuotas->count() }}</span>
-                                                                </button>
-                                                            @endif
+                                                        <div class="concept-badges">
+                                                            <span class="concept-badge-paid">{{ number_format($datos['pagado'], 2) }}</span>
+                                                            <span class="concept-badge-debt">{{ number_format($datos['pendiente'], 2) }}</span>
                                                         </div>
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                        <tfoot>
-                                            <tr style="background:#f8f9fa;">
-                                                <td colspan="2" class="text-end fw-semibold text-muted small py-2">Totales del programa:</td>
-                                                <td class="text-center fw-bold py-2">{{ number_format($totalPrograma, 2) }}</td>
-                                                <td class="text-center fw-bold text-success py-2">{{ number_format($pagadoPrograma, 2) }}</td>
-                                                <td class="text-center fw-bold text-danger py-2">{{ number_format($deudaPrograma, 2) }}</td>
-                                                <td colspan="3"></td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
+                                                    </div>
+                                                    <div class="concept-stats" style="grid-template-columns:repeat(3,1fr);">
+                                                        <div class="concept-stat" style="background:var(--cont-surface);border:none;">
+                                                            <div class="concept-stat-label">Total</div>
+                                                            <div class="concept-stat-value">{{ number_format($datos['total'], 2) }} Bs</div>
+                                                        </div>
+                                                        <div class="concept-stat" style="background:var(--cont-surface);border:none;">
+                                                            <div class="concept-stat-label">Pagado</div>
+                                                            <div class="concept-stat-value" style="color:var(--cont-success);">{{ number_format($datos['pagado'], 2) }} Bs</div>
+                                                        </div>
+                                                        <div class="concept-stat" style="background:var(--cont-surface);border:none;">
+                                                            <div class="concept-stat-label">Pendiente</div>
+                                                            <div class="concept-stat-value" style="color:var(--cont-danger);">{{ number_format($datos['pendiente'], 2) }} Bs</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
                                 </div>
+                            @endif
+
+                            <div class="table-responsive">
+                                <table class="cuotas-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:5%;text-align:center;">#</th>
+                                            <th style="width:26%;">Cuota</th>
+                                            <th style="width:12%;text-align:center;">Total</th>
+                                            <th style="width:12%;text-align:center;">Pagado</th>
+                                            <th style="width:12%;text-align:center;">Pendiente</th>
+                                            <th style="width:13%;text-align:center;">Fecha</th>
+                                            <th style="width:11%;text-align:center;">Estado</th>
+                                            <th style="width:9%;text-align:center;">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($cuotas as $cuota)
+                                            @php
+                                                $pagado       = $cuota->pago_total_bs - $cuota->pago_pendiente_bs;
+                                                $tienePagos   = $cuota->pagos_cuotas->count() > 0;
+                                                $pctCuota     = $cuota->pago_total_bs > 0
+                                                    ? ($pagado / $cuota->pago_total_bs) * 100 : 0;
+                                            @endphp
+                                            <tr class="{{ $cuota->pago_terminado == 'si' ? 'row-pagado' : ($pagado > 0 ? 'row-parcial' : '') }}">
+                                                <td style="text-align:center;">
+                                                    <span class="cuota-num-badge">{{ $cuota->n_cuota }}</span>
+                                                </td>
+                                                <td>
+                                                    <div class="cuota-name">{{ $cuota->nombre }}</div>
+                                                    @if ($tienePagos)
+                                                        <div class="cuota-payments">
+                                                            <i class="ri-receipt-line me-1"></i>{{ $cuota->pagos_cuotas->count() }} pago(s)
+                                                        </div>
+                                                    @endif
+                                                    <div class="cuota-progress">
+                                                        <div class="cuota-progress-fill {{ $cuota->pago_terminado == 'si' ? 'bg-success' : 'bg-warning' }}"
+                                                             style="width:{{ $pctCuota }}%"></div>
+                                                    </div>
+                                                </td>
+                                                <td style="text-align:center;font-weight:600;">{{ number_format($cuota->pago_total_bs, 2) }}</td>
+                                                <td style="text-align:center;font-weight:600;color:var(--cont-success);">{{ number_format($pagado, 2) }}</td>
+                                                <td style="text-align:center;">
+                                                    @if ($cuota->pago_pendiente_bs > 0)
+                                                        <span style="font-weight:600;color:var(--cont-danger);">{{ number_format($cuota->pago_pendiente_bs, 2) }}</span>
+                                                    @else
+                                                        <span style="color:var(--cont-text-muted);">—</span>
+                                                    @endif
+                                                </td>
+                                                <td style="text-align:center;color:var(--cont-text-muted);font-size:0.8rem;">
+                                                    @if ($cuota->fecha_pago)
+                                                        {{ \Carbon\Carbon::parse($cuota->fecha_pago)->format('d/m/Y') }}
+                                                    @else
+                                                        <span style="color:var(--cont-text-muted);">—</span>
+                                                    @endif
+                                                </td>
+                                                <td style="text-align:center;">
+                                                    @if ($cuota->pago_terminado == 'si')
+                                                        <span class="estado-badge-cont pagado"><i class="ri-check-line"></i>Pagado</span>
+                                                    @else
+                                                        <span class="estado-badge-cont pendiente"><i class="ri-time-line"></i>Pendiente</span>
+                                                    @endif
+                                                </td>
+                                                <td style="text-align:center;">
+                                                    <div class="d-flex gap-1 justify-content-center">
+                                                        @if ($cuota->pago_pendiente_bs > 0)
+                                                            <button class="cuota-action-btn pay btn-pagar-cuota"
+                                                                    data-cuota-id="{{ $cuota->id }}"
+                                                                    data-estudiante-id="{{ $estudiante->id }}"
+                                                                    title="Pagar cuota">
+                                                                <i class="ri-money-dollar-circle-line"></i>
+                                                            </button>
+                                                        @endif
+                                                        @if ($tienePagos)
+                                                            <button class="cuota-action-btn receipts btn-ver-recibos"
+                                                                    data-cuota-id="{{ $cuota->id }}"
+                                                                    data-cuota-nombre="{{ $cuota->nombre }}"
+                                                                    title="Ver recibos ({{ $cuota->pagos_cuotas->count() }})">
+                                                                <i class="ri-receipt-line"></i>
+                                                                <span class="receipt-count">{{ $cuota->pagos_cuotas->count() }}</span>
+                                                            </button>
+                                                        @endif
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="2" style="text-align:right;color:var(--cont-text-muted);font-size:0.78rem;">Totales del programa:</td>
+                                            <td style="text-align:center;font-weight:700;">{{ number_format($totalPrograma, 2) }}</td>
+                                            <td style="text-align:center;font-weight:700;color:var(--cont-success);">{{ number_format($pagadoPrograma, 2) }}</td>
+                                            <td style="text-align:center;font-weight:700;color:var(--cont-danger);">{{ number_format($deudaPrograma, 2) }}</td>
+                                            <td colspan="3"></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
                             </div>
 
                         </div>
@@ -407,54 +1366,44 @@
             @endforeach
         </div>
 
-        {{-- Footer resumen general --}}
-        <div class="mt-3 p-3 rounded-3 border bg-light d-flex flex-wrap gap-4">
-            <div class="d-flex align-items-center gap-2">
-                <div class="avatar-xs">
-                    <div class="avatar-title bg-primary-subtle text-primary rounded">
-                        <i class="ri-money-dollar-circle-line fs-14"></i>
-                    </div>
+        <!-- Footer Summary -->
+        <div class="footer-summary">
+            <div class="footer-stat">
+                <div class="footer-stat-icon" style="background:var(--cont-primary-light);color:var(--cont-primary);">
+                    <i class="ri-money-dollar-circle-line"></i>
                 </div>
                 <div>
-                    <div class="fw-semibold lh-1">{{ number_format($totalPagado + $totalDeuda, 2) }} Bs</div>
-                    <div class="text-muted" style="font-size:.72rem;">Monto Total General</div>
+                    <div class="footer-stat-value">{{ number_format($totalPagado + $totalDeuda, 2) }} Bs</div>
+                    <div class="footer-stat-label">Monto Total General</div>
                 </div>
             </div>
-            <div class="d-flex align-items-center gap-2">
-                <div class="avatar-xs">
-                    <div class="avatar-title bg-success-subtle text-success rounded">
-                        <i class="ri-checkbox-circle-line fs-14"></i>
-                    </div>
+            <div class="footer-stat">
+                <div class="footer-stat-icon" style="background:var(--cont-success-light);color:var(--cont-success);">
+                    <i class="ri-checkbox-circle-line"></i>
                 </div>
                 <div>
-                    <div class="fw-semibold lh-1 text-success">{{ number_format($totalPagado, 2) }} Bs</div>
-                    <div class="text-muted" style="font-size:.72rem;">Total Pagado</div>
+                    <div class="footer-stat-value" style="color:var(--cont-success);">{{ number_format($totalPagado, 2) }} Bs</div>
+                    <div class="footer-stat-label">Total Pagado</div>
                 </div>
             </div>
-            <div class="d-flex align-items-center gap-2">
-                <div class="avatar-xs">
-                    <div class="avatar-title bg-danger-subtle text-danger rounded">
-                        <i class="ri-alert-line fs-14"></i>
-                    </div>
+            <div class="footer-stat">
+                <div class="footer-stat-icon" style="background:var(--cont-danger-light);color:var(--cont-danger);">
+                    <i class="ri-alert-line"></i>
                 </div>
                 <div>
-                    <div class="fw-semibold lh-1 text-danger">{{ number_format($totalDeuda, 2) }} Bs</div>
-                    <div class="text-muted" style="font-size:.72rem;">Total Deuda</div>
+                    <div class="footer-stat-value" style="color:var(--cont-danger);">{{ number_format($totalDeuda, 2) }} Bs</div>
+                    <div class="footer-stat-label">Total Deuda</div>
                 </div>
             </div>
         </div>
 
     @else
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center py-5">
-                <div class="avatar-lg mx-auto mb-3">
-                    <div class="avatar-title bg-light text-secondary rounded-circle">
-                        <i class="ri-graduation-cap-line fs-2"></i>
-                    </div>
-                </div>
-                <h5 class="mb-2">No hay programas inscritos</h5>
-                <p class="text-muted mb-0">El participante no está inscrito en ningún programa.</p>
+        <div class="empty-state-cont">
+            <div class="empty-state-cont-icon">
+                <i class="ri-graduation-cap-line"></i>
             </div>
+            <h5>No hay programas inscritos</h5>
+            <p>El participante no está inscrito en ningún programa.</p>
         </div>
     @endif
 
@@ -463,13 +1412,14 @@
     @include('admin.contabilidad.partials.modal-pagar-contabilidad')
     @include('admin.estudiantes.partials.modal-recibos-cuota')
 
+</div>
+
 @endsection
 
 @push('script')
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
-        // ── togglePcFields debe ser global (llamada desde onchange="" inline) ──
         var pcCuotasData = {};
 
         function togglePcFields() {
@@ -493,13 +1443,10 @@
         }
 
         $(document).ready(function () {
-
-            // ── Acordeón ─────────────────────────────────────────────────────
             $('.accordion-button').on('click', function () {
                 $(this).toggleClass('collapsed');
             });
 
-            // ── Helpers multi-cuota ──────────────────────────────────────────
             function pcActualizarResumen() {
                 var monto     = parseFloat($('#pc_monto_pago').val()) || 0;
                 var descuento = parseFloat($('#pc_descuento').val()) || 0;
@@ -516,7 +1463,7 @@
 
             function pcActualizarTotales() {
                 var total = 0, count = 0;
-                $('.pc-cuota-check:checked').each(function () {
+                $('.pc-cuota-check-input:checked').each(function () {
                     total += pcCuotasData[$(this).val()] || 0;
                     count++;
                 });
@@ -528,7 +1475,7 @@
             }
 
             function pcCargarCuotas(estudianteId, preseleccionarId) {
-                $('#listaCuotasPago').html('<div class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>Cargando...</div>');
+                $('#listaCuotasPago').html('<div class="pc-empty-state"><div class="spinner-border" role="status" style="color:var(--cont-primary);width:24px;height:24px;"></div><p class="mt-2 mb-0">Cargando cuotas pendientes...</p></div>');
                 pcCuotasData = {};
 
                 $.ajax({
@@ -536,34 +1483,44 @@
                     type: 'GET',
                     success: function (response) {
                         if (!response.success || !response.programas || response.programas.length === 0) {
-                            $('#listaCuotasPago').html('<div class="alert alert-warning mb-0">No hay cuotas pendientes.</div>');
+                            $('#listaCuotasPago').html('<div class="pc-empty-state"><i class="ri-file-list-3-line d-block"></i><p class="mb-0">No hay cuotas pendientes.</p></div>');
                             return;
                         }
 
-                        var tipoBadgeClass = {
-                            'Matrícula':    'bg-primary text-white',
-                            'Colegiatura':  'bg-success text-white',
-                            'Certificación':'bg-warning text-dark',
-                            'Otros':        'bg-secondary text-white',
+                        var tipoClsMap = {
+                            'Matrícula':    'tipo-matricula',
+                            'Colegiatura':  'tipo-colegiatura',
+                            'Certificación':'tipo-certificacion',
+                            'Otros':        'tipo-otros',
                         };
 
                         var html = '';
                         response.programas.forEach(function (prog) {
-                            html += '<div class="prog-header"><i class="ri-graduation-cap-line me-1"></i>' + prog.programa + '</div>';
+                            var progTotal = prog.cuotas.reduce(function(s, c) { return s + c.pendiente_bs; }, 0);
+                            html += '<div class="pc-prog-group">';
+                            html += '<div class="pc-prog-group-header">';
+                            html += '<span class="pc-prog-group-title"><i class="ri-graduation-cap-line"></i>' + prog.programa + '</span>';
+                            html += '<span class="pc-prog-group-total">' + progTotal.toFixed(2) + ' Bs</span>';
+                            html += '</div>';
+
                             prog.cuotas.forEach(function (cuota) {
                                 pcCuotasData[cuota.id] = cuota.pendiente_bs;
                                 var checked  = (preseleccionarId && cuota.id == preseleccionarId) ? 'checked' : '';
                                 var selCls   = checked ? 'selected' : '';
-                                var badgeCls = tipoBadgeClass[cuota.tipo] || 'bg-secondary text-white';
-                                html += '<label class="cuota-check-item ' + selCls + '" for="pcCuota_' + cuota.id + '">' +
-                                    '<input class="pc-cuota-check" type="checkbox" id="pcCuota_' + cuota.id + '" value="' + cuota.id + '" ' + checked + '>' +
-                                    '<div class="flex-grow-1 min-w-0">' +
-                                        '<div class="fw-medium" style="font-size:.84rem;">' + cuota.nombre + '</div>' +
-                                        '<div class="text-muted" style="font-size:.75rem;">Pendiente: <strong>' + cuota.pendiente_bs.toFixed(2) + ' Bs</strong></div>' +
-                                    '</div>' +
-                                    '<span class="cuota-tipo-badge ' + badgeCls + '">' + cuota.tipo + '</span>' +
-                                '</label>';
+                                var tipoCls  = tipoClsMap[cuota.tipo] || 'tipo-otros';
+                                html += '<div class="pc-cuota-item ' + selCls + '" data-cuota-id="' + cuota.id + '">';
+                                html += '<input class="pc-cuota-check-input" type="checkbox" value="' + cuota.id + '" ' + checked + '>';
+                                html += '<div class="pc-cuota-check"><i class="ri-check-line"></i></div>';
+                                html += '<div class="pc-cuota-info">';
+                                html += '<div class="pc-cuota-name">' + cuota.nombre + '</div>';
+                                html += '<div class="pc-cuota-meta">';
+                                html += '<span class="pc-cuota-pending">Pendiente: ' + cuota.pendiente_bs.toFixed(2) + ' Bs</span>';
+                                html += '<span class="pc-cuota-tipo ' + tipoCls + '">' + cuota.tipo + '</span>';
+                                html += '</div></div>';
+                                html += '<div class="pc-cuota-amount">' + cuota.pendiente_bs.toFixed(2) + '</div>';
+                                html += '</div>';
                             });
+                            html += '</div>';
                         });
 
                         $('#listaCuotasPago').html(html);
@@ -575,25 +1532,32 @@
                 });
             }
 
-            // ── Eventos lista de cuotas ──────────────────────────────────────
-            $(document).on('change', '.pc-cuota-check', function () {
-                $(this).closest('.cuota-check-item').toggleClass('selected', this.checked);
+            $(document).on('change', '.pc-cuota-check-input', function () {
+                $(this).closest('.pc-cuota-item').toggleClass('selected', this.checked);
                 pcActualizarTotales();
             });
 
+            $(document).on('click', '.pc-cuota-item', function(e) {
+                if (e.target.type !== 'checkbox') {
+                    var cb = $(this).find('.pc-cuota-check-input');
+                    cb.prop('checked', !cb.prop('checked'));
+                    $(this).toggleClass('selected', cb.prop('checked'));
+                    pcActualizarTotales();
+                }
+            });
+
             $('#btnSeleccionarTodas').on('click', function () {
-                $('.pc-cuota-check').prop('checked', true).closest('.cuota-check-item').addClass('selected');
+                $('.pc-cuota-check-input').prop('checked', true).closest('.pc-cuota-item').addClass('selected');
                 pcActualizarTotales();
             });
 
             $('#btnDeseleccionarTodas').on('click', function () {
-                $('.pc-cuota-check').prop('checked', false).closest('.cuota-check-item').removeClass('selected');
+                $('.pc-cuota-check-input').prop('checked', false).closest('.pc-cuota-item').removeClass('selected');
                 pcActualizarTotales();
             });
 
             $(document).on('input', '#pc_monto_pago, #pc_descuento', pcActualizarResumen);
 
-            // ── Abrir modal cuota individual ─────────────────────────────────
             var scSaldoPendiente = 0;
 
             function scActualizarResumen() {
@@ -653,7 +1617,6 @@
                 });
             });
 
-            // ── Submit cuota individual ──────────────────────────────────────
             $(document).on('submit', '#formPagarCuota', function (e) {
                 e.preventDefault();
                 var estudianteId = $('#estudiante_id').val();
@@ -700,7 +1663,6 @@
                 });
             });
 
-            // ── Abrir modal multi-cuota ──────────────────────────────────────
             $(document).on('click', '.btn-pagar-multiple', function () {
                 var estudianteId = $(this).data('estudiante-id');
 
@@ -712,10 +1674,9 @@
                 $('#modalPagarContabilidad').modal('show');
             });
 
-            // ── Registrar pago ───────────────────────────────────────────────
             $('#btnRegistrarPagoContabilidad').on('click', function () {
                 var cuotaIds = [];
-                $('.pc-cuota-check:checked').each(function () { cuotaIds.push($(this).val()); });
+                $('.pc-cuota-check-input:checked').each(function () { cuotaIds.push($(this).val()); });
 
                 if (cuotaIds.length === 0) {
                     Swal.fire('Atención', 'Debe seleccionar al menos una cuota.', 'warning'); return;
@@ -776,7 +1737,6 @@
                 });
             });
 
-            // ── Botón Recibos ────────────────────────────────────────────────
             $(document).on('click', '.btn-ver-recibos', function () {
                 var cuotaId     = $(this).data('cuota-id');
                 var cuotaNombre = $(this).data('cuota-nombre');
@@ -805,7 +1765,6 @@
                     }
                 });
             });
-
-        }); // end ready
+        });
     </script>
 @endpush

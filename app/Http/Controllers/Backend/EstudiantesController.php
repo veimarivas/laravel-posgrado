@@ -117,7 +117,19 @@ class EstudiantesController extends Controller
                 $inscripcion->cuotas_ordenadas = $this->ordenarCuotas($inscripcion->cuotas);
             }
 
-            return view('admin.estudiantes.detalle', compact('estudiante', 'pagosEstudiante'));
+            // Obtener datos del cobrador (usuario autenticado)
+            $cobrador = \Illuminate\Support\Facades\DB::table('users')
+                ->join('personas', 'users.persona_id', '=', 'personas.id')
+                ->join('trabajadores', 'personas.id', '=', 'trabajadores.persona_id')
+                ->join('trabajadores_cargos', 'trabajadores.id', '=', 'trabajadores_cargos.trabajadore_id')
+                ->join('cargos', 'trabajadores_cargos.cargo_id', '=', 'cargos.id')
+                ->where('users.id', auth()->id())
+                ->where('trabajadores_cargos.principal', 1)
+                ->where('trabajadores_cargos.estado', 'Vigente')
+                ->select('personas.nombres', 'personas.apellido_paterno', 'personas.apellido_materno', 'cargos.nombre as cargo')
+                ->first();
+
+            return view('admin.estudiantes.detalle', compact('estudiante', 'pagosEstudiante', 'cobrador'));
         } catch (\Exception $e) {
             Log::error('Error al cargar detalle de estudiante: ' . $e->getMessage());
             return redirect()->route('admin.estudiantes.listar')

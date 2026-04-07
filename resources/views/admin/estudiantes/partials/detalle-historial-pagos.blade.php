@@ -3,175 +3,190 @@
         $totalMonto      = $pagosEstudiante->sum('pago_bs');
         $totalDescuentos = $pagosEstudiante->sum('descuento_bs');
         $totalNeto       = $totalMonto - $totalDescuentos;
-
-        $tipoBadge = [
-            'Efectivo'      => ['cls' => 'bg-success',          'icon' => 'ri-money-dollar-circle-line'],
-            'Transferencia' => ['cls' => 'bg-info',             'icon' => 'ri-bank-line'],
-            'Depósito'      => ['cls' => 'bg-primary',          'icon' => 'ri-building-line'],
-            'Tarjeta'       => ['cls' => 'bg-warning text-dark','icon' => 'ri-bank-card-line'],
-        ];
     @endphp
 
-    {{-- Stats rápidas --}}
+    {{-- Stats --}}
     <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3">
-            <div class="rounded-3 border p-3 text-center h-100">
-                <div class="fw-bold fs-4 text-primary mb-0">{{ $pagosEstudiante->count() }}</div>
-                <div class="text-muted" style="font-size:.72rem;">Total Pagos</div>
+        <div class="col-md-3 col-6">
+            <div class="est-stat-card">
+                <div class="est-stat-body">
+                    <div class="flex-grow-1">
+                        <div class="est-stat-value" style="color:var(--est-primary);">{{ $pagosEstudiante->count() }}</div>
+                        <p class="est-stat-label">Total Pagos</p>
+                    </div>
+                    <div class="est-stat-icon" style="background:var(--est-primary-light);color:var(--est-primary);">
+                        <i class="ri-receipt-line"></i>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="rounded-3 border p-3 text-center h-100" style="border-color:#198754!important;background:#f0fff5;">
-                <div class="fw-bold text-success mb-0" style="font-size:1.1rem;">{{ number_format($totalMonto, 2) }}</div>
-                <div class="text-muted" style="font-size:.72rem;">Bs Cobrado</div>
+        <div class="col-md-3 col-6">
+            <div class="est-stat-card">
+                <div class="est-stat-body">
+                    <div class="flex-grow-1">
+                        <div class="est-stat-value" style="color:var(--est-success);">{{ number_format($totalMonto, 2) }} Bs</div>
+                        <p class="est-stat-label">Bs Cobrado</p>
+                    </div>
+                    <div class="est-stat-icon" style="background:var(--est-success-light);color:var(--est-success);">
+                        <i class="ri-money-dollar-circle-line"></i>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="rounded-3 border p-3 text-center h-100" style="border-color:#ffc107!important;background:#fffdf0;">
-                <div class="fw-bold text-warning mb-0" style="font-size:1.1rem;">{{ number_format($totalDescuentos, 2) }}</div>
-                <div class="text-muted" style="font-size:.72rem;">Bs Descuento</div>
+        <div class="col-md-3 col-6">
+            <div class="est-stat-card">
+                <div class="est-stat-body">
+                    <div class="flex-grow-1">
+                        <div class="est-stat-value" style="color:var(--est-warning);">{{ number_format($totalDescuentos, 2) }} Bs</div>
+                        <p class="est-stat-label">Bs Descuento</p>
+                    </div>
+                    <div class="est-stat-icon" style="background:var(--est-warning-light);color:var(--est-warning);">
+                        <i class="ri-discount-percent-line"></i>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="col-6 col-md-3">
-            <div class="rounded-3 border p-3 text-center h-100" style="border-color:#0d6efd!important;background:#f0f5ff;">
-                <div class="fw-bold text-primary mb-0" style="font-size:1.1rem;">{{ number_format($totalNeto, 2) }}</div>
-                <div class="text-muted" style="font-size:.72rem;">Bs Neto</div>
+        <div class="col-md-3 col-6">
+            <div class="est-stat-card">
+                <div class="est-stat-body">
+                    <div class="flex-grow-1">
+                        <div class="est-stat-value" style="color:var(--est-info);">{{ number_format($totalNeto, 2) }} Bs</div>
+                        <p class="est-stat-label">Bs Neto</p>
+                    </div>
+                    <div class="est-stat-icon" style="background:var(--est-info-light);color:var(--est-info);">
+                        <i class="ri-wallet-line"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    {{-- Tabla de pagos --}}
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" style="font-size:.84rem;">
-                    <thead>
-                        <tr style="background:#f8f9fa;">
-                            <th width="18%" class="border-0 py-3 px-3 text-muted fw-semibold" style="font-size:.7rem;">RECIBO</th>
-                            <th width="16%" class="border-0 py-3 text-muted fw-semibold" style="font-size:.7rem;">FECHA</th>
-                            <th width="15%" class="text-center border-0 py-3 text-muted fw-semibold" style="font-size:.7rem;">TIPO</th>
-                            <th width="14%" class="text-center border-0 py-3 text-muted fw-semibold" style="font-size:.7rem;">MONTO</th>
-                            <th width="13%" class="text-center border-0 py-3 text-muted fw-semibold" style="font-size:.7rem;">DESCUENTO</th>
-                            <th width="13%" class="text-center border-0 py-3 text-muted fw-semibold" style="font-size:.7rem;">NETO</th>
-                            <th width="11%" class="text-center border-0 py-3 text-muted fw-semibold" style="font-size:.7rem;">ACCIONES</th>
+    {{-- Table --}}
+    <div class="est-stat-card" style="border-radius:var(--radius-lg);overflow:hidden;">
+        <div class="tabla-card-header">
+            <h5>
+                <i class="ri-history-line"></i>
+                Historial de Pagos
+                <span class="badge-recibos-count">{{ $pagosEstudiante->count() }} registro(s)</span>
+            </h5>
+        </div>
+        <div class="table-responsive">
+            <table class="est-table">
+                <thead>
+                    <tr>
+                        <th style="width:18%;">Recibo</th>
+                        <th style="width:14%;">Fecha</th>
+                        <th style="width:13%;text-align:center;">Tipo</th>
+                        <th style="width:13%;text-align:center;">Monto</th>
+                        <th style="width:12%;text-align:center;">Descuento</th>
+                        <th style="width:12%;text-align:center;">Neto</th>
+                        <th style="width:18%;text-align:center;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($pagosEstudiante as $pago)
+                        @php
+                            $totalPagado = $pago->pago_bs ?? 0;
+                            $descuento   = $pago->descuento_bs ?? 0;
+                            $montoNeto   = $totalPagado - $descuento;
+                            $tipoCls = match($pago->tipo_pago ?? '') {
+                                'Efectivo'      => 'efectivo',
+                                'Transferencia' => 'transferencia',
+                                'Depósito'      => 'deposito',
+                                'Tarjeta'       => 'tarjeta',
+                                default         => 'otro',
+                            };
+                        @endphp
+                        <tr>
+                            <td>
+                                <div class="recibo-cell">
+                                    <span class="recibo-number">{{ $pago->recibo ?? 'N/A' }}</span>
+                                    <span class="tipo-badge {{ $tipoCls }}">{{ $pago->tipo_pago ?? 'N/A' }}</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="date-cell">
+                                    <div class="date-main">{{ $pago->fecha_pago ? \Carbon\Carbon::parse($pago->fecha_pago)->format('d/m/Y') : '—' }}</div>
+                                    <div class="date-time">{{ $pago->fecha_pago ? \Carbon\Carbon::parse($pago->fecha_pago)->format('H:i') : '' }}</div>
+                                </div>
+                            </td>
+                            <td style="text-align:center;">
+                                <span class="estado-badge-est {{ $tipoCls }}">{{ $pago->tipo_pago ?? 'N/A' }}</span>
+                            </td>
+                            <td style="text-align:center;font-weight:600;color:var(--est-success);">{{ number_format($totalPagado, 2) }}</td>
+                            <td style="text-align:center;">
+                                @if ($descuento > 0)
+                                    <span style="font-weight:600;color:var(--est-warning);">-{{ number_format($descuento, 2) }}</span>
+                                @else
+                                    <span style="color:var(--est-text-muted);">—</span>
+                                @endif
+                            </td>
+                            <td style="text-align:center;font-weight:600;color:var(--est-primary);">{{ number_format($montoNeto, 2) }}</td>
+                            <td style="text-align:center;">
+                                <div class="d-flex gap-1 justify-content-center">
+                                    <button class="est-action-btn view btn-ver-detalle-pago"
+                                            data-pago-id="{{ $pago->id }}"
+                                            title="Ver detalle">
+                                        <i class="ri-eye-line"></i>
+                                    </button>
+                                    <a href="{{ route('admin.estudiantes.descargar-recibo', $pago->id) }}"
+                                       class="est-action-btn download"
+                                       target="_blank"
+                                       title="Descargar PDF">
+                                        <i class="ri-download-line"></i>
+                                    </a>
+                                </div>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($pagosEstudiante as $pago)
-                            @php
-                                $totalPagado = $pago->pago_bs ?? 0;
-                                $descuento   = $pago->descuento_bs ?? 0;
-                                $montoNeto   = $totalPagado - $descuento;
-                                $tb = $tipoBadge[$pago->tipo_pago] ?? ['cls' => 'bg-secondary', 'icon' => 'ri-money-line'];
-                            @endphp
-                            <tr>
-                                <td class="px-3">
-                                    <div class="fw-semibold text-primary" style="font-size:.82rem;">{{ $pago->recibo ?? 'N/A' }}</div>
-                                </td>
-                                <td>
-                                    @if ($pago->fecha_pago)
-                                        <div class="fw-medium">{{ \Carbon\Carbon::parse($pago->fecha_pago)->format('d/m/Y') }}</div>
-                                        <div class="text-muted" style="font-size:.72rem;">{{ \Carbon\Carbon::parse($pago->fecha_pago)->format('H:i') }}</div>
-                                    @else
-                                        <span class="text-muted">—</span>
-                                    @endif
-                                </td>
-                                <td class="text-center">
-                                    <span class="badge {{ $tb['cls'] }} rounded-pill px-2">
-                                        <i class="{{ $tb['icon'] }} me-1"></i>{{ $pago->tipo_pago ?? 'N/A' }}
-                                    </span>
-                                </td>
-                                <td class="text-center">
-                                    <span class="fw-bold text-success">{{ number_format($totalPagado, 2) }}</span>
-                                </td>
-                                <td class="text-center">
-                                    @if ($descuento > 0)
-                                        <span class="text-warning fw-medium">-{{ number_format($descuento, 2) }}</span>
-                                    @else
-                                        <span class="text-muted">—</span>
-                                    @endif
-                                </td>
-                                <td class="text-center">
-                                    <span class="fw-semibold text-primary">{{ number_format($montoNeto, 2) }}</span>
-                                </td>
-                                <td class="text-center">
-                                    <div class="d-flex justify-content-center gap-1">
-                                        <button class="btn btn-sm btn-outline-info btn-ver-detalle-pago"
-                                                data-pago-id="{{ $pago->id }}"
-                                                title="Ver detalle"
-                                                style="padding:.2rem .5rem;">
-                                            <i class="ri-eye-line"></i>
-                                        </button>
-                                        <a href="{{ route('admin.estudiantes.descargar-recibo', $pago->id) }}"
-                                           class="btn btn-sm btn-outline-success"
-                                           target="_blank"
-                                           title="Descargar PDF"
-                                           style="padding:.2rem .5rem;">
-                                            <i class="ri-download-line"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                    <tfoot>
-                        <tr style="background:#f8f9fa;">
-                            <td colspan="3" class="text-end fw-semibold text-muted small py-2 px-3">Totales:</td>
-                            <td class="text-center fw-bold text-success py-2">{{ number_format($totalMonto, 2) }}</td>
-                            <td class="text-center fw-bold text-warning py-2">-{{ number_format($totalDescuentos, 2) }}</td>
-                            <td class="text-center fw-bold text-primary py-2">{{ number_format($totalNeto, 2) }}</td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
+                    @endforeach
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" style="text-align:right;color:var(--est-text-muted);font-size:0.78rem;">Totales:</td>
+                        <td style="text-align:center;font-weight:700;color:var(--est-success);">{{ number_format($totalMonto, 2) }}</td>
+                        <td style="text-align:center;font-weight:700;color:var(--est-warning);">-{{ number_format($totalDescuentos, 2) }}</td>
+                        <td style="text-align:center;font-weight:700;color:var(--est-primary);">{{ number_format($totalNeto, 2) }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
         </div>
     </div>
 
 @else
-    <div class="text-center py-5">
-        <div class="avatar-lg mx-auto mb-3">
-            <div class="avatar-title bg-light text-secondary rounded-circle">
-                <i class="ri-history-line fs-2"></i>
-            </div>
-        </div>
-        <h5 class="mb-1">No hay pagos registrados</h5>
-        <p class="text-muted mb-0 small">El estudiante aún no ha realizado ningún pago.</p>
+    <div class="est-empty-state">
+        <div class="est-empty-state-icon"><i class="ri-history-line"></i></div>
+        <h5>No hay pagos registrados</h5>
+        <p>El estudiante aún no ha realizado ningún pago.</p>
     </div>
 @endif
 
 {{-- Modal detalle de pago --}}
-<div class="modal fade" id="modalDetallePago" tabindex="-1" aria-hidden="true">
+<div class="modal fade modal-est" id="modalDetallePago" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-bottom bg-primary text-white py-3">
-                <div class="d-flex align-items-center gap-2">
-                    <div class="avatar-sm">
-                        <div class="avatar-title bg-white bg-opacity-25 text-white rounded-2">
-                            <i class="ri-receipt-line fs-18"></i>
-                        </div>
-                    </div>
-                    <div>
-                        <h5 class="modal-title mb-0 fw-semibold">Detalle del Recibo</h5>
-                        <div class="opacity-75" style="font-size:.75rem;">Información completa del pago</div>
-                    </div>
-                </div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="ri-receipt-line me-2"></i>Detalle del Recibo
+                </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-0" id="contenidoDetallePago">
                 <div class="text-center py-5">
-                    <div class="spinner-border text-primary"></div>
-                    <p class="mt-2 text-muted small">Cargando...</p>
+                    <div class="spinner-border" role="status" style="color:var(--est-primary);"></div>
+                    <p class="mt-2" style="color:var(--est-text-muted);">Cargando...</p>
                 </div>
             </div>
-            <div class="modal-footer border-top bg-light gap-2">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">
                     <i class="ri-close-line me-1"></i>Cerrar
                 </button>
-                <a href="#" id="btnDescargarRecibo" class="btn btn-success" target="_blank">
+                <a href="#" id="btnDescargarRecibo" class="btn btn-sm" target="_blank"
+                   style="background:var(--est-success);color:white;">
                     <i class="ri-download-line me-1"></i>Descargar PDF
                 </a>
-                <button type="button" class="btn btn-outline-secondary" id="btnImprimirDetalle">
+                <button type="button" class="btn btn-sm" id="btnImprimirDetalle"
+                        style="background:var(--est-primary);color:white;">
                     <i class="ri-printer-line me-1"></i>Imprimir
                 </button>
             </div>

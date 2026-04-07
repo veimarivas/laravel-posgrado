@@ -1,79 +1,96 @@
 <!-- Modal para enlace con plan de pago -->
-<div class="modal fade" id="enlacePlanModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+<div class="modal fade modal-conc" id="enlacePlanModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
+            <div class="modal-header">
                 <h5 class="modal-title">
-                    <i class="ri-money-dollar-circle-line me-2"></i>
-                    Enlace con Plan de Pago
+                    <i class="ri-coupon-line me-2"></i>
+                    Generar Enlace con Plan de Pago
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <!-- Información de la oferta -->
-                <div class="alert alert-info mb-4">
-                    <div class="d-flex align-items-start">
-                        <div class="flex-shrink-0 me-3">
-                            <i class="ri-information-line fs-4"></i>
+                <!-- Info de la oferta -->
+                <div class="plan-modal-card">
+                    <div class="plan-modal-header">
+                        <div class="plan-modal-icon">
+                            <i class="ri-price-tag-3-line"></i>
                         </div>
-                        <div class="flex-grow-1">
-                            <h6 class="alert-heading" id="modalOfertaTitulo">Oferta Académica</h6>
-                            <p class="mb-1"><strong>Código:</strong> <span id="modalOfertaCodigo">-</span></p>
-                            <p class="mb-1"><strong>Programa:</strong> <span id="modalOfertaPrograma">-</span></p>
-                            <p class="mb-0"><strong>Asesor:</strong> <span id="modalOfertaAsesor">-</span></p>
+                        <div class="plan-modal-info">
+                            <div class="plan-modal-label">Oferta Académica</div>
+                            <div class="plan-modal-value" id="modalOfertaCodigo">-</div>
+                        </div>
+                    </div>
+                    <div class="plan-modal-divider"></div>
+                    <div class="plan-modal-body">
+                        <div class="plan-modal-field">
+                            <div class="plan-modal-field-icon"><i class="ri-graduation-cap-line"></i></div>
+                            <div>
+                                <div class="plan-modal-field-label">Programa</div>
+                                <div class="plan-modal-field-value" id="modalOfertaPrograma">-</div>
+                            </div>
+                        </div>
+                        <div class="plan-modal-field">
+                            <div class="plan-modal-field-icon"><i class="ri-user-star-line"></i></div>
+                            <div>
+                                <div class="plan-modal-field-label">Asesor</div>
+                                <div class="plan-modal-field-value" id="modalOfertaAsesor">-</div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Selección de plan de pago -->
-                <div class="mb-4">
-                    <h6 class="mb-3">
-                        <i class="ri-money-dollar-circle-line me-2"></i>
-                        Selecciona un Plan de Pago
-                    </h6>
+                <!-- Selección de plan -->
+                <div class="plan-select-section">
+                    <div class="plan-select-header">
+                        <div class="plan-select-icon">
+                            <i class="ri-stack-line"></i>
+                        </div>
+                        <div>
+                            <div class="plan-select-title">Selecciona un Plan de Pago</div>
+                            <div class="plan-select-subtitle">Elige el plan que se incluirá en el enlace</div>
+                        </div>
+                    </div>
                     <div id="planesPagoEnlaceContainer">
-                        <div class="text-center py-3">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Cargando...</span>
-                            </div>
-                            <p class="mt-2 text-muted">Cargando planes de pago disponibles...</p>
+                        <div class="plan-loading">
+                            <div class="plan-loading-spinner"></div>
+                            <p>Cargando planes de pago disponibles...</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Enlace generado -->
-                <div class="mb-4" id="enlaceGeneradoContainer" style="display: none;">
-                    <h6 class="mb-3">
-                        <i class="ri-link me-2"></i>
-                        Enlace Generado
-                    </h6>
-                    <div class="generated-link mb-3" id="generatedLink">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <span id="linkText">-</span>
-                            <button class="btn btn-sm btn-outline-primary" id="copyGeneratedLink">
-                                <i class="ri-file-copy-line"></i>
-                            </button>
+                <div class="plan-result-section" id="enlaceGeneradoContainer" style="display: none;">
+                    <div class="plan-result-header">
+                        <div class="plan-result-icon">
+                            <i class="ri-checkbox-circle-line"></i>
+                        </div>
+                        <div>
+                            <div class="plan-result-title">Enlace Generado con Éxito</div>
+                            <div class="plan-result-subtitle">Comparte este enlace con el estudiante</div>
                         </div>
                     </div>
-
-                    <!-- QR Code -->
-                    <div class="text-center mt-3">
-                        <h6 class="mb-2">
-                            <i class="ri-qr-code-line me-2"></i>
-                            Código QR
-                        </h6>
-                        <div id="qrCodeContainer" class="mb-3">
-                            <!-- QR se insertará aquí -->
+                    <div class="plan-result-link">
+                        <div class="plan-result-url" id="linkText">-</div>
+                        <button class="plan-result-copy" id="copyGeneratedLink" title="Copiar enlace">
+                            <i class="ri-file-copy-line"></i>
+                        </button>
+                    </div>
+                    <div class="plan-result-qr">
+                        <div class="plan-qr-label">
+                            <i class="ri-qr-scan-2-line"></i> Código QR
                         </div>
-                        <small class="text-muted">Escanea el código para acceder al formulario con el plan de pago
-                            seleccionado</small>
+                        <div id="qrCodeContainer" class="plan-qr-box"></div>
+                        <p class="plan-qr-hint">Escanea para acceder al formulario con el plan seleccionado</p>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <a href="#" id="visitPlanLinkBtn" target="_blank" class="btn btn-primary" style="display: none;">
-                    <i class="ri-external-link-line me-1"></i> Visitar Enlace
+                <button type="button" class="btn-enlace-modal btn-enlace-close" data-bs-dismiss="modal">
+                    <i class="ri-close-line"></i> Cerrar
+                </button>
+                <a href="#" id="visitPlanLinkBtn" target="_blank" class="btn-enlace-modal btn-enlace-open" style="display:none;">
+                    <i class="ri-global-line"></i> Abrir Enlace
                 </a>
             </div>
         </div>

@@ -12,7 +12,7 @@ class BancosController extends Controller
     {
         $search = $request->get('search', '');
 
-        $query = Banco::query();
+        $query = Banco::query()->withCount('cuentas');
 
         if ($search) {
             $query->where('nombre', 'like', "%{$search}%")
@@ -21,14 +21,23 @@ class BancosController extends Controller
 
         $bancos = $query->paginate(10)->appends(['search' => $search]);
 
+        $totalBancos = Banco::count();
+        $bancosConCuentas = Banco::has('cuentas')->count();
+        $totalCuentas = \App\Models\CuentasBancarias::count();
+
         if ($request->ajax()) {
+            $stats = [
+                'totalBancos' => $query->count(),
+                'bancosConCuentas' => $query->clone()->has('cuentas')->count()
+            ];
             return response()->json([
                 'html' => view('admin.bancos.partials.table-body', compact('bancos'))->render(),
-                'pagination' => $bancos->links('pagination::bootstrap-5')->toHtml()
+                'pagination' => $bancos->links('pagination::bootstrap-5')->toHtml(),
+                'stats' => $stats
             ]);
         }
 
-        return view('admin.bancos.listar', compact('bancos'));
+        return view('admin.bancos.listar', compact('bancos', 'totalBancos', 'bancosConCuentas', 'totalCuentas'));
     }
 
     public function registrar(Request $request)

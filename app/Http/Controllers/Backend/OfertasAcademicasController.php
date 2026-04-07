@@ -2968,4 +2968,217 @@ class OfertasAcademicasController extends Controller
 
         return $participantes;
     }
+
+    public function getGestionCuotas($id)
+    {
+        $oferta = OfertasAcademica::with([
+            'programa',
+            'inscripciones.estudiante.persona',
+            'inscripciones.planesPago',
+            'inscripciones.cuotas' => function ($query) {
+                $query->orderBy('n_cuota', 'asc');
+            },
+            'inscripciones.cuotas.pagos_cuotas.pago'
+        ])->findOrFail($id);
+
+        $participantes = [];
+        $cuotasCercanas = [];
+        $cuotasAtrasadas = [];
+        
+        $hoy = now();
+        $fechaLimiteCercana = $hoy->copy()->addDays(5);
+
+        foreach ($oferta->inscripciones->where('estado', '!=', 'Retirado') as $inscripcion) {
+            $persona = $inscripcion->estudiante->persona;
+            $nombreCompleto = trim(($persona->apellido_paterno ?? '') . ' ' . ($persona->apellido_materno ?? '') . ' ' . ($persona->nombres ?? ''));
+            
+            $totalPagado = 0;
+            $cuotasData = [];
+            
+            foreach ($inscripcion->cuotas as $cuota) {
+                $pagado = $cuota->pago_total_bs - $cuota->pago_pendiente_bs;
+                $totalPagado += $pagado;
+                
+                $estadoCuota = $cuota->pago_terminado ? 'pagada' : 'pendiente';
+                $fechaVencimiento = \Carbon\Carbon::parse($cuota->fecha_pago);
+                $diasRestantes = $hoy->diffInDays($fechaVencimiento, false);
+                
+                $cuotasData[] = [
+                    'id' => $cuota->id,
+                    'n_cuota' => $cuota->n_cuota,
+                    'nombre' => $cuota->nombre,
+                    'monto' => $cuota->pago_total_bs,
+                    'pendiente' => $cuota->pago_pendiente_bs,
+                    'pagado' => $pagado,
+                    'fecha_pago' => $cuota->fecha_pago,
+                    'estado' => $estadoCuota,
+                    'dias_restantes' => $diasRestantes
+                ];
+
+                // Cuotas pendientes
+                if (!$cuota->pago_terminado) {
+                    // Cuotas cercanas (próximos 5 días)
+                    if ($fechaVencimiento->between($hoy, $fechaLimiteCercana)) {
+                        $cuotasCercanas[] = [
+                            'estudiante_id' => $inscripcion->estudiante->id,
+                            'nombre' => $nombreCompleto,
+                            'carnet' => $persona->carnet ?? 'Sin carnet',
+                            'celular' => $persona->celular ?? '',
+                            'cuota_id' => $cuota->id,
+                            'n_cuota' => $cuota->n_cuota,
+                            'monto_pendiente' => $cuota->pago_pendiente_bs,
+                            'fecha_vencimiento' => $cuota->fecha_pago,
+                            'dias_restantes' => $diasRestantes
+                        ];
+                    }
+                    
+                    // Cuotas atrasadas (fecha ya pasó)
+                    if ($fechaVencimiento->lt($hoy)) {
+                        $cuotasAtrasadas[] = [
+                            'estudiante_id' => $inscripcion->estudiante->id,
+                            'nombre' => $nombreCompleto,
+                            'carnet' => $persona->carnet ?? 'Sin carnet',
+                            'celular' => $persona->celular ?? '',
+                            'cuota_id' => $cuota->id,
+                            'n_cuota' => $cuota->n_cuota,
+                            'monto_pendiente' => $cuota->pago_pendiente_bs,
+                            'fecha_vencimiento' => $cuota->fecha_pago,
+                            'dias_atraso' => abs($diasRestantes)
+                        ];
+                    }
+                }
+            }
+
+            $participantes[] = [
+                'inscripcion_id' => $inscripcion->id,
+                'estudiante_id' => $inscripcion->estudiante->id,
+                'nombre' => $nombreCompleto,
+                'carnet' => $persona->carnet ?? 'Sin carnet',
+                'plan_pago' => $inscripcion->planesPago->nombre ?? 'No especificado',
+                'total_pagado' => $totalPagado,
+                'cuotas' => $cuotasData
+            ];
+        }
+
+        // Ordenar por nombre
+        usort($participantes, fn($a, $b) => strcmp($a['nombre'], $b['nombre']));
+        usort($cuotasCercanas, fn($a, $b) => strcmp($a['nombre'], $b['nombre']));
+        usort($cuotasAtrasadas, fn($a, $b) => strcmp($a['nombre'], $b['nombre']));
+
+        return response()->json([
+            'oferta' => [
+                'id' => $oferta->id,
+                'nombre' => $oferta->programa->nombre ?? 'Sin programa',
+                'codigo' => $oferta->codigo
+            ],
+            'participantes' => $participantes,
+            'cuotas_cercanas' => $cuotasCercanas,
+            'cuotas_atrasadas' => $cuotasAtrasadas
+        ]);
+    }
+
+    public function actualizarFechasCuotas(Request $request, $id)
+    {
+        $request->validate([
+            'nueva_fecha' => 'required|date',
+        ]);
+
+        $nuevaFecha = $request->nueva_fecha;
+        
+        // Actualizar solo cuotas pendientes de la oferta
+        $inscripciones = Inscripcione::where('ofertas_academica_id', $id)
+            ->where('estado', '!=', 'Retirado')
+            ->with('cuotas')
+            ->get();
+
+        $actualizados = 0;
+        foreach ($inscripciones as $inscripcion) {
+            foreach ($inscripcion->cuotas as $cuota) {
+                if (!$cuota->pago_terminado) {
+                    $cuota->fecha_pago = $nuevaFecha;
+                    $cuota->save();
+                    $actualizados++;
+                }
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Se actualizaron las fechas de {$actualizados} cuotas pendientes",
+            'actualizados' => $actualizados
+        ]);
+    }
+
+    public function actualizarFechaCuota(Request $request, $cuotaId)
+    {
+        $request->validate([
+            'fecha_pago' => 'required|date',
+        ]);
+
+        $cuota = Cuota::findOrFail($cuotaId);
+        
+        if ($cuota->pago_terminado) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se puede editar la fecha de una cuota pagada'
+            ], 422);
+        }
+
+        $cuota->fecha_pago = $request->fecha_pago;
+        $cuota->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Fecha actualizada correctamente'
+        ]);
+    }
+
+    public function generarMensajeCercana($cuotaId)
+    {
+        $cuota = Cuota::with([
+            'inscripcion.estudiante.persona',
+            'inscripcion.oferta.programa'
+        ])->findOrFail($cuotaId);
+
+        $persona = $cuota->inscripcion->estudiante->persona;
+        $nombre = trim(($persona->apellido_paterno ?? '') . ' ' . ($persona->apellido_materno ?? '') . ' ' . ($persona->nombres ?? ''));
+        $ofertaNombre = $cuota->inscripcion->oferta->programa->nombre ?? 'la oferta';
+        $fecha = \Carbon\Carbon::parse($cuota->fecha_pago)->format('d/m/Y');
+        $monto = number_format($cuota->pago_pendiente_bs, 2);
+        
+        // Calcular total pagado
+        $totalPagado = $cuota->pago_total_bs - $cuota->pago_pendiente_bs;
+
+        $mensaje = "Hola {$nombre}, te recordamos que tu siguiente cuota de {$ofertaNombre} vence el {$fecha}. Monto a pagar: {$monto} Bs. Ya pagaste: " . number_format($totalPagado, 2) . " Bs.";
+
+        return response()->json([
+            'nombre' => $nombre,
+            'celular' => $persona->celular ?? '',
+            'mensaje' => $mensaje
+        ]);
+    }
+
+    public function generarMensajeAtrasada($cuotaId)
+    {
+        $cuota = Cuota::with([
+            'inscripcion.estudiante.persona',
+            'inscripcion.oferta.programa'
+        ])->findOrFail($cuotaId);
+
+        $persona = $cuota->inscripcion->estudiante->persona;
+        $nombre = trim(($persona->apellido_paterno ?? '') . ' ' . ($persona->apellido_materno ?? '') . ' ' . ($persona->nombres ?? ''));
+        $ofertaNombre = $cuota->inscripcion->oferta->programa->nombre ?? 'la oferta';
+        $monto = number_format($cuota->pago_pendiente_bs, 2);
+        
+        $totalPagado = $cuota->pago_total_bs - $cuota->pago_pendiente_bs;
+        $diasAtraso = now()->diffInDays(\Carbon\Carbon::parse($cuota->fecha_pago), false);
+
+        $mensaje = "Hola {$nombre}, tu pago de {$ofertaNombre} se encuentra atrasado ({$diasAtraso} días). Monto pendiente: {$monto} Bs. Total pagado: " . number_format($totalPagado, 2) . " Bs. Por favor comunícate para regularizar tu situación.";
+
+        return response()->json([
+            'nombre' => $nombre,
+            'celular' => $persona->celular ?? '',
+            'mensaje' => $mensaje
+        ]);
+    }
 }

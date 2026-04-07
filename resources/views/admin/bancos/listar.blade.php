@@ -1,83 +1,718 @@
 @extends('admin.dashboard')
 @section('admin')
-    <div class="container-fluid">
-        <!-- Header Section -->
-        <div class="row">
-            <div class="col-12">
-                <div class="page-title-box d-flex align-items-center justify-content-between">
-                    <h4 class="mb-0">Gestión de Bancos</h4>
-                    @if (Auth::guard('web')->user()->can('bancos.registrar'))
-                        <div class="page-title-right">
-                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#registrar">
-                                <i class="ri-add-line align-middle me-1"></i> Registrar Banco
-                            </button>
-                        </div>
-                    @endif
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap');
+
+        :root {
+            --banco-primary: #0d9488;
+            --banco-primary-light: #f0fdfa;
+            --banco-primary-dark: #0f766e;
+            --banco-accent: #f59e0b;
+            --banco-surface: #f8fafc;
+            --banco-border: #e2e8f0;
+            --banco-text: #1e293b;
+            --banco-text-muted: #64748b;
+            --banco-success: #10b981;
+            --banco-danger: #ef4444;
+            --banco-info: #3b82f6;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+        }
+
+        .bancos-page {
+            font-family: 'DM Sans', sans-serif;
+            color: var(--banco-text);
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .bancos-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 28px;
+            padding: 24px 28px;
+            background: linear-gradient(135deg, var(--banco-primary) 0%, var(--banco-primary-dark) 100%);
+            border-radius: var(--radius-lg);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bancos-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .bancos-header::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: 20%;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .bancos-header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.65rem;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.02em;
+            position: relative;
+            z-index: 1;
+            color: white;
+        }
+
+        .bancos-header h1 i {
+            color: white;
+        }
+
+        .bancos-header p {
+            margin: 4px 0 0;
+            opacity: 0.85;
+            font-size: 0.9rem;
+            position: relative;
+            z-index: 1;
+            color: white;
+        }
+
+        .btn-new-banco {
+            background: white;
+            color: var(--banco-primary);
+            border: none;
+            padding: 10px 24px;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.25s ease;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-new-banco:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            background: var(--banco-primary-light);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--banco-border);
+            transition: all 0.25s ease;
+        }
+
+        .stat-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .stat-icon.total {
+            background: var(--banco-primary-light);
+            color: var(--banco-primary);
+        }
+
+        .stat-icon.active {
+            background: #ecfdf5;
+            color: var(--banco-success);
+        }
+
+        .stat-icon.accounts {
+            background: #eff6ff;
+            color: var(--banco-info);
+        }
+
+        .stat-info p {
+            margin: 0;
+            font-size: 0.8rem;
+            color: var(--banco-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 500;
+        }
+
+        .stat-info h3 {
+            margin: 2px 0 0;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--banco-text);
+        }
+
+        .filter-bar {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--banco-border);
+        }
+
+        .search-wrapper {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .search-wrapper i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--banco-text-muted);
+            font-size: 1.1rem;
+        }
+
+        .search-wrapper input {
+            width: 100%;
+            padding: 10px 14px 10px 42px;
+            border: 1px solid var(--banco-border);
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.2s ease;
+            background: var(--banco-surface);
+        }
+
+        .search-wrapper input:focus {
+            outline: none;
+            border-color: var(--banco-primary);
+            box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+            background: white;
+        }
+
+        .btn-clear-filters {
+            padding: 8px 16px;
+            border: 1px solid var(--banco-border);
+            border-radius: var(--radius-sm);
+            background: white;
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--banco-text-muted);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-clear-filters:hover {
+            background: var(--banco-surface);
+            color: var(--banco-text);
+        }
+
+        .table-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--banco-border);
+            overflow: hidden;
+        }
+
+        .table-card-header {
+            padding: 18px 24px;
+            border-bottom: 1px dashed var(--banco-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .table-card-header h5 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        .table-responsive {
+            overflow-x: visible !important;
+        }
+
+        .bancos-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .bancos-table thead th {
+            background: var(--banco-surface);
+            padding: 12px 16px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--banco-text-muted);
+            border-bottom: 1px solid var(--banco-border);
+            white-space: normal;
+            vertical-align: middle;
+        }
+
+        .bancos-table tbody tr {
+            transition: background 0.15s ease;
+        }
+
+        .bancos-table tbody tr:hover {
+            background: var(--banco-primary-light);
+        }
+
+        .bancos-table tbody td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--banco-border);
+            vertical-align: middle;
+            white-space: normal;
+            font-size: 0.88rem;
+        }
+
+        .bancos-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .banco-logo-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .banco-logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .banco-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .banco-name-text h6 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 0.92rem;
+            color: var(--banco-text);
+        }
+
+        .banco-name-text small {
+            font-size: 0.75rem;
+            color: var(--banco-text-muted);
+        }
+
+        .color-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .color-swatch {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .badge-codigo {
+            background: var(--banco-surface);
+            color: var(--banco-text);
+            font-weight: 600;
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 4px;
+            border: 1px solid var(--banco-border);
+        }
+
+        .badge-cuentas {
+            background: var(--banco-primary-light);
+            color: var(--banco-primary);
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 4px;
+        }
+
+        .action-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: var(--radius-sm);
+            border: 1px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .action-btn.view {
+            background: var(--banco-primary-light);
+            color: var(--banco-primary);
+            border-color: var(--banco-primary-light);
+        }
+
+        .action-btn.view:hover {
+            background: var(--banco-primary);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .action-btn.edit {
+            background: #fffbeb;
+            color: #d97706;
+            border-color: #fde68a;
+        }
+
+        .action-btn.edit:hover {
+            background: #fde68a;
+            transform: translateY(-1px);
+        }
+
+        .action-btn.delete {
+            background: #fef2f2;
+            color: #dc2626;
+            border-color: #fecaca;
+        }
+
+        .action-btn.delete:hover {
+            background: #fecaca;
+            transform: translateY(-1px);
+        }
+
+        .table-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--banco-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            background: var(--banco-surface);
+        }
+
+        .table-footer .results-count {
+            font-size: 0.85rem;
+            color: var(--banco-text-muted);
+        }
+
+        .pagination .page-link {
+            border-radius: var(--radius-sm) !important;
+            border: 1px solid var(--banco-border);
+            color: var(--banco-text-muted);
+            font-size: 0.85rem;
+            padding: 6px 12px;
+            margin: 0 2px;
+        }
+
+        .pagination .page-item.active .page-link {
+            background: var(--banco-primary);
+            border-color: var(--banco-primary);
+            color: white;
+        }
+
+        .pagination .page-link:hover {
+            background: var(--banco-primary-light);
+            border-color: var(--banco-primary);
+            color: var(--banco-primary);
+        }
+
+        .empty-state {
+            padding: 48px 24px;
+            text-align: center;
+        }
+
+        .empty-state i {
+            font-size: 3.5rem;
+            color: #cbd5e1;
+            margin-bottom: 12px;
+        }
+
+        .empty-state p {
+            color: var(--banco-text-muted);
+            margin: 0;
+        }
+
+        .modal-content {
+            border: none;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--banco-border);
+            padding: 16px 24px;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--banco-border);
+            padding: 16px 24px;
+        }
+
+        .form-control,
+        .form-select {
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--banco-border);
+            padding: 10px 14px;
+            font-size: 0.9rem;
+        }
+
+        .form-control:focus {
+            border-color: var(--banco-primary);
+            box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+        }
+
+        .form-label {
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: var(--banco-text);
+            margin-bottom: 6px;
+        }
+
+        .form-check-input:checked {
+            background-color: var(--banco-primary);
+            border-color: var(--banco-primary);
+        }
+
+        @media (max-width: 991.98px) {
+            .bancos-header {
+                padding: 20px;
+            }
+
+            .bancos-header h1 {
+                font-size: 1.35rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .bancos-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .table-footer {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .bancos-table thead th,
+            .bancos-table tbody td {
+                padding: 10px 10px;
+                font-size: 0.8rem;
+            }
+
+            .banco-logo {
+                width: 32px;
+                height: 32px;
+                font-size: 0.9rem;
+            }
+
+            .banco-name-text h6 {
+                font-size: 0.82rem;
+            }
+        }
+
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 999999 !important;
+        }
+
+        .toast {
+            min-width: 300px;
+            max-width: 350px;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            margin-bottom: 10px;
+            animation: slideInRight 0.3s ease-out;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .btn .spin {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+
+    <div class="container-fluid bancos-page">
+        <!-- Page Header -->
+        <div class="bancos-header">
+            <div>
+                <h1><i class="ri-bank-line me-2"></i>Gestión de Bancos</h1>
+                <p>Administra los bancos y cuentas bancarias registradas</p>
+            </div>
+            @if (Auth::guard('web')->user()->can('bancos.registrar'))
+                <button type="button" class="btn btn-new-banco" data-bs-toggle="modal" data-bs-target="#registrar">
+                    <i class="ri-add-line me-1"></i> Nuevo Banco
+                </button>
+            @endif
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon total"><i class="ri-building-4-line"></i></div>
+                <div class="stat-info">
+                    <p>Total Bancos</p>
+                    <h3 id="totalBancosCounter">{{ $totalBancos }}</h3>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon active"><i class="ri-checkbox-circle-line"></i></div>
+                <div class="stat-info">
+                    <p>Con Cuentas</p>
+                    <h3 id="bancosConCuentas">{{ $bancosConCuentas }}</h3>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon accounts"><i class="ri-bank-card-line"></i></div>
+                <div class="stat-info">
+                    <p>Total Cuentas</p>
+                    <h3 id="totalCuentas">{{ $totalCuentas }}</h3>
                 </div>
             </div>
         </div>
-        <!-- Filters Section -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="row g-3 align-items-center">
-                            <div class="col-md-10">
-                                <div class="search-box">
-                                    <input type="text" id="searchInput" class="form-control"
-                                        placeholder="Buscar banco...">
-                                    <i class="ri-search-line search-icon"></i>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <button type="button" id="clearFilters" class="btn btn-outline-secondary w-100">
-                                    <i class="ri-refresh-line me-1"></i> Limpiar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar">
+            <div class="search-wrapper">
+                <i class="ri-search-line"></i>
+                <input type="text" id="searchInput" class="form-control" placeholder="Buscar banco..."
+                    value="{{ request('search') ?? '' }}">
             </div>
+            <button type="button" id="clearFilters" class="btn-clear-filters">
+                <i class="ri-refresh-line me-1"></i> Limpiar
+            </button>
         </div>
-        <!-- Results Section -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Lista de Bancos Registrados</h5>
+
+        <!-- Table -->
+        <div class="table-card">
+            <div class="table-card-header">
+                <h5><i class="ri-list-check me-2 text-muted"></i>Listado de Bancos Registrados</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="bancos-table">
+                    <thead>
+                        <tr>
+                            <th width="5%">#</th>
+                            <th>Logo</th>
+                            <th>Banco</th>
+                            <th>Código</th>
+                            <th>Color</th>
+                            <th>Cuentas</th>
+                            <th width="15%" class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bancosTableBody">
+                        @include('admin.bancos.partials.table-body')
+                    </tbody>
+                </table>
+            </div>
+            @if ($bancos->total() > 0)
+                <div class="table-footer">
+                    <div class="results-count">
+                        Mostrando <span class="fw-medium">{{ $bancos->firstItem() }}</span> a
+                        <span class="fw-medium">{{ $bancos->lastItem() }}</span> de
+                        <span class="fw-medium">{{ $bancos->total() }}</span> resultados
                     </div>
-                    <div class="card-body">
-                        <div id="results-container">
-                            <div class="table-responsive">
-                                <table class="table table-hover table-centered align-middle mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th width="5%">ID</th>
-                                            <th>Logo</th>
-                                            <th>Nombre del Banco</th>
-                                            <th>Código</th>
-                                            <th>Color</th>
-                                            <th>N° Cuentas</th>
-                                            <th width="15%" class="text-center">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    @include('admin.bancos.partials.table-body')
-                                </table>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center mt-3">
-                                <div class="text-muted">
-                                    Mostrando <span id="showing-count">{{ $bancos->firstItem() ?? 0 }}</span>
-                                    a <span id="to-count">{{ $bancos->lastItem() ?? 0 }}</span>
-                                    de <span id="total-count">{{ $bancos->total() ?? 0 }}</span> registros
-                                </div>
-                                <div id="pagination-container">
-                                    {{ $bancos->links('pagination::bootstrap-5') }}
-                                </div>
-                            </div>
-                        </div>
+                    <div class="pagination-container">
+                        {{ $bancos->appends(request()->input())->links('pagination::bootstrap-5') }}
                     </div>
                 </div>
-            </div>
+            @endif
         </div>
     </div>
 
@@ -635,8 +1270,8 @@
                             <div class="mb-4">
                                 ${response.banco.logo ? `<img src="${response.banco.logo}" alt="Logo" class="img-fluid rounded" style="max-height: 100px;">` : 
                                 `<div class="avatar-lg mx-auto mb-3" style="background-color: ${response.banco.color || '#0d6efd'}; border-radius: 10px;">
-                                            <div class="avatar-title text-white fs-2">${response.banco.nombre.charAt(0)}</div>
-                                        </div>`}
+                                                <div class="avatar-title text-white fs-2">${response.banco.nombre.charAt(0)}</div>
+                                            </div>`}
                             </div>
                             <div class="d-flex align-items-center justify-content-center mb-3">
                                 <div class="me-2" style="width: 20px; height: 20px; background-color: ${response.banco.color || '#0d6efd'}; border-radius: 4px;"></div>
@@ -716,20 +1351,18 @@
 
             function loadResults(search = '') {
                 $.ajax({
-                    url: '{{ route('admin.bancos.listar') }}',
+                    url: "{{ route('admin.bancos.listar') }}",
                     method: 'GET',
                     data: {
                         search: search
                     },
                     dataType: 'json',
                     success: function(response) {
-                        $('#results-container .table-responsive table').find('tbody').replaceWith(
-                            response.html);
-                        $('#pagination-container').html(response.pagination);
-                        if (response.total !== undefined) {
-                            $('#showing-count').text(response.from || 0);
-                            $('#to-count').text(response.to || 0);
-                            $('#total-count').text(response.total || 0);
+                        $('.bancos-table tbody').replaceWith(response.html);
+                        $('.pagination-container').html(response.pagination);
+                        if (response.stats) {
+                            $('#totalBancosCounter').text(response.stats.totalBancos);
+                            $('#bancosConCuentas').text(response.stats.bancosConCuentas);
                         }
                         initTooltips();
                     },
@@ -770,7 +1403,7 @@
             });
 
             // Manejar paginación
-            $(document).on('click', '#pagination-container .pagination a', function(e) {
+            $(document).on('click', '.pagination-container .pagination a', function(e) {
                 e.preventDefault();
                 const url = $(this).attr('href');
                 const search = $('#searchInput').val().trim();
@@ -785,14 +1418,8 @@
                     },
                     dataType: 'json',
                     success: function(response) {
-                        $('#results-container .table-responsive table').find('tbody')
-                            .replaceWith(response.html);
-                        $('#pagination-container').html(response.pagination);
-                        if (response.total !== undefined) {
-                            $('#showing-count').text(response.from || 0);
-                            $('#to-count').text(response.to || 0);
-                            $('#total-count').text(response.total || 0);
-                        }
+                        $('.bancos-table tbody').replaceWith(response.html);
+                        $('.pagination-container').html(response.pagination);
                         initTooltips();
                     },
                     error: function() {

@@ -212,6 +212,18 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
             [OfertasAcademicasController::class, 'exportarDetalleParticipantes']
         )
             ->name('admin.ofertas.exportar-detalle-participantes');
+
+        // Gestión de cuotas
+        Route::get('/admin/ofertas/{id}/gestion-cuotas', 'getGestionCuotas')
+            ->name('admin.ofertas.gestion-cuotas');
+        Route::post('/admin/ofertas/{id}/actualizar-fechas-cuotas', 'actualizarFechasCuotas')
+            ->name('admin.ofertas.actualizar-fechas-cuotas');
+        Route::post('/admin/ofertas/cuota/{cuotaId}/actualizar-fecha', 'actualizarFechaCuota')
+            ->name('admin.ofertas.actualizar-fecha-cuota');
+        Route::get('/admin/ofertas/cuota/{cuotaId}/mensaje-cercana', 'generarMensajeCercana')
+            ->name('admin.ofertas.mensaje-cercana');
+        Route::get('/admin/ofertas/cuota/{cuotaId}/mensaje-atrasada', 'generarMensajeAtrasada')
+            ->name('admin.ofertas.mensaje-atrasada');
     });
 
     Route::controller(UserProfileController::class)->group(function () {

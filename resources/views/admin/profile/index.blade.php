@@ -13,11 +13,11 @@
         @include('admin.profile.sidebar')
 
         <div class="col-xl-9 col-lg-9">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header border-bottom bg-transparent pt-0 pb-0 px-0">
+            <div class="profile-card">
+                <div class="profile-card-header">
                     @include('admin.profile.tabs.navigation')
                 </div>
-                <div class="card-body p-4">
+                <div class="profile-card-body">
                     <div class="tab-content">
                         <div class="tab-pane active" id="personal" role="tabpanel">
                             @include('admin.profile.tabs.personal')

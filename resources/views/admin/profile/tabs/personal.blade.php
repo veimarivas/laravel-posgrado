@@ -33,30 +33,26 @@
     ];
 @endphp
 
-<div class="row g-4">
+<div class="row g-3">
 
     {{-- Datos personales --}}
     <div class="col-lg-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-transparent border-bottom d-flex align-items-center gap-2 py-3">
-                <div class="avatar-xs">
-                    <div class="avatar-title bg-primary-subtle text-primary rounded">
-                        <i class="ri-user-line fs-14"></i>
-                    </div>
+        <div class="data-card">
+            <div class="data-card-header">
+                <div class="data-card-icon bg-primary-subtle text-primary">
+                    <i class="ri-user-line"></i>
                 </div>
-                <h6 class="mb-0 fw-semibold">Datos Personales</h6>
+                <h6 class="data-card-title">Datos Personales</h6>
             </div>
-            <div class="card-body p-0">
-                @foreach ($camposPersonal as $i => $campo)
-                    <div class="d-flex align-items-center gap-3 px-3 py-3 {{ $i < count($camposPersonal)-1 ? 'border-bottom' : '' }}">
-                        <div class="avatar-xs flex-shrink-0">
-                            <div class="avatar-title bg-{{ $campo['color'] }}-subtle text-{{ $campo['color'] }} rounded">
-                                <i class="{{ $campo['icon'] }} fs-14"></i>
-                            </div>
+            <div class="data-card-body">
+                @foreach ($camposPersonal as $campo)
+                    <div class="data-row">
+                        <div class="data-row-icon bg-{{ $campo['color'] }}-subtle text-{{ $campo['color'] }}">
+                            <i class="{{ $campo['icon'] }}"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <div class="text-muted" style="font-size:.72rem;">{{ strtoupper($campo['label']) }}</div>
-                            <div class="fw-medium small">{{ $campo['value'] }}</div>
+                            <div class="data-row-label">{{ $campo['label'] }}</div>
+                            <div class="data-row-value">{{ $campo['value'] }}</div>
                         </div>
                     </div>
                 @endforeach
@@ -66,26 +62,22 @@
 
     {{-- Contacto --}}
     <div class="col-lg-6">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-transparent border-bottom d-flex align-items-center gap-2 py-3">
-                <div class="avatar-xs">
-                    <div class="avatar-title bg-info-subtle text-info rounded">
-                        <i class="ri-contacts-line fs-14"></i>
-                    </div>
+        <div class="data-card">
+            <div class="data-card-header">
+                <div class="data-card-icon bg-info-subtle text-info">
+                    <i class="ri-contacts-line"></i>
                 </div>
-                <h6 class="mb-0 fw-semibold">Información de Contacto</h6>
+                <h6 class="data-card-title">Información de Contacto</h6>
             </div>
-            <div class="card-body p-0">
-                @foreach ($camposContacto as $i => $campo)
-                    <div class="d-flex align-items-center gap-3 px-3 py-3 {{ $i < count($camposContacto)-1 ? 'border-bottom' : '' }}">
-                        <div class="avatar-xs flex-shrink-0">
-                            <div class="avatar-title bg-{{ $campo['color'] }}-subtle text-{{ $campo['color'] }} rounded">
-                                <i class="{{ $campo['icon'] }} fs-14"></i>
-                            </div>
+            <div class="data-card-body">
+                @foreach ($camposContacto as $campo)
+                    <div class="data-row">
+                        <div class="data-row-icon bg-{{ $campo['color'] }}-subtle text-{{ $campo['color'] }}">
+                            <i class="{{ $campo['icon'] }}"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <div class="text-muted" style="font-size:.72rem;">{{ strtoupper($campo['label']) }}</div>
-                            <div class="fw-medium small">{{ $campo['value'] }}</div>
+                            <div class="data-row-label">{{ $campo['label'] }}</div>
+                            <div class="data-row-value">{{ $campo['value'] }}</div>
                         </div>
                     </div>
                 @endforeach

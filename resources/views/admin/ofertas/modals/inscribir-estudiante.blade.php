@@ -71,6 +71,7 @@
 
                 <!-- Paso 3: Formulario de Nueva Persona -->
                 <form id="formNuevaPersonaInscripcion" style="display:none;">
+                    @csrf
                     <div class="d-flex align-items-center gap-2 mb-3">
                         <button type="button" class="btn btn-light btn-sm" id="btn-volver-carnet2-incripcion"
                             style="border-radius: var(--radius-sm); border: 1px solid var(--ofertas-border); padding: 4px 12px;">

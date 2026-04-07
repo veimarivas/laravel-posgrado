@@ -18,6 +18,7 @@ class CuentasBancariasController extends Controller
     public function listar(Request $request)
     {
         $search = $request->get('search', '');
+        $filter = $request->get('filter', 'all');
 
         $query = CuentasBancarias::with(['banco', 'sucursal']);
 
@@ -33,12 +34,33 @@ class CuentasBancariasController extends Controller
             });
         }
 
-        $cuentas = $query->paginate(10)->appends(['search' => $search]);
+        switch ($filter) {
+            case 'activa':
+                $query->where('activa', true);
+                break;
+            case 'inactiva':
+                $query->where('activa', false);
+                break;
+            case 'ahorro':
+                $query->where('tipo_cuenta', 'ahorro');
+                break;
+            case 'corriente':
+                $query->where('tipo_cuenta', 'corriente');
+                break;
+            case 'moneda_extranjera':
+                $query->where('tipo_cuenta', 'moneda_extranjera');
+                break;
+        }
+
+        $cuentas = $query->paginate(10)->appends(['search' => $search, 'filter' => $filter]);
 
         if ($request->ajax()) {
             return response()->json([
                 'html' => view('admin.cuentas_bancarias.partials.table-body', compact('cuentas'))->render(),
-                'pagination' => $cuentas->links('pagination::bootstrap-5')->toHtml()
+                'pagination' => $cuentas->links('pagination::bootstrap-5')->toHtml(),
+                'from' => $cuentas->firstItem(),
+                'to' => $cuentas->lastItem(),
+                'total' => $cuentas->total()
             ]);
         }
 
