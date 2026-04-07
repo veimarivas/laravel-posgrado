@@ -378,6 +378,8 @@
 
         const estado = $('#estado_inscripcion').val();
         const planId = $('#planes_pago_select').val();
+        const ofertaId = $('#oferta_id_inscripcion').val();
+        const estudianteId = $('#estudiante_id_inscripcion').val();
 
         if (!planId) {
             mostrarToast('warning', 'Seleccione un plan de pago.');
@@ -389,15 +391,31 @@
             return;
         }
 
-        let formData = $(this).serialize();
-        if (estado === 'Pre-Inscrito' && !formData.includes('adelanto_bs=')) {
-            formData += '&adelanto_bs=' + ($('#adelanto_bs').val() || 0);
+        if (!ofertaId || !estudianteId) {
+            mostrarToast('error', 'Datos incompletos. Intente nuevamente.');
+            return;
+        }
+
+        const btn = $('#btn-registrar-inscripcion');
+        const originalHtml = btn.html();
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Registrando...');
+
+        const data = {
+            _token: "{{ csrf_token() }}",
+            oferta_id: ofertaId,
+            estudiante_id: estudianteId,
+            estado: estado,
+            planes_pago_id: planId
+        };
+
+        if (estado === 'Pre-Inscrito') {
+            data.adelanto_bs = parseFloat($('#adelanto_bs').val()) || 0;
         }
 
         $.ajax({
             url: "{{ route('admin.inscripciones.registrar') }}",
             method: 'POST',
-            data: formData,
+            data: data,
             success: function(res) {
                 mostrarToast(res.success ? 'success' : 'error', res.msg);
                 if (res.success) {
@@ -406,7 +424,19 @@
                 }
             },
             error: function(xhr) {
-                mostrarToast('error', xhr.responseJSON?.msg || 'Error al registrar la inscripción.');
+                let errorMsg = 'Error al registrar la inscripción.';
+                if (xhr.responseJSON) {
+                    if (xhr.responseJSON.msg) {
+                        errorMsg = xhr.responseJSON.msg;
+                    } else if (xhr.responseJSON.errors) {
+                        const errors = Object.values(xhr.responseJSON.errors).flat();
+                        errorMsg = errors.join('. ');
+                    }
+                }
+                mostrarToast('error', errorMsg);
+            },
+            complete: function() {
+                btn.prop('disabled', false).html(originalHtml);
             }
         });
     });
@@ -414,8 +444,13 @@
     // Submit form nueva persona
     $('#formNuevaPersonaInscripcion').submit(function(e) {
         e.preventDefault();
+        
         if (!validarApellidosNuevoInscripcion()) return;
         if ($('#fecha_nac_nuevo_inscripcion').val() && !calcularEdadNuevoInscripcion()) return;
+
+        const btn = $('#btn-guardar-nueva-persona-incripcion');
+        const originalHtml = btn.html();
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-2"></span>Registrando...');
 
         $.ajax({
             url: "{{ route('admin.estudiantes.registrar-persona-estudiante') }}",
@@ -429,13 +464,24 @@
                     cargarPlanesPago(res.student_id, $('#oferta_id_inscripcion').val());
                 } else {
                     mostrarToast('error', res.msg || 'Error al registrar la persona.');
+                    btn.prop('disabled', false).html(originalHtml);
                 }
             },
             error: function(xhr) {
-                const errors = xhr.responseJSON?.errors || {};
-                if (errors.carnet) $('#feedback_carnet_nuevo_inscripcion').addClass('text-danger').text(errors.carnet[0]);
-                if (errors.correo) $('#feedback_correo_nuevo_inscripcion').addClass('text-danger').text(errors.correo[0]);
-                if (errors.apellidos) $('#feedback_apellidos_nuevo_inscripcion').text(errors.apellidos[0]);
+                let errorMsg = 'Error al registrar la persona.';
+                if (xhr.responseJSON) {
+                    if (xhr.responseJSON.msg) {
+                        errorMsg = xhr.responseJSON.msg;
+                    } else if (xhr.responseJSON.errors) {
+                        const errors = Object.values(xhr.responseJSON.errors).flat();
+                        errorMsg = errors.join('. ');
+                        if (xhr.responseJSON.errors.carnet) $('#feedback_carnet_nuevo_inscripcion').addClass('text-danger').text('❌ ' + xhr.responseJSON.errors.carnet[0]);
+                        if (xhr.responseJSON.errors.correo) $('#feedback_correo_nuevo_inscripcion').addClass('text-danger').text('❌ ' + xhr.responseJSON.errors.correo[0]);
+                        if (xhr.responseJSON.errors.apellidos) $('#feedback_apellidos_nuevo_inscripcion').text('⚠️ ' + xhr.responseJSON.errors.apellidos[0]);
+                    }
+                }
+                mostrarToast('error', errorMsg);
+                btn.prop('disabled', false).html(originalHtml);
                 checkFormNuevaPersonaInscripcion();
             }
         });
@@ -475,8 +521,11 @@
     }
 
     function checkFormNuevaPersonaInscripcion() {
-        const carnetOk = $('#feedback_carnet_nuevo_inscripcion').hasClass('text-success');
-        const correoOk = $('#feedback_correo_nuevo_inscripcion').hasClass('text-success');
+        const carnetVal = $('#carnet_nuevo_inscripcion').val().trim();
+        const correoVal = $('#correo_nuevo_inscripcion').val().trim();
+        // Si el carnet está vacío, no está ok. Si tiene valor y no tiene error, está ok.
+        const carnetOk = carnetVal && !$('#feedback_carnet_nuevo_inscripcion').hasClass('text-danger');
+        const correoOk = correoVal && !$('#feedback_correo_nuevo_inscripcion').hasClass('text-danger');
         const nombres = $('#nombres_nuevo_inscripcion').val().trim();
         const celular = $('#celular_nuevo_inscripcion').val().trim();
         const ciudade = $('#ciudad_nuevo_inscripcion').val();
@@ -499,6 +548,7 @@
         const carnet = $(this).val().trim();
         if (!carnet) {
             $('#feedback_carnet_nuevo_inscripcion').removeClass('text-success text-danger').text('');
+            checkFormNuevaPersonaInscripcion();
             return;
         }
         clearTimeout(debounceCarnet);
@@ -513,6 +563,9 @@
                     $('#feedback_carnet_nuevo_inscripcion').removeClass('text-danger').addClass('text-success').text('✅ Disponible');
                 }
                 checkFormNuevaPersonaInscripcion();
+            }).fail(function() {
+                $('#feedback_carnet_nuevo_inscripcion').removeClass('text-success text-danger').text('');
+                checkFormNuevaPersonaInscripcion();
             });
         }, 400);
     });
@@ -522,6 +575,7 @@
         const correo = $(this).val().trim();
         if (!correo) {
             $('#feedback_correo_nuevo_inscripcion').removeClass('text-success text-danger').text('');
+            checkFormNuevaPersonaInscripcion();
             return;
         }
         clearTimeout(debounceCorreo);
@@ -536,11 +590,18 @@
                     $('#feedback_correo_nuevo_inscripcion').removeClass('text-danger').addClass('text-success').text('✅ Disponible');
                 }
                 checkFormNuevaPersonaInscripcion();
+            }).fail(function() {
+                $('#feedback_correo_nuevo_inscripcion').removeClass('text-success text-danger').text('');
+                checkFormNuevaPersonaInscripcion();
             });
         }, 400);
     });
 
     $('#nombres_nuevo_inscripcion, #paterno_nuevo_inscripcion, #materno_nuevo_inscripcion, #celular_nuevo_inscripcion').on('input', function() {
+        checkFormNuevaPersonaInscripcion();
+    });
+
+    $('select[name="sexo"], select[name="estado_civil"]').on('change', function() {
         checkFormNuevaPersonaInscripcion();
     });
 
