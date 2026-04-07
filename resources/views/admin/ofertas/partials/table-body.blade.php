@@ -8,7 +8,7 @@
         ])
     @empty
         <tr>
-            <td colspan="10" class="text-center py-4">
+            <td colspan="9" class="text-center py-4">
                 <div class="d-flex flex-column align-items-center">
                     <i class="ri-inbox-line fs-1 text-muted mb-2"></i>
                     <h5 class="text-muted">No se encontraron ofertas académicas</h5>

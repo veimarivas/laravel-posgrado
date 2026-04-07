@@ -7,14 +7,14 @@
         0% {
             transform: rotate(0deg);
         }
-
         100% {
             transform: rotate(360deg);
         }
     }
 
+    /* Plan de pago modal styles */
     .plan-card {
-        border-left: 4px solid var(--bs-primary);
+        border-left: 4px solid var(--ofertas-primary, var(--bs-primary));
         transition: transform 0.2s ease;
     }
 
@@ -39,7 +39,7 @@
 
     .monto-total {
         font-weight: 600;
-        color: var(--bs-success);
+        color: var(--ofertas-success, var(--bs-success));
     }
 
     .plan-header {
@@ -57,41 +57,7 @@
     }
 
     .table-group-divider {
-        border-top-color: var(--bs-primary);
-    }
-
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-
-    .card-header {
-        border-bottom: none;
-    }
-
-    .table-hover tbody tr:hover {
-        background-color: rgba(0, 123, 255, 0.05);
-    }
-
-    .table tfoot tr {
-        background-color: #f8f9fa;
-    }
-
-    .badge {
-        font-size: 0.75rem;
-        padding: 0.25rem 0.5rem;
-    }
-
-    .border-primary {
-        border-width: 2px !important;
-    }
-
-    .border-secondary {
-        border-width: 1px !important;
-    }
-
-    .card-body.border-dashed {
-        border-style: dashed !important;
+        border-top-color: var(--ofertas-primary, var(--bs-primary));
     }
 
     .form-select {
@@ -105,116 +71,9 @@
         box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
     }
 
-    .btn-outline-secondary:hover {
-        background-color: #6c757d;
-        border-color: #6c757d;
-        color: white;
-    }
-
-    .table-hover tbody tr:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        transition: all 0.3s ease;
-    }
-
-    .btn-sm {
-        border-radius: 4px !important;
-        font-weight: 500 !important;
-    }
-
-    .btn.btn-teal {
-        background-color: #20c997 !important;
-        border-color: #1baa7e !important;
-        color: #fff !important;
-    }
-
-    .btn.btn-teal:hover {
-        background-color: #1baa7e !important;
-        border-color: #18966e !important;
-    }
-
-    .btn.btn-purple {
-        background-color: #6f42c1 !important;
-        border-color: #5e33a6 !important;
-        color: #fff !important;
-    }
-
-    .btn.btn-purple:hover {
-        background-color: #5e33a6 !important;
-        border-color: #4d2a8b !important;
-    }
-
-    .btn.btn-orange {
-        background-color: #fd7e14 !important;
-        border-color: #e56b00 !important;
-        color: #fff !important;
-    }
-
-    .btn.btn-orange:hover {
-        background-color: #e56b00 !important;
-        border-color: #cc5f00 !important;
-    }
-
-    .btn.btn-indigo {
-        background-color: #6610f2 !important;
-        border-color: #560bd0 !important;
-        color: #fff !important;
-    }
-
-    .btn.btn-indigo:hover {
-        background-color: #560bd0 !important;
-    }
-
-    .badge {
-        font-weight: 500;
-        letter-spacing: 0.3px;
-    }
-
-    .table>tbody>tr>td {
-        vertical-align: middle;
-        padding: 8px 8px;
-    }
-
-    .acciones-celda .btn-sm {
-        height: 28px;
-        min-width: 30px;
-        padding: 0.15rem 0.4rem;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .acciones-celda .btn-sm i {
-        font-size: 13px;
-        line-height: 1;
-    }
-
     .btn-group .btn:hover {
         z-index: 2;
         transform: none;
-    }
-
-    .table img {
-        border-radius: 4px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .pagination .page-link {
-        border-radius: 4px;
-        margin: 0 3px;
-        font-weight: 500;
-    }
-
-    .table tbody tr td[colspan] {
-        background-color: #f8f9fa;
-    }
-
-    .convenio-img {
-        width: 40px;
-        height: 40px;
-        object-fit: cover;
-        border-radius: 50%;
-        border: 2px solid #e9ecef;
     }
 
     .input-group-sm .input-group-text {
@@ -254,5 +113,10 @@
         border-radius: 5px;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         z-index: 1000;
+    }
+
+    /* Phase badge color override */
+    .fase-badge {
+        transition: background-color 0.2s ease;
     }
 </style>

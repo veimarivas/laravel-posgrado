@@ -1,28 +1,37 @@
 <div id="results-container">
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" style="min-width:1100px;font-size:.84rem;">
-                    <thead>
-                        <tr style="background:#f8f9fa;">
-                            <th width="3%"  class="border-0 py-3 px-3 text-muted fw-semibold text-center" style="font-size:.7rem;">N°</th>
-                            <th width="7%"  class="border-0 py-3 text-muted fw-semibold text-center"       style="font-size:.7rem;">CÓDIGO</th>
-                            <th width="20%" class="border-0 py-3 text-muted fw-semibold"                   style="font-size:.7rem;">PROGRAMA</th>
-                            <th width="5%"  class="border-0 py-3 text-muted fw-semibold text-center"       style="font-size:.7rem;">MÓD.</th>
-                            <th width="11%" class="border-0 py-3 text-muted fw-semibold"                   style="font-size:.7rem;">CONVENIO</th>
-                            <th width="9%"  class="border-0 py-3 text-muted fw-semibold text-center"       style="font-size:.7rem;">MODALIDAD</th>
-                            <th width="10%" class="border-0 py-3 text-muted fw-semibold text-center"       style="font-size:.7rem;">FECHAS</th>
-                            <th width="6%"  class="border-0 py-3 text-muted fw-semibold text-center"       style="font-size:.7rem;">INSCRITOS</th>
-                            <th width="8%"  class="border-0 py-3 text-muted fw-semibold text-center"       style="font-size:.7rem;">FASE</th>
-                            <th width="21%" class="border-0 py-3 text-muted fw-semibold text-center"       style="font-size:.7rem;">ACCIONES</th>
-                        </tr>
-                    </thead>
-                    @include('admin.ofertas.partials.table-body')
-                </table>
-            </div>
+    <div class="table-card">
+        <div class="table-card-header">
+            <h5><i class="ri-list-check me-2 text-muted"></i>Listado de Ofertas Académicas</h5>
         </div>
-    </div>
-    <div class="d-flex justify-content-end mt-3" id="pagination-container">
-        {{ $ofertas->links('pagination::bootstrap-5') }}
+        <div class="table-responsive">
+            <table class="ofertas-table">
+                <thead>
+                    <tr>
+                        <th width="3%" class="text-center">N°</th>
+                        <th>Oferta</th>
+                        <th width="4%" class="text-center">Mód.</th>
+                        <th width="9%" class="text-center">Convenio</th>
+                        <th width="7%" class="text-center">Modalidad</th>
+                        <th width="7%" class="text-center">Fechas</th>
+                        <th width="5%" class="text-center">Inscr.</th>
+                        <th width="5%" class="text-center">Fase</th>
+                        <th width="13%" class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                @include('admin.ofertas.partials.table-body')
+            </table>
+        </div>
+        @if ($ofertas->total() > 0)
+            <div class="table-footer">
+                <div class="results-count">
+                    Mostrando <span class="fw-medium">{{ $ofertas->firstItem() }}</span> a
+                    <span class="fw-medium">{{ $ofertas->lastItem() }}</span> de
+                    <span class="fw-medium">{{ $ofertas->total() }}</span> resultados
+                </div>
+                <div class="pagination-container">
+                    {{ $ofertas->appends(request()->input())->links('pagination::bootstrap-5') }}
+                </div>
+            </div>
+        @endif
     </div>
 </div>
