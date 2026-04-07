@@ -396,16 +396,25 @@
             $('#tableCount').text(pagination.total);
 
             let html = `
-                <table class="table table-hover align-middle mb-0" style="font-size:.8rem;">
+                <table class="table table-hover align-middle mb-0" style="font-size:.78rem;table-layout:fixed;width:100%;">
+                    <colgroup>
+                        <col style="width:3%;">
+                        <col style="width:25%;">
+                        <col style="width:24%;">
+                        <col style="width:16%;">
+                        <col style="width:9%;">
+                        <col style="width:9%;">
+                        <col style="width:14%;">
+                    </colgroup>
                     <thead>
                         <tr style="background:#f8f9fa;">
-                            <th class="border-0 py-2 px-2 text-muted fw-semibold" style="font-size:.68rem;width:28px;text-align:center;">#</th>
-                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.68rem;">ESTUDIANTE</th>
-                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.68rem;">PROGRAMA</th>
-                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.68rem;width:130px;">PLAN</th>
-                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.68rem;width:80px;">ESTADO</th>
-                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.68rem;width:80px;">FECHA</th>
-                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.68rem;width:110px;">ACCIONES</th>
+                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.65rem;text-align:center;">#</th>
+                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.65rem;overflow:hidden;">ESTUDIANTE</th>
+                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.65rem;overflow:hidden;">PROGRAMA</th>
+                            <th class="border-0 py-2 text-muted fw-semibold" style="font-size:.65rem;overflow:hidden;">PLAN</th>
+                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.65rem;">ESTADO</th>
+                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.65rem;">FECHA</th>
+                            <th class="border-0 py-2 text-muted fw-semibold text-center" style="font-size:.65rem;">ACCIONES</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -419,19 +428,19 @@
                 const fecha = new Date(inscripcion.fecha_registro);
                 const rowNumber = (pagination.current_page - 1) * pagination.per_page + index + 1;
 
-                // Botones de acción compactos (icon-only 28x28px)
-                let accionesHtml = `<div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap;">`;
+                // Botones de acción compactos (icon-only 26x26px)
+                let accionesHtml = `<div style="display:flex;gap:3px;justify-content:center;flex-wrap:nowrap;">`;
 
                 accionesHtml += `
                     <a href="/admin/profile/marketing/inscripcion/${inscripcion.id}/formulario-pdf"
                        class="action-btn-mkt"
-                       style="width:28px;height:28px;border-radius:6px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;text-decoration:none;transition:all .2s;"
+                       style="width:26px;height:26px;border-radius:5px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;text-decoration:none;flex-shrink:0;"
                        title="Generar Formulario PDF" target="_blank">
                         <i class="ri-file-text-line"></i>
                     </a>
                     <a href="/admin/estudiantes/detalle/${inscripcion.estudiante_id}"
                        class="action-btn-mkt"
-                       style="width:28px;height:28px;border-radius:6px;background:#f0fdfa;color:#0f766e;border:1px solid #ccfbf1;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;text-decoration:none;transition:all .2s;"
+                       style="width:26px;height:26px;border-radius:5px;background:#f0fdfa;color:#0f766e;border:1px solid #ccfbf1;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;text-decoration:none;flex-shrink:0;"
                        title="Ver detalles">
                         <i class="ri-eye-line"></i>
                     </a>`;
@@ -439,7 +448,7 @@
                 if (inscripcion.estado === 'Pre-Inscrito') {
                     accionesHtml += `
                     <button class="action-btn-mkt btn-convertir-inscrito"
-                            style="width:28px;height:28px;border-radius:6px;background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;cursor:pointer;transition:all .2s;"
+                            style="width:26px;height:26px;border-radius:5px;background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;cursor:pointer;flex-shrink:0;"
                             data-inscripcion-id="${inscripcion.id}"
                             data-oferta-id="${inscripcion.oferta_academica.id}"
                             data-estudiante-nombre="${estudiante?.nombres || 'N/A'} ${estudiante?.apellido_paterno || ''}"
@@ -452,39 +461,40 @@
                     accionesHtml += `
                     <a href="/admin/inscripciones/${inscripcion.id}/cuotas"
                        class="action-btn-mkt"
-                       style="width:28px;height:28px;border-radius:6px;background:#faf5ff;color:#9333ea;border:1px solid #e9d5ff;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;text-decoration:none;transition:all .2s;"
+                       style="width:26px;height:26px;border-radius:5px;background:#faf5ff;color:#9333ea;border:1px solid #e9d5ff;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;text-decoration:none;flex-shrink:0;"
                        title="Ver cuotas">
                         <i class="ri-money-dollar-circle-line"></i>
                     </a>`;
                 }
                 accionesHtml += `</div>`;
 
+                const nombreCompleto = `${estudiante?.nombres || ''} ${estudiante?.apellido_paterno || ''} ${estudiante?.apellido_materno || ''}`.trim();
+                const nombreCorto = `${estudiante?.nombres || 'N/A'} ${estudiante?.apellido_paterno || ''}`;
+
                 html += `
     <tr>
-        <td class="px-2 py-2 text-muted fw-semibold" style="font-size:.72rem;text-align:center;">${rowNumber}</td>
-        <td class="py-2">
-            <div class="fw-semibold" style="font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${estudiante?.nombres || ''} ${estudiante?.apellido_paterno || ''} ${estudiante?.apellido_materno || ''}">
-                ${estudiante?.nombres || 'N/A'} ${estudiante?.apellido_paterno || ''}
-            </div>
-            <div class="text-muted" style="font-size:.68rem;"><i class="ri-id-card-line me-1"></i>${estudiante?.carnet || 'N/A'}</div>
+        <td class="px-1 py-2 text-muted fw-semibold" style="font-size:.7rem;text-align:center;">${rowNumber}</td>
+        <td class="py-2" style="overflow:hidden;">
+            <div class="fw-semibold" style="font-size:.76rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${nombreCompleto}">${nombreCorto || 'N/A'}</div>
+            <div class="text-muted" style="font-size:.65rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><i class="ri-id-card-line me-1"></i>${estudiante?.carnet || 'N/A'}</div>
         </td>
-        <td class="py-2">
-            <div style="font-size:.76rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${programa?.nombre || 'N/A'}">${programa?.nombre || 'N/A'}</div>
-            ${sucursal ? `<div class="text-muted" style="font-size:.65rem;">${sucursal?.nombre || ''}</div>` : ''}
+        <td class="py-2" style="overflow:hidden;">
+            <div style="font-size:.74rem;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${programa?.nombre || 'N/A'}">${programa?.nombre || 'N/A'}</div>
+            ${sucursal ? `<div class="text-muted" style="font-size:.62rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${sucursal?.nombre || ''}</div>` : ''}
         </td>
-        <td class="py-2">
+        <td class="py-2" style="overflow:hidden;">
             ${planPago
-                ? `<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size:.65rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;" title="${planPago.nombre || ''}">${planPago.nombre || 'Sin nombre'}</span>`
-                : `<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill" style="font-size:.65rem;">No asignado</span>`
+                ? `<span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill" style="font-size:.62rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;max-width:100%;" title="${planPago.nombre || ''}">${planPago.nombre || 'Sin nombre'}</span>`
+                : `<span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill" style="font-size:.62rem;">No asignado</span>`
             }
         </td>
         <td class="text-center py-2">
-            <span class="badge ${inscripcion.estado === 'Inscrito' ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-warning-subtle text-warning border border-warning-subtle'} rounded-pill" style="font-size:.65rem;">
+            <span class="badge ${inscripcion.estado === 'Inscrito' ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-warning-subtle text-warning border border-warning-subtle'} rounded-pill" style="font-size:.62rem;">
                 ${inscripcion.estado}
             </span>
         </td>
         <td class="py-2 text-center">
-            <div style="font-size:.72rem;">${fecha.toLocaleDateString('es-ES')}</div>
+            <div style="font-size:.7rem;">${fecha.toLocaleDateString('es-ES')}</div>
         </td>
         <td class="text-center py-2">
             ${accionesHtml}
