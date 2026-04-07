@@ -65,9 +65,9 @@
             const esPromo   = plan.es_promocion == 1;
             const fIni      = plan.fecha_inicio_promocion || null;
             const fFin      = plan.fecha_fin_promocion || null;
-            const promoActiva = fIni && fFin ? isPromoActive(fIni, fFin) : false;
+            const promoActiva = esPromo && fIni && fFin ? isPromoActive(fIni, fFin) : false;
 
-            const color     = paleta[idx % paleta.length];
+            const color     = esPromo ? (promoActiva ? '#10b981' : '#ef4444') : paleta[idx % paleta.length];
             const colorLight = color + '15';
             const iconPlan  = esPromo ? 'ri-price-tag-3-line' : 'ri-bank-card-line';
 
@@ -107,8 +107,8 @@
                             </div>
                             <div class="d-flex flex-column align-items-end gap-1">
                                 ${esPromo ? `
-                                <span class="badge rounded-pill" style="background: #fef3c7; color: #d97706; font-size: 0.68rem; font-weight: 600;">
-                                    <i class="ri-price-tag-3-line me-1"></i>PROMOCIÓN
+                                <span class="badge rounded-pill" style="background: ${promoActiva ? '#dcfce7' : '#fef2f2'}; color: ${promoActiva ? '#16a34a' : '#dc2626'}; font-size: 0.68rem; font-weight: 600;">
+                                    <i class="ri-price-tag-3-line me-1"></i>${promoActiva ? 'PROMO VIGENTE' : 'PROMO EXPIRADA'}
                                 </span>` : `
                                 <span class="badge rounded-pill" style="background: ${colorLight}; color: ${color}; font-size: 0.68rem; font-weight: 600;">Plan ${idx + 1}</span>`}
                                 <span class="badge rounded-pill" style="background: #f1f5f9; color: #64748b; font-size: 0.62rem;">${plan.conceptos.length} concepto(s)</span>
