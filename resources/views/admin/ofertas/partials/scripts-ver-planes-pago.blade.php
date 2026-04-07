@@ -48,16 +48,25 @@
         return num.toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
+    function isPromoActive(fIni, fFin) {
+        if (!fIni || !fFin) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const start = new Date(fIni + 'T00:00:00');
+        const end = new Date(fFin + 'T23:59:59');
+        return today >= start && today <= end;
+    }
+
     function renderizarPlanesPago(planes) {
         const paleta = ['#0f766e', '#2563eb', '#0891b2', '#7c3aed'];
         let html = '<div class="row g-3">';
 
         planes.forEach((plan, idx) => {
             const esPromo   = plan.conceptos.some(c => c.es_promocion);
-            const promoVig  = plan.conceptos.some(c => c.promocion_vigente);
             const promoConc = plan.conceptos.find(c => c.es_promocion);
             const fIni      = promoConc?.fecha_inicio_promocion;
             const fFin      = promoConc?.fecha_fin_promocion;
+            const promoActiva = fIni && fFin ? isPromoActive(fIni, fFin) : false;
 
             const color     = paleta[idx % paleta.length];
             const colorLight = color + '15';
@@ -89,8 +98,11 @@
                                 <div>
                                     <div class="fw-semibold" style="font-size: 0.9rem; color: #1e293b;">${plan.nombre}</div>
                                     ${esPromo && fIni ? `
-                                    <div class="text-muted" style="font-size: 0.72rem;">
+                                    <div style="font-size: 0.72rem; color: ${promoActiva ? '#059669' : '#dc2626'};">
                                         <i class="ri-calendar-line me-1"></i>${fmtDate(fIni)} — ${fmtDate(fFin)}
+                                        <span class="badge rounded-pill ms-1" style="background: ${promoActiva ? '#dcfce7' : '#fef2f2'}; color: ${promoActiva ? '#16a34a' : '#dc2626'}; font-size: 0.6rem; font-weight: 600;">
+                                            ${promoActiva ? 'Vigente' : 'Expirada'}
+                                        </span>
                                     </div>` : ''}
                                 </div>
                             </div>
@@ -98,9 +110,6 @@
                                 ${esPromo ? `
                                 <span class="badge rounded-pill" style="background: #fef3c7; color: #d97706; font-size: 0.68rem; font-weight: 600;">
                                     <i class="ri-price-tag-3-line me-1"></i>PROMOCIÓN
-                                </span>
-                                <span class="badge rounded-pill" style="background: ${promoVig ? '#dcfce7' : '#fef2f2'}; color: ${promoVig ? '#16a34a' : '#dc2626'}; font-size: 0.65rem; font-weight: 600;">
-                                    ${promoVig ? '✓ Vigente' : '✗ No vigente'}
                                 </span>` : `
                                 <span class="badge rounded-pill" style="background: ${colorLight}; color: ${color}; font-size: 0.68rem; font-weight: 600;">Plan ${idx + 1}</span>`}
                                 <span class="badge rounded-pill" style="background: #f1f5f9; color: #64748b; font-size: 0.62rem;">${plan.conceptos.length} concepto(s)</span>
@@ -118,6 +127,9 @@
                 const dBs     = c.descuento_bs ? parseFloat(String(c.descuento_bs).replace(',', '')) : null;
                 const rowBg   = c.es_promocion ? '#fffbeb' : (cIdx % 2 === 0 ? '#fafbfc' : 'white');
                 const iColor  = c.es_promocion ? '#d97706' : color;
+                const cPromoActiva = c.es_promocion && c.fecha_inicio_promocion && c.fecha_fin_promocion
+                    ? isPromoActive(c.fecha_inicio_promocion, c.fecha_fin_promocion)
+                    : false;
 
                 html += `
                         <div style="padding: 10px 14px; background: ${rowBg}; ${cIdx < plan.conceptos.length - 1 ? 'border-bottom: 1px solid #f1f5f9;' : ''}">
@@ -131,7 +143,7 @@
                                         ${c.es_promocion ? `
                                         <div class="d-flex align-items-center gap-1 mt-1 flex-wrap">
                                             <span class="badge rounded-pill" style="background: #fef3c7; color: #d97706; font-size: 0.6rem; font-weight: 600;">Promo</span>
-                                            ${c.fecha_inicio_promocion ? `<span class="text-muted" style="font-size: 0.65rem;"><i class="ri-calendar-line me-1"></i>${fmtDate(c.fecha_inicio_promocion)} → ${fmtDate(c.fecha_fin_promocion)}</span>` : ''}
+                                            ${c.fecha_inicio_promocion ? `<span style="font-size: 0.65rem; color: ${cPromoActiva ? '#059669' : '#dc2626'};"><i class="ri-calendar-line me-1"></i>${fmtDate(c.fecha_inicio_promocion)} → ${fmtDate(c.fecha_fin_promocion)}</span>` : ''}
                                             ${dPct ? `<span class="badge rounded-pill" style="background: #fef2f2; color: #dc2626; font-size: 0.6rem; font-weight: 600;">-${dPct}%</span>` : ''}
                                         </div>` : ''}
                                     </div>

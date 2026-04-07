@@ -84,7 +84,7 @@
         @if ($oferta->totalPreInscritos() > 0)
             <div class="badge-preinscritos">
                 <span class="badge-pre-count">
-                    <i class="ri-user-add-line me-1"></i>{{ $oferta->totalPreInscritos() }} pre
+                    <i class="ri-user-add-line"></i> {{ $oferta->totalPreInscritos() }}
                 </span>
             </div>
         @endif

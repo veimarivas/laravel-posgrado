@@ -3,15 +3,15 @@
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow" style="border-radius: var(--radius-lg); overflow: hidden;">
 
-            <div class="modal-header border-0 py-3 px-4" style="background: linear-gradient(135deg, var(--ofertas-primary) 0%, var(--ofertas-primary-dark) 100%); color: white;">
+            <div class="modal-header border-0 py-3 px-4" style="background: linear-gradient(135deg, #0f766e 0%, #0d5f59 100%); color: #fff;">
                 <div class="d-flex align-items-center gap-3">
                     <div style="width: 42px; height: 42px; background: rgba(255,255,255,0.15); border-radius: 10px; display: flex; align-items: center; justify-content: center;">
-                        <i class="ri-bank-card-line" style="font-size: 1.3rem; color: white;"></i>
+                        <i class="ri-bank-card-line" style="font-size: 1.3rem; color: #fff;"></i>
                     </div>
                     <div>
-                        <h5 class="modal-title mb-0 fw-semibold" style="font-family: 'Outfit', sans-serif; font-size: 1.1rem;">Planes de Pago</h5>
-                        <div style="opacity: 0.85; font-size: 0.78rem;">
-                            Oferta: <span id="planes_oferta_codigo" class="fw-semibold" style="font-family: monospace; background: rgba(255,255,255,0.2); padding: 1px 8px; border-radius: 4px;"></span>
+                        <h5 class="modal-title mb-0 fw-semibold" style="font-family: 'Outfit', sans-serif; font-size: 1.1rem; color: #fff;">Planes de Pago</h5>
+                        <div style="opacity: 0.85; font-size: 0.78rem; color: #fff;">
+                            Oferta: <span id="planes_oferta_codigo" class="fw-semibold" style="font-family: monospace; background: rgba(255,255,255,0.2); padding: 1px 8px; border-radius: 4px; color: #fff;"></span>
                         </div>
                     </div>
                 </div>
