@@ -62,10 +62,9 @@
         let html = '<div class="row g-3">';
 
         planes.forEach((plan, idx) => {
-            const esPromo   = plan.conceptos.some(c => c.es_promocion);
-            const promoConc = plan.conceptos.find(c => c.es_promocion);
-            const fIni      = promoConc?.fecha_inicio_promocion;
-            const fFin      = promoConc?.fecha_fin_promocion;
+            const esPromo   = plan.es_promocion == 1;
+            const fIni      = plan.fecha_inicio_promocion || null;
+            const fFin      = plan.fecha_fin_promocion || null;
             const promoActiva = fIni && fFin ? isPromoActive(fIni, fFin) : false;
 
             const color     = paleta[idx % paleta.length];
@@ -125,11 +124,8 @@
                 const treg    = c.precio_regular ? parseFloat(String(c.precio_regular).replace(',', '')) : null;
                 const dPct    = c.descuento_porcentaje;
                 const dBs     = c.descuento_bs ? parseFloat(String(c.descuento_bs).replace(',', '')) : null;
-                const rowBg   = c.es_promocion ? '#fffbeb' : (cIdx % 2 === 0 ? '#fafbfc' : 'white');
-                const iColor  = c.es_promocion ? '#d97706' : color;
-                const cPromoActiva = c.es_promocion && c.fecha_inicio_promocion && c.fecha_fin_promocion
-                    ? isPromoActive(c.fecha_inicio_promocion, c.fecha_fin_promocion)
-                    : false;
+                const rowBg   = cIdx % 2 === 0 ? '#fafbfc' : 'white';
+                const iColor  = color;
 
                 html += `
                         <div style="padding: 10px 14px; background: ${rowBg}; ${cIdx < plan.conceptos.length - 1 ? 'border-bottom: 1px solid #f1f5f9;' : ''}">
@@ -140,21 +136,13 @@
                                     </div>
                                     <div style="min-width: 0;">
                                         <div class="fw-medium" style="font-size: 0.82rem; color: #1e293b;">${c.concepto_nombre}</div>
-                                        ${c.es_promocion ? `
-                                        <div class="d-flex align-items-center gap-1 mt-1 flex-wrap">
-                                            <span class="badge rounded-pill" style="background: #fef3c7; color: #d97706; font-size: 0.6rem; font-weight: 600;">Promo</span>
-                                            ${c.fecha_inicio_promocion ? `<span style="font-size: 0.65rem; color: ${cPromoActiva ? '#059669' : '#dc2626'};"><i class="ri-calendar-line me-1"></i>${fmtDate(c.fecha_inicio_promocion)} → ${fmtDate(c.fecha_fin_promocion)}</span>` : ''}
-                                            ${dPct ? `<span class="badge rounded-pill" style="background: #fef2f2; color: #dc2626; font-size: 0.6rem; font-weight: 600;">-${dPct}%</span>` : ''}
-                                        </div>` : ''}
                                     </div>
                                 </div>
                                 <div class="text-end flex-shrink-0 ms-2">
                                     <span class="badge rounded-pill" style="background: ${colorLight}; color: ${color}; font-size: 0.68rem; font-weight: 600;">
                                         ${c.n_cuotas}x ${c.monto_por_cuota} Bs
                                     </span>
-                                    <div class="mt-1 fw-bold" style="font-size: 0.85rem; color: ${iColor};">${formatMoney(c.total_concepto)} Bs</div>
-                                    ${treg && c.es_promocion ? `<div class="text-muted text-decoration-line-through" style="font-size: 0.68rem;">${formatMoney(c.precio_regular)} Bs</div>` : ''}
-                                    ${dBs && dBs > 0 && c.es_promocion ? `<div class="text-success" style="font-size: 0.65rem;"><i class="ri-arrow-down-line me-1"></i>Ahorro ${dBs.toFixed(2)} Bs</div>` : ''}
+                                    <div class="mt-1 fw-bold" style="font-size: 0.85rem; color: ${color};">${formatMoney(c.total_concepto)} Bs</div>
                                 </div>
                             </div>
                         </div>`;
