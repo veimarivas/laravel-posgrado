@@ -150,6 +150,12 @@
             border-color: var(--ofertas-primary);
         }
 
+        .btn-nueva-persona:hover:not(:disabled) {
+            background: var(--ofertas-primary-dark) !important;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
         /* Table Card */
         .table-card {
             background: white;

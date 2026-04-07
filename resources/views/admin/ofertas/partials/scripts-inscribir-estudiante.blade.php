@@ -9,7 +9,7 @@
         $('#mensaje-verificacion-inscripcion').html('');
         $('#paso-carnet-inscripcion').show();
         $('#formInscripcion, #formConfirmarEstudiante, #formNuevaPersonaInscripcion').hide();
-        $('#btn-nueva-persona-inscripcion').prop('disabled', true);
+        $('#btn-nueva-persona-inscripcion').prop('disabled', true).css({ opacity: 0.5, cursor: 'not-allowed' });
 
         // Resetear controles
         $('#estado_inscripcion').val('');
@@ -33,22 +33,20 @@
         $('#paso-carnet-inscripcion').show();
 
         if (!carnet) {
-            $('#btn-nueva-persona-inscripcion').prop('disabled', true);
+            $('#btn-nueva-persona-inscripcion').prop('disabled', true).css({ opacity: 0.5, cursor: 'not-allowed' });
             return;
         }
 
-        // Aplicar debounce - esperar 500ms después de la última tecla
+        // Aplicar debounce
         clearTimeout(debounceTimerInscripcion);
 
         debounceTimerInscripcion = setTimeout(() => {
-            // Verificar si el valor no ha cambiado durante el debounce
             if ($('#carnet_inscripcion').val().trim() !== lastCarnetValue) {
                 return;
             }
 
-            // Mostrar indicador de carga
             $('#mensaje-verificacion-inscripcion').html(
-                '<div class="text-info"><i class="ri-loader-4-line spin"></i> Verificando carnet...</div>'
+                '<div class="text-center text-muted" style="font-size:0.82rem;"><i class="ri-loader-4-line spin me-1"></i>Verificando carnet...</div>'
             );
 
             $.post("{{ route('admin.estudiantes.verificar-carnet') }}", {
@@ -58,7 +56,6 @@
                 if (res.exists) {
                     if (res.is_student) {
                         const ofertaId = $('#oferta_id_inscripcion').val();
-                        // Verificar si ya está inscrito
                         $.post("{{ route('admin.inscripciones.verificar-inscripcion-existente') }}", {
                             _token: "{{ csrf_token() }}",
                             estudiante_id: res.estudiante_id,
@@ -66,60 +63,53 @@
                         }, function(verif) {
                             if (verif.exists) {
                                 $('#mensaje-verificacion-inscripcion').html(
-                                    '<div class="alert alert-warning">⚠️ Esta persona ya está inscrita o pre-inscrita en esta oferta académica.</div>'
+                                    '<div class="text-center"><div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill" style="background:#fef3c7;color:#d97706;font-size:0.82rem;font-weight:500;"><i class="ri-alert-line"></i>Esta persona ya está inscrita en esta oferta</div></div>'
                                 );
-                                $('#btn-nueva-persona-inscripcion').prop('disabled',
-                                    true);
+                                $('#btn-nueva-persona-inscripcion').prop('disabled', true).css({ opacity: 0.5, cursor: 'not-allowed' });
                             } else {
                                 $('#mensaje-verificacion-inscripcion').html(
-                                    '<div class="alert alert-success">✅ Persona encontrada y registrada como estudiante.</div>'
+                                    '<div class="text-center"><div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill" style="background:#dcfce7;color:#16a34a;font-size:0.82rem;font-weight:500;"><i class="ri-checkbox-circle-line"></i>Estudiante encontrado — continuando...</div></div>'
                                 );
                                 $('#estudiante_id_inscripcion').val(res.estudiante_id);
-                                $('#formInscripcion').show();
-                                $('#paso-carnet-inscripcion, #formConfirmarEstudiante, #formNuevaPersonaInscripcion')
-                                    .hide();
-                                cargarPlanesPago(res.estudiante_id, ofertaId);
+                                setTimeout(() => {
+                                    $('#formInscripcion').show();
+                                    $('#paso-carnet-inscripcion, #formConfirmarEstudiante, #formNuevaPersonaInscripcion').hide();
+                                    cargarPlanesPago(res.estudiante_id, ofertaId);
+                                }, 600);
                             }
                         }).fail(function() {
                             $('#mensaje-verificacion-inscripcion').html(
-                                '<div class="alert alert-danger">Error al verificar inscripción existente.</div>'
+                                '<div class="text-center"><div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill" style="background:#fef2f2;color:#dc2626;font-size:0.82rem;font-weight:500;"><i class="ri-error-warning-line"></i>Error al verificar inscripción</div></div>'
                             );
                         });
                     } else {
-                        // Persona existe pero no es estudiante
                         $('#mensaje-verificacion-inscripcion').html(
-                            '<div class="alert alert-info">👤 Persona registrada pero no es estudiante.</div>'
+                            '<div class="text-center"><div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill" style="background:#dbeafe;color:#2563eb;font-size:0.82rem;font-weight:500;"><i class="ri-user-line"></i>Persona encontrada — confirmar como estudiante</div></div>'
                         );
                         $('#persona_id_confirmar').val(res.persona.id);
                         $('#nombre_persona_confirmar').text(res.persona.nombre_completo);
                         $('#formConfirmarEstudiante').show();
-                        $('#paso-carnet-inscripcion, #formNuevaPersonaInscripcion, #formInscripcion')
-                            .hide();
-                        $('#btn-nueva-persona-inscripcion').prop('disabled', true);
+                        $('#paso-carnet-inscripcion, #formNuevaPersonaInscripcion, #formInscripcion').hide();
+                        $('#btn-nueva-persona-inscripcion').prop('disabled', true).css({ opacity: 0.5, cursor: 'not-allowed' });
                     }
                 } else {
-                    // Persona no existe
                     $('#mensaje-verificacion-inscripcion').html(
-                        '<div class="alert alert-danger">❌ Persona no registrada en el sistema.</div>'
+                        '<div class="text-center"><div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill" style="background:#fef2f2;color:#dc2626;font-size:0.82rem;font-weight:500;"><i class="ri-user-unfollow-line"></i>Persona no encontrada en el sistema</div></div>'
                     );
-                    // Mostrar botón para nueva persona
-                    $('#btn-nueva-persona-inscripcion').prop('disabled', false);
-                    // NO mostramos automáticamente el formulario - solo habilitamos el botón
+                    $('#btn-nueva-persona-inscripcion').prop('disabled', false).css({ opacity: 1, cursor: 'pointer' });
                 }
             }).fail(function() {
                 $('#mensaje-verificacion-inscripcion').html(
-                    '<div class="alert alert-danger">Error al verificar el carnet.</div>'
+                    '<div class="text-center"><div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill" style="background:#fef2f2;color:#dc2626;font-size:0.82rem;font-weight:500;"><i class="ri-error-warning-line"></i>Error al verificar el carnet</div></div>'
                 );
             });
-        }, 500); // 500ms de debounce
+        }, 500);
     });
 
-    // Función para cargar los planes de pago disponibles para la oferta
+    // Función para cargar los planes de pago
     function cargarPlanesPago(estudianteId, ofertaId) {
-        // Mostrar indicador de carga
         $('#planes_pago_select').html('<option value="">Cargando planes...</option>');
 
-        // Usar el nuevo endpoint para obtener planes filtrados
         $.ajax({
             url: `/admin/ofertas/${ofertaId}/planes-inscripcion`,
             method: 'GET',
@@ -127,25 +117,15 @@
                 if (res.success && res.planes.length > 0) {
                     let opts = '<option value="">Seleccione un plan</option>';
                     res.planes.forEach(plan => {
-                        // Agregar indicador si es promoción
-                        let promocionInfo = '';
-                        if (plan.es_promocion == 1) {
-                            const inicio = plan.fecha_inicio_promocion ?
-                                new Date(plan.fecha_inicio_promocion).toLocaleDateString() : '';
-                            const fin = plan.fecha_fin_promocion ?
-                                new Date(plan.fecha_fin_promocion).toLocaleDateString() : '';
-                            promocionInfo = ` 🏷️ (Promoción hasta ${fin})`;
+                        const esPromo = parseInt(plan.es_promocion) === 1;
+                        let label = plan.nombre;
+                        if (esPromo) {
+                            const fin = plan.fecha_fin_promocion ? new Date(plan.fecha_fin_promocion).toLocaleDateString() : '';
+                            label += ` 🏷️ (Promoción hasta ${fin})`;
                         }
-
-                        opts +=
-                            `<option value="${plan.id}">${plan.nombre}${promocionInfo}</option>`;
+                        opts += `<option value="${plan.id}">${label}</option>`;
                     });
                     $('#planes_pago_select').html(opts);
-
-                    // Mostrar información adicional si solo hay un plan
-                    if (res.planes.length === 1) {
-                        mostrarToast('info', 'Solo hay un plan disponible para esta oferta');
-                    }
                 } else {
                     $('#planes_pago_select').html('<option value="">No hay planes disponibles</option>');
                     mostrarToast('warning', 'No hay planes de pago disponibles para esta oferta');
@@ -159,70 +139,86 @@
         });
     }
 
-    // Evento para el botón "Registrar nueva persona"
+    // Botón "Registrar nueva persona"
     $('#btn-nueva-persona-inscripcion').on('click', function() {
-        // Solo mostrar formulario cuando se haga clic en el botón
         $('#paso-carnet-inscripcion').hide();
         $('#formNuevaPersonaInscripcion').show();
 
-        // Prellenar el carnet en el formulario de nueva persona
         const carnet = $('#carnet_inscripcion').val().trim();
         if (carnet) {
             $('#carnet_nuevo_inscripcion').val(carnet);
-            // Disparar validación del carnet
             $('#carnet_nuevo_inscripcion').trigger('input');
         }
     });
 
-    // Evento para volver desde el formulario de nueva persona
+    // Volver desde nueva persona
     $('#btn-volver-carnet2-incripcion').on('click', function() {
         $('#formNuevaPersonaInscripcion').hide();
         $('#paso-carnet-inscripcion').show();
         $('#carnet_inscripcion').val('');
         $('#mensaje-verificacion-inscripcion').html('');
-        $('#btn-nueva-persona-inscripcion').prop('disabled', true);
+        $('#btn-nueva-persona-inscripcion').prop('disabled', true).css({ opacity: 0.5, cursor: 'not-allowed' });
     });
 
-    // Evento para volver desde el formulario de confirmar estudiante
+    // Volver desde confirmar estudiante
     $('#btn-volver-carnet-confirmar').on('click', function() {
         $('#formConfirmarEstudiante').hide();
         $('#paso-carnet-inscripcion').show();
         $('#carnet_inscripcion').val('');
         $('#mensaje-verificacion-inscripcion').html('');
-        $('#btn-nueva-persona-inscripcion').prop('disabled', true);
+        $('#btn-nueva-persona-inscripcion').prop('disabled', true).css({ opacity: 0.5, cursor: 'not-allowed' });
     });
 
-    // Evento para volver desde el formulario de inscripción
+    // Confirmar registro como estudiante
+    $('#btn-confirmar-estudiante').on('click', function() {
+        const personaId = $('#persona_id_confirmar').val();
+        const ofertaId = $('#oferta_id_inscripcion').val();
+
+        $.ajax({
+            url: "{{ route('admin.estudiantes.registrar') }}",
+            method: 'POST',
+            data: {
+                _token: "{{ csrf_token() }}",
+                persona_id: personaId
+            },
+            success: function(res) {
+                if (res.success) {
+                    $('#estudiante_id_inscripcion').val(personaId);
+                    $('#formInscripcion').show();
+                    $('#formConfirmarEstudiante').hide();
+                    cargarPlanesPago(personaId, ofertaId);
+                } else {
+                    mostrarToast('error', res.msg || 'Error al registrar como estudiante.');
+                }
+            },
+            error: function(xhr) {
+                mostrarToast('error', xhr.responseJSON?.msg || 'Error al registrar como estudiante.');
+            }
+        });
+    });
+
+    // Volver desde inscripción
     $('#btn-volver-estudiante-incripcion').on('click', function() {
         $('#formInscripcion').hide();
-        // Si venimos de una persona existente pero no estudiante, volver a ese paso
         if ($('#persona_id_confirmar').val()) {
             $('#formConfirmarEstudiante').show();
         } else {
-            // Si venimos de una persona nueva, volver a ese paso
             $('#formNuevaPersonaInscripcion').show();
         }
     });
 
-    // Evento para cambiar el estado de inscripción
+    // Cambio de estado de inscripción
     $('#estado_inscripcion').on('change', function() {
         const estado = $(this).val();
         const planSeleccionado = $('#planes_pago_select').val();
 
         if (estado === 'Inscrito') {
-            // Para Inscrito: mostrar vista previa de cuotas
             $('#adelanto-section').hide();
             $('#cuotas-preview-section').show();
             $('#cuotas-preview-container').empty();
             $('#confirmar-cuotas-btn').hide();
-
-            if (planSeleccionado) {
-                $('#generar-cuotas-btn').show();
-            } else {
-                $('#generar-cuotas-btn').hide();
-            }
+            $('#generar-cuotas-btn').show().prop('disabled', !planSeleccionado);
         } else if (estado === 'Pre-Inscrito') {
-            // Para Pre-Inscrito: mostrar campo de adelanto (opcional)
             $('#adelanto-section').show();
             $('#cuotas-preview-section').hide();
             $('#cuotas-preview-container').empty();
@@ -234,7 +230,7 @@
         }
     });
 
-    // Evento para mostrar el botón "Generar Cuotas" al seleccionar un plan de pago
+    // Cambio de plan de pago
     $('#planes_pago_select').on('change', function() {
         const estado = $('#estado_inscripcion').val();
         const planId = $(this).val();
@@ -243,74 +239,25 @@
             $('#cuotas-preview-section').show();
             $('#cuotas-preview-container').empty();
             $('#confirmar-cuotas-btn').hide();
-            $('#generar-cuotas-btn').show();
+            $('#generar-cuotas-btn').show().prop('disabled', false);
         } else if (estado === 'Pre-Inscrito') {
             $('#generar-cuotas-btn').hide();
             $('#confirmar-cuotas-btn').hide();
         }
     });
 
-    // Función para confirmar cuotas (solo para "Inscrito")
-    function confirmarCuotasInscrito() {
-        const ofertaId = $('#oferta_id_inscripcion').val();
-        const estudianteId = $('#estudiante_id_inscripcion').val();
-        const planId = $('#planes_pago_select').val();
-        const estado = 'Inscrito'; // Siempre Inscrito aquí
-
-        // Recoger datos de cuotas
-        const cuotasData = [];
-        $('#cuotas-preview-container tbody tr').each(function() {
-            const conceptoId = $(this).find('.fecha-pago-input').data('concepto-id');
-            const nCuota = $(this).find('.fecha-pago-input').data('n-cuota');
-            const fechaPago = $(this).find('.fecha-pago-input').val();
-            const montoPorCuota = parseFloat($(this).find('input[type="number"]').val());
-
-            cuotasData.push({
-                concepto_id: conceptoId,
-                n_cuota: nCuota,
-                fecha_pago: fechaPago,
-                monto_bs: montoPorCuota
-            });
-        });
-
-        $.ajax({
-            url: "{{ route('admin.inscripciones.confirmar-cuotas') }}",
-            method: 'POST',
-            data: {
-                _token: "{{ csrf_token() }}",
-                oferta_id: ofertaId,
-                estudiante_id: estudianteId,
-                planes_pago_id: planId,
-                estado: estado,
-                cuotas_data: cuotasData
-            },
-            success: function(res) {
-                alert(res.msg);
-                if (res.success) {
-                    $('#modalInscribirEstudiante').modal('hide');
-                    location.reload();
-                }
-            },
-            error: function(xhr) {
-                alert(xhr.responseJSON?.msg || 'Error al confirmar las cuotas.');
-            }
-        });
-    }
-
-    // Evento para generar la vista previa de cuotas
+    // Generar vista previa de cuotas
     $('#generar-cuotas-btn').on('click', function() {
-        const estado = $('#estado_inscripcion').val();
         const planId = $('#planes_pago_select').val();
         const ofertaId = $('#oferta_id_inscripcion').val();
 
-        if (estado !== 'Inscrito' || !planId) {
-            alert('Por favor, seleccione un plan de pago válido.');
+        if (!planId) {
+            mostrarToast('warning', 'Seleccione un plan de pago primero.');
             return;
         }
 
-        // Mostrar spinner
         $('#cuotas-preview-container').html(
-            '<div class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div></div>'
+            '<div class="text-center py-3"><div class="spinner-border" style="color:var(--ofertas-primary);width:1.5rem;height:1.5rem;" role="status"></div><p class="text-muted mt-2 mb-0 small">Generando cuotas...</p></div>'
         );
 
         $.ajax({
@@ -328,74 +275,64 @@
                     $('#generar-cuotas-btn').hide();
                 } else {
                     $('#cuotas-preview-container').html(
-                        `<div class="alert alert-danger">${res.msg}</div>`
+                        `<div class="text-center py-3"><div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill" style="background:#fef2f2;color:#dc2626;font-size:0.82rem;"><i class="ri-error-warning-line"></i>${res.msg}</div></div>`
                     );
                 }
             },
-            error: function(xhr) {
+            error: function() {
                 $('#cuotas-preview-container').html(
-                    `<div class="alert alert-danger">Error al generar la vista previa de cuotas.</div>`
+                    '<div class="text-center py-3"><div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill" style="background:#fef2f2;color:#dc2626;font-size:0.82rem;"><i class="ri-error-warning-line"></i>Error al generar la vista previa</div></div>'
                 );
             }
         });
     });
 
-    // Función para renderizar la vista previa de las cuotas (versión final)
+    // Renderizar cuotas preview
     function renderizarCuotasPreview(cuotas) {
         let html = `
         <div class="table-responsive">
-            <table class="table table-bordered">
+            <table class="table table-sm" style="font-size:0.82rem;">
                 <thead>
-                    <tr>
-                        <th>Concepto</th>
-                        <th>N° Cuota</th>
-                        <th>Monto por Cuota</th>
-                        <th>Fecha de Pago</th>
+                    <tr style="background:var(--ofertas-surface);">
+                        <th style="padding:8px 12px;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--ofertas-text-muted);border-bottom:1px solid var(--ofertas-border);">CONCEPTO</th>
+                        <th style="padding:8px 12px;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--ofertas-text-muted);border-bottom:1px solid var(--ofertas-border);text-align:center;">N°</th>
+                        <th style="padding:8px 12px;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--ofertas-text-muted);border-bottom:1px solid var(--ofertas-border);text-align:end;">MONTO</th>
+                        <th style="padding:8px 12px;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--ofertas-text-muted);border-bottom:1px solid var(--ofertas-border);text-align:center;">FECHA PAGO</th>
                     </tr>
                 </thead>
-                <tbody>
-        `;
+                <tbody>`;
 
         cuotas.forEach(cuota => {
             html += `
-            <tr>
-                <td>${cuota.concepto_nombre}</td>
-                <td>${cuota.n_cuota}</td>
-                <td>
-                    <input type="number" class="form-control" value="${cuota.pago_total_bs}" readonly>
-                </td>
-                <td>
-                    <input type="date" class="form-control fecha-pago-input" 
-                           value="${cuota.fecha_pago}" 
-                           data-concepto-id="${cuota.concepto_id}" 
-                           data-n-cuota="${cuota.n_cuota}">
-                </td>
-            </tr>
-        `;
+                <tr>
+                    <td style="padding:8px 12px;border-bottom:1px solid var(--ofertas-border);font-weight:500;">${cuota.concepto_nombre}</td>
+                    <td style="padding:8px 12px;border-bottom:1px solid var(--ofertas-border);text-align:center;">
+                        <span class="badge rounded-pill" style="background:var(--ofertas-primary-light);color:var(--ofertas-primary);font-size:0.72rem;font-weight:600;">${cuota.n_cuota}</span>
+                    </td>
+                    <td style="padding:8px 12px;border-bottom:1px solid var(--ofertas-border);text-align:end;">
+                        <input type="number" class="form-control form-control-sm text-end fw-bold" value="${cuota.pago_total_bs}" readonly
+                            style="border-radius:var(--radius-sm);border:1px solid var(--ofertas-border);font-size:0.82rem;background:var(--ofertas-surface);">
+                    </td>
+                    <td style="padding:8px 12px;border-bottom:1px solid var(--ofertas-border);text-align:center;">
+                        <input type="date" class="form-control form-control-sm fecha-pago-input"
+                            value="${cuota.fecha_pago}"
+                            data-concepto-id="${cuota.concepto_id}"
+                            data-n-cuota="${cuota.n_cuota}"
+                            style="border-radius:var(--radius-sm);border:1px solid var(--ofertas-border);font-size:0.82rem;">
+                    </td>
+                </tr>`;
         });
 
-        html += `
-                </tbody>
-            </table>
-        </div>
-        `;
-
+        html += `</tbody></table></div>`;
         $('#cuotas-preview-container').html(html);
     }
 
-    // Evento para confirmar la inscripción con cuotas
+    // Confirmar cuotas
     $('#confirmar-cuotas-btn').on('click', function() {
-        const estado = $('#estado_inscripcion').val();
-        const planId = $('#planes_pago_select').val();
         const ofertaId = $('#oferta_id_inscripcion').val();
         const estudianteId = $('#estudiante_id_inscripcion').val();
+        const planId = $('#planes_pago_select').val();
 
-        if (estado !== 'Inscrito') {
-            alert('Esta función solo está disponible para inscripciones.');
-            return;
-        }
-
-        // Recoger las fechas de pago y los montos
         const cuotasData = [];
         $('#cuotas-preview-container tbody tr').each(function() {
             const conceptoId = $(this).find('.fecha-pago-input').data('concepto-id');
@@ -411,7 +348,6 @@
             });
         });
 
-        // Enviar datos al backend
         $.ajax({
             url: "{{ route('admin.inscripciones.confirmar-cuotas') }}",
             method: 'POST',
@@ -420,7 +356,7 @@
                 oferta_id: ofertaId,
                 estudiante_id: estudianteId,
                 planes_pago_id: planId,
-                estado: estado,
+                estado: 'Inscrito',
                 cuotas_data: cuotasData
             },
             success: function(res) {
@@ -431,109 +367,32 @@
                 }
             },
             error: function(xhr) {
-                const errorMsg = xhr.responseJSON?.msg || 'Error al confirmar la inscripción.';
-                mostrarToast('error', errorMsg);
+                mostrarToast('error', xhr.responseJSON?.msg || 'Error al confirmar la inscripción.');
             }
         });
     });
 
-    // Submit del formulario de confirmar estudiante
-    $('#formConfirmarEstudiante').submit(function(e) {
-        e.preventDefault();
-        $.ajax({
-            url: "{{ route('admin.estudiantes.registrar') }}",
-            method: 'POST',
-            data: $(this).serialize(),
-            success: function(res) {
-                if (res.success) {
-                    // Ahora que es estudiante, mostrar el formulario de inscripción
-                    $('#estudiante_id_inscripcion').val($('#persona_id_confirmar').val());
-                    $('#formInscripcion').show();
-                    $('#formConfirmarEstudiante').hide();
-                    cargarPlanesPago($('#persona_id_confirmar').val(), $('#oferta_id_inscripcion')
-                        .val());
-                } else {
-                    alert(res.msg || 'Error al registrar como estudiante.');
-                }
-            },
-            error: function(xhr) {
-                alert(xhr.responseJSON?.msg || 'Error al registrar como estudiante.');
-            }
-        });
-    });
-
-    // Submit del formulario de nueva persona
-    $('#formNuevaPersonaInscripcion').submit(function(e) {
-        e.preventDefault();
-        // Validaciones adicionales (opcional, puedes reutilizar las del original)
-        if (!validarApellidosNuevoInscripcion()) return;
-        if ($('#fecha_nac_nuevo_inscripcion').val() && !calcularEdadNuevoInscripcion()) return;
-
-        $.ajax({
-            url: "{{ route('admin.estudiantes.registrar-persona-estudiante') }}",
-            method: 'POST',
-            data: $(this).serialize(),
-            success: function(res) {
-                if (res.success) {
-                    // Obtener el ID del estudiante recién creado
-                    // Asumiendo que el controlador devuelve el ID del estudiante en res.student_id
-                    // Si no, necesitarás modificar el controlador para devolverlo.
-                    $('#estudiante_id_inscripcion').val(res
-                        .student_id); // <-- Requiere modificación en el controlador
-                    $('#formInscripcion').show();
-                    $('#formNuevaPersonaInscripcion').hide();
-                    cargarPlanesPago(res.student_id, $('#oferta_id_inscripcion').val());
-                } else {
-                    alert(res.msg || 'Error al registrar la persona y estudiante.');
-                }
-            },
-            error: function(xhr) {
-                const errors = xhr.responseJSON?.errors || {};
-                if (errors.carnet) $('#feedback_carnet_nuevo_inscripcion').addClass('text-danger')
-                    .text(errors.carnet[0]);
-                if (errors.correo) $('#feedback_correo_nuevo_inscripcion').addClass('text-danger')
-                    .text(errors.correo[0]);
-                if (errors.apellidos) $('#feedback_apellidos_nuevo_inscripcion').text(errors
-                    .apellidos[0]);
-                checkFormNuevaPersonaInscripcion();
-            }
-        });
-    });
-
-    // Submit del formulario de inscripción MEJORADO
+    // Submit form inscripción (Pre-Inscrito)
     $('#formInscripcion').submit(function(e) {
         e.preventDefault();
 
-        // DEBUG: Mostrar la URL que se va a usar
-        const url = "{{ route('admin.inscripciones.registrar') }}";
-        console.log('URL de registro:', url);
         const estado = $('#estado_inscripcion').val();
         const planId = $('#planes_pago_select').val();
-        const adelanto = $('#adelanto_bs').val();
 
-        // Validaciones
         if (!planId) {
-            alert('Por favor, seleccione un plan de pago.');
+            mostrarToast('warning', 'Seleccione un plan de pago.');
             return;
         }
 
         if (estado === 'Inscrito') {
-            // Para Inscrito: usar confirmación de cuotas
-            alert('Para "Inscrito", por favor genere y confirme las cuotas primero.');
+            mostrarToast('warning', 'Para "Inscrito", genere y confirme las cuotas primero.');
             return;
         }
 
-        // Para Pre-Inscrito: enviar directamente
         let formData = $(this).serialize();
-
-        // Asegurar que el campo adelantobs se envíe siempre (incluso si está oculto o vacío)
         if (estado === 'Pre-Inscrito' && !formData.includes('adelanto_bs=')) {
             formData += '&adelanto_bs=' + ($('#adelanto_bs').val() || 0);
         }
-
-        console.log('Datos enviados:', formData);
-        console.log('Estado:', estado);
-        console.log('Adelanto:', $('#adelanto_bs').val());
 
         $.ajax({
             url: "{{ route('admin.inscripciones.registrar') }}",
@@ -547,24 +406,47 @@
                 }
             },
             error: function(xhr) {
-                console.error('Error completo:', xhr);
-                console.error('Status:', xhr.status);
-                console.error('Response:', xhr.responseText);
-
-                const errorMsg = xhr.responseJSON?.msg || 'Error al registrar la inscripción.';
-                mostrarToast('error', errorMsg);
+                mostrarToast('error', xhr.responseJSON?.msg || 'Error al registrar la inscripción.');
             }
         });
     });
 
+    // Submit form nueva persona
+    $('#formNuevaPersonaInscripcion').submit(function(e) {
+        e.preventDefault();
+        if (!validarApellidosNuevoInscripcion()) return;
+        if ($('#fecha_nac_nuevo_inscripcion').val() && !calcularEdadNuevoInscripcion()) return;
 
+        $.ajax({
+            url: "{{ route('admin.estudiantes.registrar-persona-estudiante') }}",
+            method: 'POST',
+            data: $(this).serialize(),
+            success: function(res) {
+                if (res.success) {
+                    $('#estudiante_id_inscripcion').val(res.student_id);
+                    $('#formInscripcion').show();
+                    $('#formNuevaPersonaInscripcion').hide();
+                    cargarPlanesPago(res.student_id, $('#oferta_id_inscripcion').val());
+                } else {
+                    mostrarToast('error', res.msg || 'Error al registrar la persona.');
+                }
+            },
+            error: function(xhr) {
+                const errors = xhr.responseJSON?.errors || {};
+                if (errors.carnet) $('#feedback_carnet_nuevo_inscripcion').addClass('text-danger').text(errors.carnet[0]);
+                if (errors.correo) $('#feedback_correo_nuevo_inscripcion').addClass('text-danger').text(errors.correo[0]);
+                if (errors.apellidos) $('#feedback_apellidos_nuevo_inscripcion').text(errors.apellidos[0]);
+                checkFormNuevaPersonaInscripcion();
+            }
+        });
+    });
 
-    // === VALIDACIONES PARA EL FORMULARIO DE NUEVA PERSONA ===
+    // === VALIDACIONES TIEMPO REAL NUEVA PERSONA ===
     function validarApellidosNuevoInscripcion() {
         const p = $('#paterno_nuevo_inscripcion').val().trim();
         const m = $('#materno_nuevo_inscripcion').val().trim();
         if (!p && !m) {
-            $('#feedback_apellidos_nuevo_inscripcion').text('Debe ingresar al menos un apellido.');
+            $('#feedback_apellidos_nuevo_inscripcion').text('⚠️ Ingrese al menos un apellido');
             return false;
         } else {
             $('#feedback_apellidos_nuevo_inscripcion').text('');
@@ -575,7 +457,7 @@
     function calcularEdadNuevoInscripcion() {
         const fecha = $('#fecha_nac_nuevo_inscripcion').val();
         if (!fecha) {
-            $('#edad_calculada_nuevo_inscripcion').text('');
+            $('#edad_calculada_nuevo_inscripcion').text('').removeClass('text-danger text-success');
             return true;
         }
         const hoy = new Date();
@@ -584,10 +466,10 @@
         const mes = hoy.getMonth() - nac.getMonth();
         if (mes < 0 || (mes === 0 && hoy.getDate() < nac.getDate())) edad--;
         if (edad < 18) {
-            $('#edad_calculada_nuevo_inscripcion').addClass('text-danger').text('⚠️ Debe tener al menos 18 años.');
+            $('#edad_calculada_nuevo_inscripcion').addClass('text-danger').removeClass('text-success').text('⚠️ Debe tener al menos 18 años');
             return false;
         } else {
-            $('#edad_calculada_nuevo_inscripcion').removeClass('text-danger').text(`Edad: ${edad} años`);
+            $('#edad_calculada_nuevo_inscripcion').removeClass('text-danger').addClass('text-success').text(`✅ Edad: ${edad} años`);
             return true;
         }
     }
@@ -602,71 +484,17 @@
         const ecivil = $('select[name="estado_civil"]').val();
         const apellidosOk = validarApellidosNuevoInscripcion();
         const edadOk = !$('#fecha_nac_nuevo_inscripcion').val() || calcularEdadNuevoInscripcion();
-        const enabled = carnetOk && correoOk && nombres && celular && ciudade && sexo && ecivil &&
-            apellidosOk && edadOk;
-        $('#btn-guardar-nueva-persona-incripcion').prop('disabled', !enabled);
+        const enabled = carnetOk && correoOk && nombres && celular && ciudade && sexo && ecivil && apellidosOk && edadOk;
+        const btn = $('#btn-guardar-nueva-persona-incripcion');
+        btn.prop('disabled', !enabled);
+        if (enabled) {
+            btn.css({ opacity: 1, cursor: 'pointer' });
+        } else {
+            btn.css({ opacity: 0.5, cursor: 'not-allowed' });
+        }
     }
 
-    // === DINÁMICA DE ESTUDIOS (NUEVA PERSONA) ===
-    $(document).on('change', '.grado-select-nuevo', function() {
-        const row = $(this).closest('.estudio-item-nuevo');
-        const gradoId = $(this).val();
-        if (!gradoId) {
-            row.find('.profesion-select-nuevo, .universidad-select-nuevo').prop('disabled', true)
-                .html('<option value="">Profesión</option>');
-            row.find('.universidad-select-nuevo').html('<option value="">Universidad</option>');
-            return;
-        }
-        let htmlProf = '<option value="">Profesión</option>';
-        @foreach ($profesiones as $p)
-            htmlProf += `<option value="{{ $p->id }}">{{ $p->nombre }}</option>`;
-        @endforeach
-        row.find('.profesion-select-nuevo').html(htmlProf).prop('disabled', false);
-        let htmlUni = '<option value="">Universidad</option>';
-        @foreach ($universidades as $u)
-            htmlUni +=
-                `<option value="{{ $u->id }}">{{ $u->nombre }} ({{ $u->sigla }})</option>`;
-        @endforeach
-        row.find('.universidad-select-nuevo').html(htmlUni).prop('disabled', false);
-    });
-
-    $(document).on('click', '.add-estudio-nuevo', function() {
-        const index = $('.estudio-item-nuevo').length;
-        let html = `
-        <div class="estudio-item-nuevo row mb-2">
-            <div class="col-md-3">
-                <select class="form-select grado-select-nuevo" name="estudios[${index}][grado]">
-                    <option value="">Grado</option>
-                    @foreach ($grados as $g)
-                        <option value="{{ $g->id }}">{{ $g->nombre }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-4">
-                <select class="form-select profesion-select-nuevo" name="estudios[${index}][profesion]" disabled>
-                    <option value="">Profesión</option>
-                </select>
-            </div>
-            <div class="col-md-4">
-                <select class="form-select universidad-select-nuevo" name="estudios[${index}][universidad]" disabled>
-                    <option value="">Universidad</option>
-                    @foreach ($universidades as $u)
-                        <option value="{{ $u->id }}">{{ $u->nombre }} ({{ $u->sigla }})</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="col-md-1">
-                <button type="button" class="btn btn-danger btn-sm remove-estudio-nuevo">−</button>
-            </div>
-        </div>`;
-        $('#estudios-container-nuevo-incripcion').append(html);
-    });
-
-    $(document).on('click', '.remove-estudio-nuevo', function() {
-        $(this).closest('.estudio-item-nuevo').remove();
-    });
-
-    // === EVENTOS PARA VALIDACIÓN EN TIEMPO REAL ===
+    // Validación carnet nueva persona
     $('#carnet_nuevo_inscripcion').on('input', function() {
         const carnet = $(this).val().trim();
         if (!carnet) {
@@ -680,17 +508,16 @@
                 carnet: carnet
             }, function(res) {
                 if (res.exists) {
-                    $('#feedback_carnet_nuevo_inscripcion').removeClass('text-success')
-                        .addClass('text-danger').text('❌ Carnet ya en uso.');
+                    $('#feedback_carnet_nuevo_inscripcion').removeClass('text-success').addClass('text-danger').text('❌ Carnet ya en uso');
                 } else {
-                    $('#feedback_carnet_nuevo_inscripcion').removeClass('text-danger').addClass(
-                        'text-success').text('✅ Disponible.');
+                    $('#feedback_carnet_nuevo_inscripcion').removeClass('text-danger').addClass('text-success').text('✅ Disponible');
                 }
                 checkFormNuevaPersonaInscripcion();
             });
         }, 400);
     });
 
+    // Validación correo nueva persona
     $('#correo_nuevo_inscripcion').on('input', function() {
         const correo = $(this).val().trim();
         if (!correo) {
@@ -704,27 +531,16 @@
                 correo: correo
             }, function(res) {
                 if (res.exists) {
-                    $('#feedback_correo_nuevo_inscripcion').removeClass('text-success')
-                        .addClass('text-danger').text('❌ Correo ya en uso.');
+                    $('#feedback_correo_nuevo_inscripcion').removeClass('text-success').addClass('text-danger').text('❌ Correo ya en uso');
                 } else {
-                    $('#feedback_correo_nuevo_inscripcion').removeClass('text-danger').addClass(
-                        'text-success').text('✅ Disponible.');
+                    $('#feedback_correo_nuevo_inscripcion').removeClass('text-danger').addClass('text-success').text('✅ Disponible');
                 }
                 checkFormNuevaPersonaInscripcion();
             });
         }, 400);
     });
 
-    $('#nombres_nuevo_inscripcion').on('input', function() {
-        checkFormNuevaPersonaInscripcion();
-    });
-
-    $('#paterno_nuevo_inscripcion, #materno_nuevo_inscripcion').on('input', function() {
-        validarApellidosNuevoInscripcion();
-        checkFormNuevaPersonaInscripcion();
-    });
-
-    $('#celular_nuevo_inscripcion').on('input', function() {
+    $('#nombres_nuevo_inscripcion, #paterno_nuevo_inscripcion, #materno_nuevo_inscripcion, #celular_nuevo_inscripcion').on('input', function() {
         checkFormNuevaPersonaInscripcion();
     });
 
@@ -744,7 +560,6 @@
         checkFormNuevaPersonaInscripcion();
     });
 
-    // Función auxiliar para llenar ciudades
     function llenarCiudadesPorDepartamento(departamentoId, selectElement) {
         selectElement.empty();
         if (!departamentoId) {
@@ -764,44 +579,88 @@
         selectElement.prop('disabled', false);
     }
 
-    // Inicializar validaciones
     $('#departamento_nuevo_inscripcion').trigger('change');
 
-    // Busca el script para convertir pre-inscrito y actualízalo
+    // === ESTUDIOS ===
+    $(document).on('change', '.grado-select-nuevo', function() {
+        const row = $(this).closest('.estudio-item-nuevo');
+        const gradoId = $(this).val();
+        if (!gradoId) {
+            row.find('.profesion-select-nuevo, .universidad-select-nuevo').prop('disabled', true)
+                .html('<option value="">Profesión</option>');
+            row.find('.universidad-select-nuevo').html('<option value="">Universidad</option>');
+            return;
+        }
+        let htmlProf = '<option value="">Profesión</option>';
+        @foreach ($profesiones as $p)
+            htmlProf += `<option value="{{ $p->id }}">{{ $p->nombre }}</option>`;
+        @endforeach
+        row.find('.profesion-select-nuevo').html(htmlProf).prop('disabled', false);
+        let htmlUni = '<option value="">Universidad</option>';
+        @foreach ($universidades as $u)
+            htmlUni += `<option value="{{ $u->id }}">{{ $u->nombre }} ({{ $u->sigla }})</option>`;
+        @endforeach
+        row.find('.universidad-select-nuevo').html(htmlUni).prop('disabled', false);
+    });
+
+    $(document).on('click', '.add-estudio-nuevo', function() {
+        const index = $('.estudio-item-nuevo').length;
+        let html = `
+        <div class="estudio-item-nuevo row g-2 mb-2 align-items-end">
+            <div class="col-md-3">
+                <select class="form-select form-select-sm grado-select-nuevo" name="estudios[${index}][grado]" style="border-radius:var(--radius-sm);border:1px solid var(--ofertas-border);">
+                    <option value="">Grado</option>
+                    @foreach ($grados as $g)
+                        <option value="{{ $g->id }}">{{ $g->nombre }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select class="form-select form-select-sm profesion-select-nuevo" name="estudios[${index}][profesion]" disabled style="border-radius:var(--radius-sm);border:1px solid var(--ofertas-border);">
+                    <option value="">Profesión</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select class="form-select form-select-sm universidad-select-nuevo" name="estudios[${index}][universidad]" disabled style="border-radius:var(--radius-sm);border:1px solid var(--ofertas-border);">
+                    <option value="">Universidad</option>
+                    @foreach ($universidades as $u)
+                        <option value="{{ $u->id }}">{{ $u->nombre }} ({{ $u->sigla }})</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-1">
+                <button type="button" class="btn btn-sm btn-danger remove-estudio-nuevo" style="border-radius:var(--radius-sm);padding:4px 8px;">−</button>
+            </div>
+        </div>`;
+        $('#estudios-container-nuevo-incripcion').append(html);
+    });
+
+    $(document).on('click', '.remove-estudio-nuevo', function() {
+        $(this).closest('.estudio-item-nuevo').remove();
+    });
+
+    // Convertir pre-inscrito
     $(document).on('click', '.convertir-inscrito-btn', function() {
-        const inscripcionId = $(this).data('inscripcion-id'); // Este debería ser el ID de la inscripción
+        const inscripcionId = $(this).data('inscripcion-id');
         const ofertaId = $(this).data('oferta-id');
         const planPagoId = $(this).data('plan-pago-id');
 
-        // Validar que tenemos todos los datos necesarios
         if (!inscripcionId || !ofertaId || !planPagoId) {
-            Swal.fire({
-                title: 'Error',
-                text: 'Faltan datos necesarios para realizar la conversión.',
-                icon: 'error',
-                confirmButtonColor: '#d33'
-            });
+            Swal.fire({ title: 'Error', text: 'Faltan datos necesarios.', icon: 'error', confirmButtonColor: '#d33' });
             return;
         }
 
         Swal.fire({
             title: '¿Convertir a Inscrito?',
-            html: `¿Está seguro de convertir esta pre-inscripción a inscripción completa?<br><br>
-               <strong>Se realizarán las siguientes acciones:</strong><br>
-               1. Cambiar estado a "Inscrito"<br>
-               2. Generar cuotas según el plan de pago<br>
-               3. Matricular en todos los módulos<br>
-               4. Aplicar adelanto si existe`,
+            html: 'Se generarán las cuotas según el plan seleccionado.',
             icon: 'question',
             showCancelButton: true,
             confirmButtonText: 'Sí, convertir',
             cancelButtonText: 'Cancelar',
             confirmButtonColor: '#28a745',
-            showLoaderOnConfirm: true,
             preConfirm: () => {
                 return $.ajax({
-                    url: "{{ route('admin.inscripciones.convertir-pre-inscrito', ['inscripcion' => '__id__']) }}"
-                        .replace('__id__', inscripcionId),
+                    url: "{{ route('admin.inscripciones.convertir-pre-inscrito', ['inscripcion' => '__id__']) }}".replace('__id__', inscripcionId),
                     method: 'POST',
                     data: {
                         _token: "{{ csrf_token() }}",
@@ -809,29 +668,12 @@
                         oferta_id: ofertaId,
                         planes_pago_id: planPagoId
                     }
-                }).then(response => {
-                    if (!response.success) {
-                        throw new Error(response.msg || 'Error en la conversión');
-                    }
-                    return response;
-                }).catch(error => {
-                    Swal.showValidationMessage(
-                        `Error: ${error.responseJSON?.msg || error.message}`
-                    );
-                });
+                }).then(r => { if (!r.success) throw new Error(r.msg); return r; })
+                  .catch(e => Swal.showValidationMessage(`Error: ${e.responseJSON?.msg || e.message}`));
             }
-        }).then((result) => {
+        }).then(result => {
             if (result.isConfirmed) {
-                Swal.fire({
-                    title: '¡Éxito!',
-                    text: result.value.msg,
-                    icon: 'success',
-                    confirmButtonColor: '#28a745',
-                    showConfirmButton: true
-                }).then(() => {
-                    // Recargar la página para ver los cambios
-                    location.reload();
-                });
+                Swal.fire('¡Éxito!', result.value.msg, 'success').then(() => location.reload());
             }
         });
     });
