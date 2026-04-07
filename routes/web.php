@@ -141,6 +141,7 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
         // Nueva ruta para obtener los eventos de un módulo en formato FullCalendar
         Route::get('/admin/modulos/eventos/{modulo}', 'obtenerEventosModulo')->name('admin.modulos.obtener-eventos');
         Route::post('/admin/horarios/reprogramar', 'reprogramarHorario')->name('admin.horarios.reprogramar');
+        Route::post('/admin/horarios/actualizar', 'actualizarHorario')->name('admin.horarios.actualizar');
 
         // OFERTAS ACADEMICAS - CRONOGRAMA GENERAL
         Route::get('/admin/ofertas/cronograma', 'cronograma')->name('admin.ofertas.cronograma');

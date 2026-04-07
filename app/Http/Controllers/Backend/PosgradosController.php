@@ -67,22 +67,26 @@ class PosgradosController extends Controller
         $idsCargosAcademicos = Cargo::where('nombre', 'like', '%Académico%')->pluck('id');
         $idsCargosMarketing  = Cargo::where('nombre', 'like', '%Marketing%')->pluck('id');
 
-        // Trabajadores con cargo académico Y estado = 'Vigente'
+        // Trabajadores con cargo académico Y estado = 'Vigente' (sin duplicados por trabajador)
         $trabajadoresAcademicos = collect();
         if ($idsCargosAcademicos->isNotEmpty()) {
             $trabajadoresAcademicos = TrabajadoresCargo::with('trabajador.persona', 'cargo')
                 ->whereIn('cargo_id', $idsCargosAcademicos)
                 ->where('estado', 'Vigente')
-                ->get();
+                ->get()
+                ->unique('trabajador_id')
+                ->values();
         }
 
-        // Trabajadores con cargo de marketing Y estado = 'Vigente'
+        // Trabajadores con cargo de marketing Y estado = 'Vigente' (sin duplicados por trabajador)
         $trabajadoresMarketing = collect();
         if ($idsCargosMarketing->isNotEmpty()) {
             $trabajadoresMarketing = TrabajadoresCargo::with('trabajador.persona', 'cargo')
                 ->whereIn('cargo_id', $idsCargosMarketing)
                 ->where('estado', 'Vigente')
-                ->get();
+                ->get()
+                ->unique('trabajador_id')
+                ->values();
         }
 
         return view('admin.posgrados.listar', compact(

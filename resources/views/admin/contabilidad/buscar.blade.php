@@ -22,30 +22,41 @@
     </div>
 
     <!-- Búsqueda por carnet -->
-    <div class="card border">
-        <div class="card-body">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body py-4">
             <div class="row justify-content-center">
-                <div class="col-md-6">
+                <div class="col-md-7 col-lg-5">
                     <div class="text-center mb-4">
-                        <div class="avatar-lg mx-auto mb-3">
-                            <div class="avatar-title bg-primary-subtle text-primary rounded-circle">
-                                <i class="ri-search-line fs-2"></i>
-                            </div>
+                        <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary-subtle text-primary mx-auto mb-3"
+                             style="width:64px;height:64px;">
+                            <i class="ri-search-line fs-2"></i>
                         </div>
-                        <h5 class="mb-2">Buscar Participante</h5>
-                        <p class="text-muted mb-4">Ingrese el número de carnet del participante para ver su detalle
-                            financiero</p>
+                        <h5 class="mb-1 fw-semibold">Buscar Participante</h5>
+                        <p class="text-muted mb-0" style="font-size:.85rem;">
+                            Escriba el carnet o nombre del participante — los resultados aparecen en tiempo real
+                        </p>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="carnet" class="form-label">Carnet de Identidad</label>
+                    <div class="mb-2">
+                        <label for="carnet" class="form-label fw-semibold" style="font-size:.85rem;">
+                            Carnet o Nombre
+                        </label>
                         <div class="input-group">
-                            <input type="text" class="form-control" id="carnet" placeholder="Ej: 1234567" autofocus>
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="ri-id-card-line text-muted"></i>
+                            </span>
+                            <input type="text" class="form-control border-start-0 ps-0"
+                                   id="carnet" placeholder="Ej: 1234567 o Juan Pérez" autofocus autocomplete="off">
+                            <span class="input-group-text bg-white border-start-0" id="searchSpinner" style="display:none;">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                            </span>
                             <button class="btn btn-primary" type="button" id="btnBuscarCarnet">
-                                <i class="ri-search-line me-1"></i> Buscar
+                                <i class="ri-search-line"></i>
                             </button>
                         </div>
-                        <div class="form-text">Ingrese el número completo del carnet</div>
+                        <div class="form-text" id="searchHint">
+                            <i class="ri-information-line me-1"></i>Escriba al menos 3 caracteres para buscar automáticamente
+                        </div>
                     </div>
                 </div>
             </div>
@@ -64,82 +75,165 @@
 @push('script')
     <script>
         $(document).ready(function() {
-            // Buscar por carnet
-            $('#btnBuscarCarnet').on('click', function() {
-                var carnet = $('#carnet').val().trim();
+            let debounceTimer = null;
+            let lastQuery = '';
 
-                if (!carnet) {
-                    mostrarAlerta('Por favor ingrese un número de carnet', 'warning');
+            // ── Búsqueda en tiempo real ──────────────────────────────────
+            $('#carnet').on('input', function() {
+                const query = $(this).val().trim();
+
+                clearTimeout(debounceTimer);
+                $('#alertContainer').html('');
+
+                if (query === lastQuery) return;
+
+                if (query.length < 3) {
+                    if (query.length === 0) {
+                        $('#resultadoBusqueda').html('');
+                        lastQuery = '';
+                    }
+                    $('#searchHint').html('<i class="ri-information-line me-1"></i>Escriba al menos 3 caracteres para buscar automáticamente');
                     return;
                 }
 
-                // Mostrar loading
+                $('#searchHint').html('<i class="ri-time-line me-1"></i>Buscando...');
+
+                debounceTimer = setTimeout(function() {
+                    ejecutarBusqueda(query);
+                }, 400);
+            });
+
+            // ── Botón buscar / Enter ──────────────────────────────────────
+            $('#btnBuscarCarnet').on('click', function() {
+                const query = $('#carnet').val().trim();
+                if (!query) {
+                    mostrarAlerta('Por favor ingrese un carnet o nombre', 'warning');
+                    return;
+                }
+                clearTimeout(debounceTimer);
+                ejecutarBusqueda(query);
+            });
+
+            $('#carnet').on('keypress', function(e) {
+                if (e.which === 13) {
+                    clearTimeout(debounceTimer);
+                    const query = $(this).val().trim();
+                    if (query) ejecutarBusqueda(query);
+                }
+            });
+
+            // ── Función principal de búsqueda ─────────────────────────────
+            function ejecutarBusqueda(query) {
+                lastQuery = query;
+
+                $('#searchSpinner').show();
+                $('#btnBuscarCarnet').prop('disabled', true);
+
                 $('#resultadoBusqueda').html(`
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="sr-only">Buscando...</span>
+                    <div class="text-center py-4 text-muted" style="font-size:.88rem;">
+                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                        Buscando <strong>${query}</strong>...
                     </div>
-                    <p class="mt-3">Buscando participante...</p>
-                </div>
-            `);
+                `);
 
                 $.ajax({
                     url: "{{ route('admin.contabilidad.verificar-carnet') }}",
                     type: "POST",
                     data: {
                         _token: "{{ csrf_token() }}",
-                        carnet: carnet
+                        carnet: query
                     },
                     success: function(response) {
+                        $('#searchSpinner').hide();
+                        $('#btnBuscarCarnet').prop('disabled', false);
+                        $('#searchHint').html('<i class="ri-check-line me-1 text-success"></i>Búsqueda completada');
+
                         if (response.success) {
-                            // Mostrar información resumida y botón para ver detalle
+                            const e = response.estudiante;
+                            const deudaColor = parseFloat(e.total_deuda) > 0 ? 'danger' : 'success';
+
                             $('#resultadoBusqueda').html(`
-                            <div class="card border border-primary">
-                                <div class="card-body">
-                                    <div class="row align-items-center">
-                                        <div class="col-md-9">
-                                            <h5 class="mb-1">${response.estudiante.nombre_completo}</h5>
-                                            <div class="row mt-3">
-                                                <div class="col-md-4">
-                                                    <p class="mb-1"><strong>Carnet:</strong> ${response.estudiante.carnet}</p>
-                                                    <p class="mb-1"><strong>Correo:</strong> ${response.estudiante.correo || 'N/A'}</p>
-                                                    <p class="mb-0"><strong>Celular:</strong> ${response.estudiante.celular || 'N/A'}</p>
+                                <div class="card border-0 shadow-sm" style="border-left:4px solid #0d6efd!important;">
+                                    <div class="card-body p-4">
+                                        <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary-subtle text-primary fw-bold flex-shrink-0"
+                                                     style="width:52px;height:52px;font-size:1.2rem;">
+                                                    ${e.nombre_completo.charAt(0).toUpperCase()}
                                                 </div>
-                                                <div class="col-md-4">
-                                                    <p class="mb-1"><strong>Programas:</strong> ${response.estudiante.total_programas}</p>
-                                                    <p class="mb-1"><strong>Pagado:</strong> <span class="text-success">${formatMoney(response.estudiante.total_pagado)} Bs</span></p>
-                                                    <p class="mb-0"><strong>Deuda:</strong> <span class="text-danger">${formatMoney(response.estudiante.total_deuda)} Bs</span></p>
+                                                <div>
+                                                    <h5 class="mb-0 fw-bold">${e.nombre_completo}</h5>
+                                                    <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+                                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle rounded-pill" style="font-size:.72rem;">
+                                                            <i class="ri-id-card-line me-1"></i>${e.carnet}
+                                                        </span>
+                                                        ${e.correo ? `<span class="text-muted" style="font-size:.82rem;"><i class="ri-mail-line me-1"></i>${e.correo}</span>` : ''}
+                                                        ${e.celular ? `<span class="text-muted" style="font-size:.82rem;"><i class="ri-phone-line me-1"></i>${e.celular}</span>` : ''}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <a href="${response.redirect}" class="btn btn-primary">
+                                                <i class="ri-eye-line me-1"></i>Ver Detalle
+                                            </a>
+                                        </div>
+
+                                        <hr class="my-3">
+
+                                        <div class="row g-3">
+                                            <div class="col-sm-4">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="d-flex align-items-center justify-content-center rounded bg-info-subtle text-info flex-shrink-0" style="width:36px;height:36px;">
+                                                        <i class="ri-book-2-line"></i>
+                                                    </div>
+                                                    <div>
+                                                        <p class="mb-0 text-muted" style="font-size:.72rem;text-transform:uppercase;font-weight:600;">Programas</p>
+                                                        <span class="fw-semibold">${e.total_programas}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-4">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="d-flex align-items-center justify-content-center rounded bg-success-subtle text-success flex-shrink-0" style="width:36px;height:36px;">
+                                                        <i class="ri-money-dollar-circle-line"></i>
+                                                    </div>
+                                                    <div>
+                                                        <p class="mb-0 text-muted" style="font-size:.72rem;text-transform:uppercase;font-weight:600;">Total Pagado</p>
+                                                        <span class="fw-semibold text-success">${formatMoney(e.total_pagado)} Bs</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-4">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="d-flex align-items-center justify-content-center rounded bg-${deudaColor}-subtle text-${deudaColor} flex-shrink-0" style="width:36px;height:36px;">
+                                                        <i class="ri-bill-line"></i>
+                                                    </div>
+                                                    <div>
+                                                        <p class="mb-0 text-muted" style="font-size:.72rem;text-transform:uppercase;font-weight:600;">Deuda Pendiente</p>
+                                                        <span class="fw-semibold text-${deudaColor}">${formatMoney(e.total_deuda)} Bs</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="col-md-3 text-end">
-                                            <a href="${response.redirect}" class="btn btn-primary btn-lg">
-                                                <i class="ri-eye-line me-2"></i> Ver Detalle Completo
-                                            </a>
-                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        `);
+                            `);
                         } else {
-                            $('#resultadoBusqueda').html('');
-                            mostrarAlerta(response.msg, 'danger');
+                            $('#resultadoBusqueda').html(`
+                                <div class="text-center py-4 text-muted">
+                                    <i class="ri-search-line fs-2 d-block mb-2"></i>
+                                    <span style="font-size:.88rem;">${response.msg || 'No se encontró ningún participante con ese dato'}</span>
+                                </div>
+                            `);
                         }
                     },
                     error: function(xhr) {
-                        console.error(xhr);
+                        $('#searchSpinner').hide();
+                        $('#btnBuscarCarnet').prop('disabled', false);
                         $('#resultadoBusqueda').html('');
-                        mostrarAlerta('Error al buscar el carnet', 'danger');
+                        mostrarAlerta('Error al realizar la búsqueda', 'danger');
                     }
                 });
-            });
-
-            // Permitir buscar al presionar Enter
-            $('#carnet').on('keypress', function(e) {
-                if (e.which === 13) {
-                    $('#btnBuscarCarnet').click();
-                }
-            });
+            }
 
             function formatMoney(amount) {
                 return parseFloat(amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
@@ -147,16 +241,12 @@
 
             function mostrarAlerta(mensaje, tipo) {
                 $('#alertContainer').html(`
-                <div class="alert alert-${tipo} alert-dismissible fade show" role="alert">
-                    <i class="ri-alert-line me-2"></i> ${mensaje}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            `);
-
-                // Auto-ocultar después de 5 segundos
-                setTimeout(function() {
-                    $('.alert').alert('close');
-                }, 5000);
+                    <div class="alert alert-${tipo} alert-dismissible fade show border-0 shadow-sm" role="alert">
+                        <i class="ri-alert-line me-2"></i>${mensaje}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                `);
+                setTimeout(function() { $('.alert').alert('close'); }, 5000);
             }
         });
     </script>

@@ -1,120 +1,118 @@
 @extends('admin.dashboard')
 @section('admin')
     <div class="container-fluid">
-        <!-- Page Title -->
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="page-title-box d-sm-flex align-items-center justify-content-between bg-light rounded-3 p-3">
-                    <div>
-                        <h4 class="mb-1 fw-bold text-dark">Gestión de Personas</h4>
-                        <p class="text-muted mb-0">Administra el registro de personas en el sistema</p>
-                    </div>
 
-                    @if (Auth::guard('web')->user()->can('personas.registrar'))
-                        <div class="page-title-right">
-                            <button type="button" class="btn btn-primary btn-lg waves-effect waves-light"
-                                data-bs-toggle="modal" data-bs-target="#registrar">
-                                <i class="ri-user-add-line align-bottom me-1"></i> Nueva Persona
-                            </button>
+        {{-- Page Header --}}
+        <div class="card border-0 shadow-sm mb-4" style="border-radius:12px;overflow:hidden;">
+            <div class="card-body p-0" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);">
+                <div class="p-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                             style="width:50px;height:50px;background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.3);">
+                            <i class="ri-team-line text-white" style="font-size:1.5rem;"></i>
                         </div>
+                        <div>
+                            <h4 class="mb-0 text-white fw-bold">Gestión de Personas</h4>
+                            <p class="mb-0 text-white-50" style="font-size:.82rem;">Administra el registro de personas en el sistema</p>
+                        </div>
+                    </div>
+                    @if (Auth::guard('web')->user()->can('personas.registrar'))
+                        <button type="button" class="btn fw-semibold flex-shrink-0"
+                            data-bs-toggle="modal" data-bs-target="#registrar"
+                            style="background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.35);color:#fff;border-radius:8px;backdrop-filter:blur(4px);">
+                            <i class="ri-user-add-line me-1"></i> Nueva Persona
+                        </button>
                     @endif
                 </div>
             </div>
         </div>
 
-        <!-- Filters & Stats Cards -->
-        <div class="row">
-            <div class="col-xl-3 col-md-6">
-                <div class="card border border-primary">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="avatar-sm rounded-circle bg-primary bg-opacity-10">
-                                    <i class="ri-user-line fs-24 text-primary"></i>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="text-muted mb-1">Total Personas</p>
-                                <h4 class="mb-0" id="totalPersonasCounter">{{ $personas->total() }}</h4>
-                            </div>
+        {{-- Stats + Search Row --}}
+        <div class="row g-3 mb-4">
+            <div class="col-xl-2 col-md-4">
+                <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+                    <div class="card-body p-3 d-flex align-items-center gap-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                             style="width:46px;height:46px;background:rgba(102,126,234,.12);">
+                            <i class="ri-team-line" style="font-size:1.25rem;color:#667eea;"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted mb-0" style="font-size:.74rem;text-transform:uppercase;letter-spacing:.4px;">Total Personas</p>
+                            <h4 class="mb-0 fw-bold" id="totalPersonasCounter">{{ $personas->total() }}</h4>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col-xl-9">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="d-flex flex-wrap gap-3">
-                            <div class="flex-grow-1">
-                                <div class="search-box position-relative">
-                                    <input type="text" id="searchInput" class="form-control search form-control-lg ps-5"
-                                        placeholder="Buscar por nombre, carnet, correo, celular..."
-                                        value="{{ request('search') ?? '' }}">
-                                    <i
-                                        class="ri-search-line search-icon position-absolute top-50 start-0 translate-middle-y text-muted ms-3"></i>
-                                </div>
-                            </div>
-                            <div>
-                                <button type="button" id="clearFilters" class="btn btn-outline-secondary btn-lg">
-                                    <i class="ri-refresh-line align-bottom me-1"></i> Limpiar
-                                </button>
-                            </div>
+            <div class="col-xl-10 col-md-8">
+                <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
+                    <div class="card-body p-3 d-flex align-items-center gap-3">
+                        <div class="flex-grow-1 position-relative">
+                            <i class="ri-search-line position-absolute top-50 translate-middle-y ms-3 text-muted" style="z-index:1;left:0;"></i>
+                            <input type="text" id="searchInput"
+                                class="form-control border-0 bg-light ps-5"
+                                style="border-radius:8px;font-size:.9rem;"
+                                placeholder="Buscar por nombre, carnet, correo, celular..."
+                                value="{{ request('search') ?? '' }}">
                         </div>
+                        <button type="button" id="clearFilters"
+                            class="btn btn-outline-secondary flex-shrink-0"
+                            style="border-radius:8px;">
+                            <i class="ri-refresh-line me-1"></i>Limpiar
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Results Table -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card border border-light shadow-sm">
-                    <div class="card-header border-bottom-dashed d-flex align-items-center justify-content-between">
-                        <h5 class="card-title mb-0 fw-bold">Listado de Personas</h5>
-                        <div class="dropdown">
-                            <button class="btn btn-soft-secondary btn-sm dropdown-toggle" type="button"
-                                data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="ri-equalizer-line align-bottom me-1"></i> Vista
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item active" href="#"><i
-                                            class="ri-list-check align-bottom me-2"></i> Tabla</a></li>
-                                <li><a class="dropdown-item" href="#"><i class="ri-grid-line align-bottom me-2"></i>
-                                        Cuadrícula</a></li>
-                            </ul>
-                        </div>
+        {{-- Results Table --}}
+        <div class="card border-0 shadow-sm" style="border-radius:12px;overflow:hidden;">
+            <div class="card-header border-0 py-3 px-4" style="background:linear-gradient(135deg,#f8f9fa 0%,#e9ecef 100%);">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                         style="width:36px;height:36px;background:rgba(102,126,234,.12);">
+                        <i class="ri-list-check text-primary" style="font-size:1rem;"></i>
                     </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-borderless table-centered align-middle table-nowrap mb-0">
-                                <thead class="table-light text-muted fw-semibold">
-                                    <tr>
-                                        <th class="px-3 py-3" width="10%">Carnet</th>
-                                        <th class="px-3 py-3">Nombre Completo</th>
-                                        <th class="px-3 py-3">Contacto</th>
-                                        <th class="px-3 py-3">Información</th>
-                                        <th class="px-3 py-3 text-center" width="15%">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="personasTableBody">
-                                    @include('admin.personas.partials.table-body')
-                                </tbody>
-                            </table>
-                        </div>
-                        @if ($personas->total() > 0)
-                            <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
-                                <div class="results-count text-muted">
-                                    Mostrando <span class="fw-medium">{{ $personas->firstItem() }}</span> a
-                                    <span class="fw-medium">{{ $personas->lastItem() }}</span> de
-                                    <span class="fw-medium">{{ $personas->total() }}</span> resultados
-                                </div>
-                                <div class="pagination-container">
-                                    {{ $personas->appends(request()->input())->links('pagination::bootstrap-5') }}
-                                </div>
-                            </div>
-                        @endif
+                    <div>
+                        <h6 class="mb-0 fw-semibold">Listado de Personas</h6>
+                        <p class="mb-0 text-muted" style="font-size:.72rem;">Resultados del sistema</p>
                     </div>
                 </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" style="font-size:.88rem;">
+                        <thead style="background:#f8f9fc;">
+                            <tr>
+                                <th class="px-4 py-3 fw-semibold text-muted border-0"
+                                    style="font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;" width="10%">Carnet</th>
+                                <th class="px-4 py-3 fw-semibold text-muted border-0"
+                                    style="font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;">Nombre Completo</th>
+                                <th class="px-4 py-3 fw-semibold text-muted border-0"
+                                    style="font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;">Contacto</th>
+                                <th class="px-4 py-3 fw-semibold text-muted border-0"
+                                    style="font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;">Información</th>
+                                <th class="px-4 py-3 fw-semibold text-muted border-0 text-center"
+                                    style="font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;" width="12%">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="personasTableBody">
+                            @include('admin.personas.partials.table-body')
+                        </tbody>
+                    </table>
+                </div>
+                @if ($personas->total() > 0)
+                    <div class="d-flex justify-content-between align-items-center px-4 py-3 border-top flex-wrap gap-2"
+                         style="background:#fafbff;">
+                        <div class="results-count text-muted" style="font-size:.82rem;">
+                            Mostrando <span class="fw-semibold text-dark">{{ $personas->firstItem() }}</span> –
+                            <span class="fw-semibold text-dark">{{ $personas->lastItem() }}</span> de
+                            <span class="fw-semibold text-dark">{{ $personas->total() }}</span> personas
+                        </div>
+                        <div class="pagination-container">
+                            {{ $personas->appends(request()->input())->links('pagination::bootstrap-5') }}
+                        </div>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
@@ -122,23 +120,36 @@
     <!-- Modal Registrar -->
     <div class="modal fade" id="registrar" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-xl">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-primary-subtle p-3 position-relative">
-                    <h5 class="modal-title fw-bold text-primary" id="registrarLabel">
-                        <i class="ri-user-add-line me-2 align-bottom"></i>Registrar Nueva Persona
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+            <div class="modal-content border-0 shadow-lg" style="border-radius:14px;overflow:hidden;">
+                <div class="modal-header border-0 py-3 px-4"
+                     style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                             style="width:40px;height:40px;background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.3);">
+                            <i class="ri-user-add-line text-white" style="font-size:1.1rem;"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title mb-0 text-white fw-semibold" id="registrarLabel">Registrar Nueva Persona</h5>
+                            <p class="mb-0 text-white-50" style="font-size:.74rem;">Complete los datos de la nueva persona</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal"
                         aria-label="Close"></button>
                 </div>
                 <form id="addForm" class="needs-validation" novalidate>
                     @csrf
                     <div class="modal-body p-4">
                         <div class="row g-3">
-                            <!-- Datos Personales -->
-                            <div class="col-lg-12 mb-3">
-                                <h6 class="fw-bold text-primary mb-3">
-                                    <i class="ri-user-3-line me-2"></i>Datos Personales
-                                </h6>
+                            {{-- Datos Personales --}}
+                            <div class="col-12">
+                                <div class="d-flex align-items-center gap-2 mb-3 pb-2"
+                                     style="border-bottom:2px solid rgba(102,126,234,.15);">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                         style="width:30px;height:30px;background:rgba(102,126,234,.12);">
+                                        <i class="ri-user-3-line" style="font-size:.85rem;color:#667eea;"></i>
+                                    </div>
+                                    <h6 class="mb-0 fw-semibold" style="font-size:.88rem;color:#495057;">Datos Personales</h6>
+                                </div>
                             </div>
 
                             <div class="col-md-3">
@@ -216,11 +227,16 @@
                                 </div>
                             </div>
 
-                            <!-- Contacto -->
-                            <div class="col-lg-12 mb-3 mt-4">
-                                <h6 class="fw-bold text-primary mb-3">
-                                    <i class="ri-phone-line me-2"></i>Datos de Contacto
-                                </h6>
+                            {{-- Datos de Contacto --}}
+                            <div class="col-12 mt-2">
+                                <div class="d-flex align-items-center gap-2 mb-3 pb-2"
+                                     style="border-bottom:2px solid rgba(32,201,151,.15);">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                         style="width:30px;height:30px;background:rgba(32,201,151,.12);">
+                                        <i class="ri-phone-line" style="font-size:.85rem;color:#20c997;"></i>
+                                    </div>
+                                    <h6 class="mb-0 fw-semibold" style="font-size:.88rem;color:#495057;">Datos de Contacto</h6>
+                                </div>
                             </div>
 
                             <div class="col-md-6">
@@ -289,18 +305,24 @@
                                 </div>
                             </div>
 
-                            <!-- Estudios -->
-                            <div class="col-12 mt-4">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h6 class="fw-bold text-primary mb-0">
-                                        <i class="ri-book-line me-2"></i>Estudios Realizados
-                                    </h6>
-                                    <button type="button" class="btn btn-outline-primary btn-sm add-estudio">
-                                        <i class="ri-add-line me-1"></i>Agregar Estudio
+                            {{-- Estudios --}}
+                            <div class="col-12 mt-2">
+                                <div class="d-flex align-items-center justify-content-between mb-3 pb-2"
+                                     style="border-bottom:2px solid rgba(111,66,193,.15);">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                             style="width:30px;height:30px;background:rgba(111,66,193,.12);">
+                                            <i class="ri-book-line" style="font-size:.85rem;color:#6f42c1;"></i>
+                                        </div>
+                                        <h6 class="mb-0 fw-semibold" style="font-size:.88rem;color:#495057;">Estudios Realizados</h6>
+                                    </div>
+                                    <button type="button" class="btn btn-sm add-estudio fw-semibold"
+                                            style="border-radius:6px;background:rgba(111,66,193,.1);border:1px solid rgba(111,66,193,.2);color:#6f42c1;font-size:.78rem;">
+                                        <i class="ri-add-line me-1"></i>Agregar
                                     </button>
                                 </div>
                                 <div id="estudios-container">
-                                    <div class="estudio-item row mb-3 border rounded p-3 bg-light">
+                                    <div class="estudio-item row mb-3 rounded p-3" style="background:#f8f9fc;border:1px solid #e8eaf0 !important;">
                                         <div class="col-md-3">
                                             <label class="form-label fw-medium">Grado Académico</label>
                                             <select class="form-select grado-select" name="estudios[0][grado]">
@@ -330,7 +352,8 @@
                                             </select>
                                         </div>
                                         <div class="col-md-1 d-flex align-items-end">
-                                            <button type="button" class="btn btn-danger btn-sm remove-estudio">
+                                            <button type="button" class="btn btn-sm remove-estudio"
+                                                style="border-radius:6px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;">
                                                 <i class="ri-delete-bin-line"></i>
                                             </button>
                                         </div>
@@ -339,11 +362,12 @@
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer bg-light p-3">
-                        <button type="button" class="btn btn-soft-secondary btn-lg"
-                            data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary btn-lg addBtn" disabled>
-                            <i class="ri-user-add-line me-1 align-bottom"></i>
+                    <div class="modal-footer border-0 px-4 py-3" style="background:#f8f9fc;">
+                        <button type="button" class="btn btn-outline-secondary"
+                            style="border-radius:8px;" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn addBtn fw-semibold" disabled
+                            style="border-radius:8px;background:linear-gradient(135deg,#667eea,#764ba2);border:none;color:#fff;box-shadow:0 4px 14px rgba(102,126,234,.35);">
+                            <i class="ri-user-add-line me-1"></i>
                             <span class="submit-text">Registrar Persona</span>
                         </button>
                     </div>
@@ -355,12 +379,20 @@
     <!-- Modal Modificar -->
     <div class="modal fade" id="modalModificar" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-xl">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-warning-subtle p-3 position-relative">
-                    <h5 class="modal-title fw-bold text-warning" id="modalModificarLabel">
-                        <i class="ri-edit-line me-2 align-bottom"></i>Editar Persona
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-content border-0 shadow-lg" style="border-radius:14px;overflow:hidden;">
+                <div class="modal-header border-0 py-3 px-4"
+                     style="background:linear-gradient(135deg,#fd7e14 0%,#f59e0b 100%);">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                             style="width:40px;height:40px;background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.3);">
+                            <i class="ri-edit-line text-white" style="font-size:1.1rem;"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title mb-0 text-white fw-semibold" id="modalModificarLabel">Editar Persona</h5>
+                            <p class="mb-0 text-white-50" style="font-size:.74rem;">Actualiza los datos de la persona</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form id="updateForm" class="needs-validation" novalidate>
                     @csrf
@@ -375,11 +407,12 @@
                             <p class="mt-2 text-muted">Cargando información de la persona...</p>
                         </div>
                     </div>
-                    <div class="modal-footer bg-light p-3">
-                        <button type="button" class="btn btn-soft-secondary btn-lg"
-                            data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-warning btn-lg updateBtn" disabled>
-                            <i class="ri-refresh-line me-1 align-bottom"></i>
+                    <div class="modal-footer border-0 px-4 py-3" style="background:#f8f9fc;">
+                        <button type="button" class="btn btn-outline-secondary"
+                            style="border-radius:8px;" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn updateBtn fw-semibold" disabled
+                            style="border-radius:8px;background:linear-gradient(135deg,#fd7e14,#f59e0b);border:none;color:#fff;box-shadow:0 4px 14px rgba(253,126,20,.3);">
+                            <i class="ri-refresh-line me-1"></i>
                             <span class="submit-text">Actualizar Persona</span>
                         </button>
                     </div>
@@ -391,12 +424,20 @@
     <!-- Modal Eliminar -->
     <div class="modal fade" id="modalEliminar" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-danger-subtle p-3 position-relative">
-                    <h5 class="modal-title fw-bold text-danger" id="modalEliminarLabel">
-                        <i class="ri-delete-bin-line me-2 align-bottom"></i>Confirmar Eliminación
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+            <div class="modal-content border-0 shadow-lg" style="border-radius:14px;overflow:hidden;">
+                <div class="modal-header border-0 py-3 px-4"
+                     style="background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                             style="width:40px;height:40px;background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.3);">
+                            <i class="ri-delete-bin-line text-white" style="font-size:1.1rem;"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title mb-0 text-white fw-semibold" id="modalEliminarLabel">Confirmar Eliminación</h5>
+                            <p class="mb-0 text-white-50" style="font-size:.74rem;">Esta acción no se puede deshacer</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal"
                         aria-label="Close"></button>
                 </div>
                 <form id="deleteForm">
@@ -405,26 +446,23 @@
                     <input type="hidden" name="id" id="eliminarId">
                     <div class="modal-body p-4 text-center">
                         <div class="mb-4">
-                            <div class="avatar-xl mx-auto">
-                                <div class="avatar-title bg-danger bg-opacity-10 text-danger rounded-circle fs-2xl">
-                                    <i class="ri-alert-line"></i>
-                                </div>
+                            <div class="d-flex align-items-center justify-content-center mx-auto rounded-circle"
+                                 style="width:72px;height:72px;background:rgba(239,68,68,.1);">
+                                <i class="ri-alert-line" style="font-size:2rem;color:#ef4444;"></i>
                             </div>
                         </div>
-                        <h4 class="mb-3 fw-bold">¿Estás seguro de eliminar esta persona?</h4>
-                        <p class="text-muted mb-0">Esta acción no se puede deshacer. Se eliminarán todos los datos
-                            asociados a esta persona.</p>
-                        <div class="mt-3 p-3 bg-light rounded">
-                            <small class="text-danger fw-medium">Advertencia:</small>
-                            <small class="text-muted">Si la persona tiene registros relacionados (trabajador, docente,
-                                usuario, etc.), deberás actualizarlos primero.</small>
+                        <h5 class="mb-2 fw-bold">¿Eliminar esta persona?</h5>
+                        <p class="text-muted mb-0" style="font-size:.88rem;">Se eliminarán todos los datos asociados a esta persona.</p>
+                        <div class="mt-3 p-3 rounded" style="background:rgba(239,68,68,.06);border:1px dashed rgba(239,68,68,.3);">
+                            <small class="text-danger fw-semibold"><i class="ri-information-line me-1"></i>Si tiene registros relacionados (trabajador, docente, usuario), deberás actualizarlos primero.</small>
                         </div>
                     </div>
-                    <div class="modal-footer justify-content-center bg-light p-3">
-                        <button type="button" class="btn btn-soft-secondary btn-lg"
-                            data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-danger btn-lg btnDelete">
-                            <i class="ri-delete-bin-line me-1 align-bottom"></i>
+                    <div class="modal-footer border-0 justify-content-center px-4 py-3" style="background:#f8f9fc;">
+                        <button type="button" class="btn btn-outline-secondary"
+                            style="border-radius:8px;" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btnDelete fw-semibold"
+                            style="border-radius:8px;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;color:#fff;box-shadow:0 4px 14px rgba(239,68,68,.35);">
+                            <i class="ri-delete-bin-line me-1"></i>
                             <span class="submit-text">Sí, Eliminar</span>
                         </button>
                     </div>
@@ -436,77 +474,108 @@
 
 @push('style')
     <style>
-        .table-nowrap td,
-        .table-nowrap th {
-            white-space: nowrap;
+        /* ── Table ─────────────────────────────── */
+        .table > tbody > tr {
+            border-bottom: 1px solid #f0f2f5;
+        }
+        .table > tbody > tr:hover {
+            background: #f8f9ff !important;
+        }
+        .table > tbody > tr:last-child {
+            border-bottom: none;
         }
 
+        /* ── Persona avatar initials ────────────── */
+        .persona-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .85rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        /* ── Action buttons ─────────────────────── */
         .btn-action {
-            width: 32px;
-            height: 32px;
+            width: 34px;
+            height: 34px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            border-radius: 6px;
-            transition: all 0.2s ease;
+            border-radius: 8px;
+            transition: all .2s ease;
+            font-size: .9rem;
         }
-
         .btn-action:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,.12);
         }
 
-        .estudio-item {
-            transition: all 0.3s ease;
+        /* ── Estudio items ──────────────────────── */
+        .estudio-item, .estudio-item-edicion {
+            background: #f8f9fc !important;
+            border: 1px solid #e8eaf0 !important;
+            border-radius: 8px !important;
+            transition: all .2s;
+        }
+        .estudio-item:hover, .estudio-item-edicion:hover {
+            background: #f0f2ff !important;
+            border-color: #c5cae9 !important;
         }
 
-        .estudio-item:hover {
-            background-color: #f8f9fa;
-            border-color: #dee2e6;
+        /* ── Form inputs ────────────────────────── */
+        .modal .form-control,
+        .modal .form-select {
+            border-radius: 7px;
+            font-size: .875rem;
+        }
+        .modal .form-label {
+            font-size: .82rem;
+            color: #495057;
         }
 
-        @media (max-width: 767.98px) {
-            .modal-dialog {
-                margin: 0.5rem;
-                max-width: calc(100% - 1rem);
-            }
-
-            .card-header {
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            .search-box {
-                width: 100%;
-            }
+        /* ── Pagination ─────────────────────────── */
+        .pagination .page-link {
+            border-radius: 6px !important;
+            margin: 0 2px;
+            font-size: .82rem;
+            border-color: #e9ecef;
+            color: #667eea;
+        }
+        .pagination .page-item.active .page-link {
+            background: linear-gradient(135deg,#667eea,#764ba2);
+            border-color: transparent;
         }
 
+        /* ── Toast ──────────────────────────────── */
         .toast-container {
             position: fixed;
             top: 20px;
             right: 20px;
             z-index: 999999;
         }
-
         .toast {
             min-width: 300px;
-            max-width: 350px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            border-radius: 8px;
+            max-width: 360px;
+            box-shadow: 0 8px 24px rgba(0,0,0,.15);
+            border-radius: 10px !important;
             overflow: hidden;
             margin-bottom: 10px;
-            animation: slideInRight 0.3s ease-out;
+            animation: slideInRight .3s ease-out;
+        }
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to   { transform: translateX(0);    opacity: 1; }
         }
 
-        @keyframes slideInRight {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateX(0);
-                opacity: 1;
+        /* ── Responsive ─────────────────────────── */
+        @media (max-width: 767.98px) {
+            .modal-dialog {
+                margin: .5rem;
+                max-width: calc(100% - 1rem);
             }
         }
     </style>
@@ -605,29 +674,30 @@
 
             function crearFilaEstudio(index) {
                 return `
-                <div class="estudio-item row mb-3 border rounded p-3 bg-light">
+                <div class="estudio-item row mb-3 rounded p-3" style="background:#f8f9fc;border:1px solid #e8eaf0 !important;">
                     <div class="col-md-3">
-                        <label class="form-label fw-medium">Grado Académico</label>
-                        <select class="form-select grado-select" name="estudios[${index}][grado]">
+                        <label class="form-label fw-medium" style="font-size:.82rem;">Grado Académico</label>
+                        <select class="form-select grado-select" name="estudios[${index}][grado]" style="border-radius:7px;font-size:.875rem;">
                             <option value="">Seleccionar</option>
                             ${grados.map(g => `<option value="${g.id}">${g.nombre}</option>`).join('')}
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label fw-medium">Profesión</label>
-                        <select class="form-select profesion-select" name="estudios[${index}][profesion]" disabled>
+                        <label class="form-label fw-medium" style="font-size:.82rem;">Profesión</label>
+                        <select class="form-select profesion-select" name="estudios[${index}][profesion]" disabled style="border-radius:7px;font-size:.875rem;">
                             <option value="">Seleccionar</option>
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label fw-medium">Universidad</label>
-                        <select class="form-select universidad-select" name="estudios[${index}][universidad]" disabled>
+                        <label class="form-label fw-medium" style="font-size:.82rem;">Universidad</label>
+                        <select class="form-select universidad-select" name="estudios[${index}][universidad]" disabled style="border-radius:7px;font-size:.875rem;">
                             <option value="">Seleccionar</option>
                             ${universidades.map(u => `<option value="${u.id}">${u.nombre} (${u.sigla})</option>`).join('')}
                         </select>
                     </div>
                     <div class="col-md-1 d-flex align-items-end">
-                        <button type="button" class="btn btn-danger btn-sm remove-estudio">
+                        <button type="button" class="btn btn-sm remove-estudio"
+                            style="border-radius:6px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;">
                             <i class="ri-delete-bin-line"></i>
                         </button>
                     </div>
@@ -641,39 +711,40 @@
                 const universidadId = estudio ? (estudio.universidade_id || estudio.universidad) : '';
 
                 return `
-                <div class="estudio-item-edicion row mb-3 border rounded p-3 bg-light" data-index="${index}">
+                <div class="estudio-item-edicion row mb-3 rounded p-3" data-index="${index}" style="background:#f8f9fc;border:1px solid #e8eaf0 !important;">
                     ${estudioId ? `<input type="hidden" name="estudios_edit[${index}][id]" value="${estudioId}">` : ''}
                     <div class="col-md-3">
-                        <label class="form-label fw-medium">Grado Académico</label>
-                        <select class="form-select grado-select-edicion" name="estudios_edit[${index}][grado]">
+                        <label class="form-label fw-medium" style="font-size:.82rem;">Grado Académico</label>
+                        <select class="form-select grado-select-edicion" name="estudios_edit[${index}][grado]" style="border-radius:7px;font-size:.875rem;">
                             <option value="">Seleccionar</option>
-                            ${grados.map(g => 
+                            ${grados.map(g =>
                                 `<option value="${g.id}" ${gradoId == g.id ? 'selected' : ''}>${g.nombre}</option>`
                             ).join('')}
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label fw-medium">Profesión</label>
-                        <select class="form-select profesion-select-edicion" name="estudios_edit[${index}][profesion]" 
-                            ${gradoId ? '' : 'disabled'}>
+                        <label class="form-label fw-medium" style="font-size:.82rem;">Profesión</label>
+                        <select class="form-select profesion-select-edicion" name="estudios_edit[${index}][profesion]"
+                            ${gradoId ? '' : 'disabled'} style="border-radius:7px;font-size:.875rem;">
                             <option value="">Seleccionar</option>
-                            ${profesiones.map(p => 
+                            ${profesiones.map(p =>
                                 `<option value="${p.id}" ${profesionId == p.id ? 'selected' : ''}>${p.nombre}</option>`
                             ).join('')}
                         </select>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label fw-medium">Universidad</label>
-                        <select class="form-select universidad-select-edicion" name="estudios_edit[${index}][universidad]" 
-                            ${gradoId ? '' : 'disabled'}>
+                        <label class="form-label fw-medium" style="font-size:.82rem;">Universidad</label>
+                        <select class="form-select universidad-select-edicion" name="estudios_edit[${index}][universidad]"
+                            ${gradoId ? '' : 'disabled'} style="border-radius:7px;font-size:.875rem;">
                             <option value="">Seleccionar</option>
-                            ${universidades.map(u => 
+                            ${universidades.map(u =>
                                 `<option value="${u.id}" ${universidadId == u.id ? 'selected' : ''}>${u.nombre} (${u.sigla})</option>`
                             ).join('')}
                         </select>
                     </div>
                     <div class="col-md-1 d-flex align-items-end">
-                        <button type="button" class="btn btn-danger btn-sm remove-estudio-edicion">
+                        <button type="button" class="btn btn-sm remove-estudio-edicion"
+                            style="border-radius:6px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#ef4444;">
                             <i class="ri-delete-bin-line"></i>
                         </button>
                     </div>
@@ -1009,11 +1080,15 @@
 
                 return `
                 <div class="row g-3">
-                    <!-- Datos Personales -->
-                    <div class="col-lg-12 mb-3">
-                        <h6 class="fw-bold text-primary mb-3">
-                            <i class="ri-user-3-line me-2"></i>Datos Personales
-                        </h6>
+                    <div class="col-12">
+                        <div class="d-flex align-items-center gap-2 mb-3 pb-2"
+                             style="border-bottom:2px solid rgba(102,126,234,.15);">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                 style="width:30px;height:30px;background:rgba(102,126,234,.12);">
+                                <i class="ri-user-3-line" style="font-size:.85rem;color:#667eea;"></i>
+                            </div>
+                            <h6 class="mb-0 fw-semibold" style="font-size:.88rem;color:#495057;">Datos Personales</h6>
+                        </div>
                     </div>
 
                     <div class="col-md-3">
@@ -1088,11 +1163,15 @@
                         </div>
                     </div>
 
-                    <!-- Contacto -->
-                    <div class="col-lg-12 mb-3 mt-4">
-                        <h6 class="fw-bold text-primary mb-3">
-                            <i class="ri-phone-line me-2"></i>Datos de Contacto
-                        </h6>
+                    <div class="col-12 mt-2">
+                        <div class="d-flex align-items-center gap-2 mb-3 pb-2"
+                             style="border-bottom:2px solid rgba(32,201,151,.15);">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                 style="width:30px;height:30px;background:rgba(32,201,151,.12);">
+                                <i class="ri-phone-line" style="font-size:.85rem;color:#20c997;"></i>
+                            </div>
+                            <h6 class="mb-0 fw-semibold" style="font-size:.88rem;color:#495057;">Datos de Contacto</h6>
+                        </div>
                     </div>
 
                     <div class="col-md-6">
@@ -1164,14 +1243,19 @@
                         </div>
                     </div>
 
-                    <!-- Estudios -->
-                    <div class="col-12 mt-4">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="fw-bold text-primary mb-0">
-                                <i class="ri-book-line me-2"></i>Estudios Realizados
-                            </h6>
-                            <button type="button" class="btn btn-outline-primary btn-sm add-estudio-edicion">
-                                <i class="ri-add-line me-1"></i>Agregar Estudio
+                    <div class="col-12 mt-2">
+                        <div class="d-flex align-items-center justify-content-between mb-3 pb-2"
+                             style="border-bottom:2px solid rgba(111,66,193,.15);">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                     style="width:30px;height:30px;background:rgba(111,66,193,.12);">
+                                    <i class="ri-book-line" style="font-size:.85rem;color:#6f42c1;"></i>
+                                </div>
+                                <h6 class="mb-0 fw-semibold" style="font-size:.88rem;color:#495057;">Estudios Realizados</h6>
+                            </div>
+                            <button type="button" class="btn btn-sm add-estudio-edicion fw-semibold"
+                                    style="border-radius:6px;background:rgba(111,66,193,.1);border:1px solid rgba(111,66,193,.2);color:#6f42c1;font-size:.78rem;">
+                                <i class="ri-add-line me-1"></i>Agregar
                             </button>
                         </div>
                         <div id="estudios-container-edicion">

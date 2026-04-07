@@ -1264,37 +1264,45 @@ class OfertasAcademicasController extends Controller
     {
         $eventos = [];
         foreach ($modulo->horarios as $horario) {
-            $start = $horario->fecha . 'T' . $horario->hora_inicio;
-            $end = $horario->fecha . 'T' . $horario->hora_fin;
+            $fechaStr = \Carbon\Carbon::parse($horario->fecha)->format('Y-m-d');
+            $start = $fechaStr . 'T' . substr($horario->hora_inicio, 0, 5);
+            $end   = $fechaStr . 'T' . substr($horario->hora_fin,    0, 5);
             $responsable = optional($horario->trabajador_cargo)->trabajador?->persona?->nombres . ' ' .
                 optional($horario->trabajador_cargo)->trabajador?->persona?->apellido_paterno ?? 'Sin responsable';
             $cargo = optional($horario->trabajador_cargo)->cargo?->nombre ?? '';
             $estado = $horario->estado ?? 'Confirmado';
             $estadoLabel = match ($estado) {
-                'Confirmado' => '[✅ Confirmado]',
+                'Confirmado'   => '[✅ Confirmado]',
                 'Desarrollado' => '[✔️ Desarrollado]',
-                'Postergado' => '[⏸️ Postergado]',
-                default => '',
+                'Postergado'   => '[⏸️ Postergado]',
+                default        => '',
             };
             $title = $modulo->nombre . ' - ' . $responsable . ' (' . $cargo . ') ' . $estadoLabel;
 
+            $docente = trim(
+                optional($modulo->docente?->persona)->nombres . ' ' .
+                optional($modulo->docente?->persona)->apellido_paterno
+            );
             $eventos[] = [
-                'title' => $title,
-                'start' => $start,
-                'end' => $end,
-                'className' => 'text-with',
+                'title'         => $title,
+                'start'         => $start,
+                'end'           => $end,
+                'className'     => 'text-with',
                 'extendedProps' => [
-                    'modulo_id' => $modulo->id,
-                    'horario_id' => $horario->id,
-                    'responsable' => $responsable,
-                    'cargo' => $cargo,
-                    'estado' => $estado,
-                    'color_modulo' => $modulo->color,
-                ]
+                    'modulo_id'             => $modulo->id,
+                    'horario_id'            => $horario->id,
+                    'responsable'           => $responsable,
+                    'cargo'                 => $cargo,
+                    'estado'                => $estado,
+                    'color_modulo'          => $modulo->color,
+                    'trabajadores_cargo_id' => $horario->trabajadores_cargo_id,
+                    'sucursales_cuenta_id'  => $horario->sucursales_cuenta_id,
+                    'docente'               => $docente ?: null,
+                ],
             ];
         }
 
-        return response()->json($eventos); // Devuelve un array plano de eventos
+        return response()->json($eventos);
     }
 
     // En OfertasAcademicasController.php
@@ -1380,6 +1388,80 @@ class OfertasAcademicasController extends Controller
         return response()->json(['success' => true]);
     }
 
+    public function actualizarHorario(Request $request)
+    {
+        $request->validate([
+            'id'                    => 'required|exists:horarios,id',
+            'fecha'                 => 'required|date',
+            'hora_inicio'           => 'required',
+            'hora_fin'              => 'required',
+            'trabajadores_cargo_id' => 'nullable|exists:trabajadores_cargos,id',
+            'sucursales_cuenta_id'  => 'nullable|exists:sucursales_cuentas,id',
+        ]);
+
+        $horario = Horario::findOrFail($request->id);
+        $horario->update([
+            'fecha'                 => $request->fecha,
+            'hora_inicio'           => $request->hora_inicio,
+            'hora_fin'              => $request->hora_fin,
+            'trabajadores_cargo_id' => $request->trabajadores_cargo_id,
+            'sucursales_cuenta_id'  => $request->sucursales_cuenta_id,
+        ]);
+
+        $horario->refresh();
+        $modulo = $horario->modulo;
+        $docenteNombre = trim(
+            optional($modulo->docente?->persona)->nombres . ' ' .
+            optional($modulo->docente?->persona)->apellido_paterno
+        ) ?: null;
+        $eventos = [];
+        foreach ($modulo->horarios as $h) {
+            $fechaStr = \Carbon\Carbon::parse($h->fecha)->format('Y-m-d');
+            $start = $fechaStr . 'T' . substr($h->hora_inicio, 0, 5);
+            $end   = $fechaStr . 'T' . substr($h->hora_fin, 0, 5);
+            $responsable = optional($h->trabajador_cargo)->trabajador?->persona?->nombres . ' ' .
+                optional($h->trabajador_cargo)->trabajador?->persona?->apellido_paterno ?? 'Sin responsable';
+            $cargo = optional($h->trabajador_cargo)->cargo?->nombre ?? '';
+            $estado = $h->estado ?? 'Confirmado';
+            $estadoLabel = match ($estado) {
+                'Confirmado'  => '[✅ Confirmado]',
+                'Desarrollado'=> '[✔️ Desarrollado]',
+                'Postergado'  => '[⏸️ Postergado]',
+                default       => '',
+            };
+            $eventos[] = [
+                'title'         => $modulo->nombre . ' - ' . $responsable . ' (' . $cargo . ') ' . $estadoLabel,
+                'start'         => $start,
+                'end'           => $end,
+                'className'     => 'text-with',
+                'extendedProps' => [
+                    'modulo_id'             => $modulo->id,
+                    'horario_id'            => $h->id,
+                    'responsable'           => $responsable,
+                    'cargo'                 => $cargo,
+                    'estado'                => $estado,
+                    'color_modulo'          => $modulo->color,
+                    'trabajadores_cargo_id' => $h->trabajadores_cargo_id,
+                    'sucursales_cuenta_id'  => $h->sucursales_cuenta_id,
+                    'docente'               => $docenteNombre,
+                ],
+            ];
+        }
+
+        $respNombre = optional($horario->trabajador_cargo)->trabajador?->persona?->nombres . ' ' .
+            optional($horario->trabajador_cargo)->trabajador?->persona?->apellido_paterno ?? '';
+        $respCargo  = optional($horario->trabajador_cargo)->cargo?->nombre ?? '';
+
+        return response()->json([
+            'success'     => true,
+            'msg'         => 'Horario actualizado correctamente.',
+            'eventos'     => $eventos,
+            'responsable' => trim($respNombre),
+            'cargo'       => $respCargo,
+            'docente'     => $docenteNombre,
+        ]);
+    }
+
     // Modifica el método `asignarHorarios` para que devuelva los eventos
     public function asignarHorarios(Request $request)
     {
@@ -1411,42 +1493,51 @@ class OfertasAcademicasController extends Controller
         }
 
         // Devolver los nuevos eventos para el calendario
+        $moduloFresh = $modulo->fresh();
+        $docenteNombre = trim(
+            optional($moduloFresh->docente?->persona)->nombres . ' ' .
+            optional($moduloFresh->docente?->persona)->apellido_paterno
+        ) ?: null;
         $eventos = [];
-        foreach ($modulo->fresh()->horarios as $horario) {
-            $start = $horario->fecha . 'T' . $horario->hora_inicio;
-            $end = $horario->fecha . 'T' . $horario->hora_fin;
+        foreach ($moduloFresh->horarios as $horario) {
+            $fechaStr = \Carbon\Carbon::parse($horario->fecha)->format('Y-m-d');
+            $start = $fechaStr . 'T' . substr($horario->hora_inicio, 0, 5);
+            $end   = $fechaStr . 'T' . substr($horario->hora_fin,    0, 5);
             $responsable = optional($horario->trabajador_cargo)->trabajador?->persona?->nombres . ' ' .
                 optional($horario->trabajador_cargo)->trabajador?->persona?->apellido_paterno ?? 'Sin responsable';
             $cargo = optional($horario->trabajador_cargo)->cargo?->nombre ?? '';
             $estado = $horario->estado ?? 'Confirmado';
             $estadoLabel = match ($estado) {
-                'Confirmado' => '[✅ Confirmado]',
+                'Confirmado'   => '[✅ Confirmado]',
                 'Desarrollado' => '[✔️ Desarrollado]',
-                'Postergado' => '[⏸️ Postergado]',
-                default => '',
+                'Postergado'   => '[⏸️ Postergado]',
+                default        => '',
             };
-            $title = $modulo->nombre . ' - ' . $responsable . ' (' . $cargo . ') ' . $estadoLabel;
+            $title = $moduloFresh->nombre . ' - ' . $responsable . ' (' . $cargo . ') ' . $estadoLabel;
 
             $eventos[] = [
-                'title' => $title,
-                'start' => $start,
-                'end' => $end,
-                'className' => 'text-with',
+                'title'         => $title,
+                'start'         => $start,
+                'end'           => $end,
+                'className'     => 'text-with',
                 'extendedProps' => [
-                    'modulo_id' => $modulo->id,
-                    'horario_id' => $horario->id,
-                    'responsable' => $responsable,
-                    'cargo' => $cargo,
-                    'estado' => $estado,
-                    'color_modulo' => $modulo->color,
-                ]
+                    'modulo_id'             => $moduloFresh->id,
+                    'horario_id'            => $horario->id,
+                    'responsable'           => $responsable,
+                    'cargo'                 => $cargo,
+                    'estado'                => $estado,
+                    'color_modulo'          => $moduloFresh->color,
+                    'trabajadores_cargo_id' => $horario->trabajadores_cargo_id,
+                    'sucursales_cuenta_id'  => $horario->sucursales_cuenta_id,
+                    'docente'               => $docenteNombre,
+                ],
             ];
         }
 
         return response()->json([
             'success' => true,
-            'msg' => 'Horarios asignados correctamente.',
-            'eventos' => $eventos
+            'msg'     => 'Horarios asignados correctamente.',
+            'eventos' => $eventos,
         ]);
     }
 

@@ -15,6 +15,12 @@ class ProgramasController extends Controller
             ['nombre' => trim($request->nombre)],
             ['nombre' => trim($request->nombre)]
         );
-        return response()->json(['id' => $programa->id]);
+        return response()->json([
+            'exists' => $programa->wasRecentlyCreated === false,
+            'programa' => [
+                'id' => $programa->id,
+                'nombre' => $programa->nombre
+            ]
+        ]);
     }
 }
