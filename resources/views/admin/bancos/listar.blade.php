@@ -912,6 +912,21 @@
     <script>
         $(document).ready(function() {
             let debounceTimer;
+            let isProcessing = false;
+
+            // Inicializar tooltips
+            function initTooltips() {
+                $('[data-bs-toggle="tooltip"]').each(function() {
+                    if (this._tooltip) {
+                        this._tooltip.dispose();
+                    }
+                    new bootstrap.Tooltip(this, {
+                        container: 'body',
+                        trigger: 'hover'
+                    });
+                });
+            }
+            initTooltips();
 
             // Resetear formulario de registro
             function resetAddForm() {
@@ -923,20 +938,17 @@
                 $('.addBtn').prop('disabled', true).html('<i class="ri-save-line me-1"></i> Registrar Banco');
             }
 
-            // Evento cuando se cierra el modal de registro
             $('#registrar').on('hidden.bs.modal', resetAddForm);
 
-            // Preview de color en registro
+            // Preview de color
             $('#color_registro').on('input', function() {
                 $('#colorPreviewRegistro').css('background-color', $(this).val());
             });
-
-            // Preview de color en edición
             $('#color_edicion').on('input', function() {
                 $('#colorPreviewEdicion').css('background-color', $(this).val());
             });
 
-            // Validar nombre y código en tiempo real (Registro)
+            // Validar nombre/código en registro
             $('#nombre_registro, #codigo_registro').on('input', function() {
                 const nombre = $('#nombre_registro').val().trim();
                 const codigo = $('#codigo_registro').val().trim();
@@ -944,7 +956,6 @@
                 const feedbackCodigo = $('#feedback_codigo_registro');
                 const submitBtn = $('.addBtn');
 
-                // Limpiar mensajes
                 feedbackNombre.removeClass('text-success text-danger').text('');
                 feedbackCodigo.removeClass('text-success text-danger').text('');
 
@@ -987,18 +998,19 @@
                 }, 300);
             });
 
-            // Registro de banco
+            // Registro
             $('#addForm').submit(function(e) {
                 e.preventDefault();
+                if (isProcessing) return;
                 const submitBtn = $('.addBtn');
+                isProcessing = true;
                 submitBtn.prop('disabled', true).html(
                     '<i class="ri-loader-4-line spin me-1"></i> Registrando...');
 
-                var formData = $(this).serialize();
                 $.ajax({
                     url: "{{ route('admin.bancos.registrar') }}",
                     type: "POST",
-                    data: formData,
+                    data: $(this).serialize(),
                     success: function(res) {
                         if (res.success) {
                             showNotification('success', res.msg);
@@ -1019,11 +1031,14 @@
                         showNotification('error', errorMsg);
                         submitBtn.prop('disabled', false).html(
                             '<i class="ri-save-line me-1"></i> Registrar Banco');
+                    },
+                    complete: function() {
+                        isProcessing = false;
                     }
                 });
             });
 
-            // Editar banco - abrir modal
+            // Editar - abrir modal
             $(document).on('click', '.editBtn', function() {
                 var data = $(this).data('bs-obj');
                 $('#bancoId').val(data.id);
@@ -1033,13 +1048,12 @@
                 $('#colorPreviewEdicion').css('background-color', data.color || '#0d6efd');
                 $('#logo_edicion').val(data.logo || '');
 
-                // Resetear feedback
                 $('#feedback_nombre_edicion, #feedback_codigo_edicion').removeClass(
                     'text-success text-danger').text('');
                 $('.updateBtn').prop('disabled', false);
             });
 
-            // Validar en tiempo real para edición
+            // Validar edición
             $('#nombre_edicion, #codigo_edicion').on('input', function() {
                 const nombre = $('#nombre_edicion').val().trim();
                 const codigo = $('#codigo_edicion').val().trim();
@@ -1091,18 +1105,19 @@
                 }, 300);
             });
 
-            // Actualizar banco
+            // Actualizar
             $('#updateForm').submit(function(e) {
                 e.preventDefault();
+                if (isProcessing) return;
                 const submitBtn = $('.updateBtn');
+                isProcessing = true;
                 submitBtn.prop('disabled', true).html(
                     '<i class="ri-loader-4-line spin me-1"></i> Actualizando...');
 
-                var formData = $(this).serialize();
                 $.ajax({
                     url: "{{ route('admin.bancos.modificar') }}",
                     type: "POST",
-                    data: formData,
+                    data: $(this).serialize(),
                     success: function(res) {
                         if (res.success) {
                             showNotification('success', res.msg);
@@ -1122,35 +1137,32 @@
                         showNotification('error', errorMsg);
                         submitBtn.prop('disabled', false).html(
                             '<i class="ri-save-line me-1"></i> Actualizar Banco');
+                    },
+                    complete: function() {
+                        isProcessing = false;
                     }
                 });
             });
 
-            // Eliminar banco - abrir modal
+            // Eliminar - abrir modal
             $(document).on('click', '.deleteBtn', function() {
                 var data = $(this).data('bs-obj');
                 $('#eliminarId').val(data.id);
-
-                // Resetear estado
                 $('#warning-cuentas').hide();
                 $('.btnDelete').prop('disabled', false).removeClass('disabled');
 
-                // Verificar si el banco tiene cuentas
                 $.ajax({
                     url: "{{ route('admin.bancos.ver', ':id') }}".replace(':id', data.id),
                     type: "GET",
                     success: function(response) {
                         const tieneCuentas = response.cuentas && response.cuentas.length > 0;
-                        const warningElement = $('#warning-cuentas');
-
                         if (tieneCuentas) {
-                            warningElement.show();
-                            $('.btnDelete').prop('disabled', true).addClass('disabled');
-                            warningElement.html(
-                                `<i class="ri-alert-line me-1"></i> <strong>Advertencia:</strong> Este banco tiene ${response.cuentas.length} cuenta${response.cuentas.length > 1 ? 's' : ''} bancaria${response.cuentas.length > 1 ? 's' : ''} asociada${response.cuentas.length > 1 ? 's' : ''}. Deberá eliminar primero todas sus cuentas para poder eliminar este banco.`
+                            $('#warning-cuentas').show().html(
+                                `<i class="ri-alert-line me-1"></i> <strong>Advertencia:</strong> Este banco tiene ${response.cuentas.length} cuenta(s) asociada(s). Debe eliminarlas primero.`
                             );
+                            $('.btnDelete').prop('disabled', true).addClass('disabled');
                         } else {
-                            warningElement.hide();
+                            $('#warning-cuentas').hide();
                             $('.btnDelete').prop('disabled', false).removeClass('disabled');
                         }
                     },
@@ -1161,37 +1173,31 @@
                 });
             });
 
-            // Confirmar eliminación de banco
+            // Confirmar eliminación
             $('#deleteForm').submit(function(e) {
                 e.preventDefault();
+                if (isProcessing) return;
                 const submitBtn = $('.btnDelete');
                 const bancoId = $('#eliminarId').val();
 
-                if (!bancoId || bancoId <= 0) {
-                    showNotification('error', 'ID de banco no válido');
-                    return;
-                }
-
-                if (submitBtn.prop('disabled')) {
+                if (!bancoId || submitBtn.prop('disabled')) {
                     showNotification('error',
                         'No se puede eliminar el banco porque tiene cuentas asociadas.');
                     return;
                 }
 
+                isProcessing = true;
                 submitBtn.prop('disabled', true).html(
                     '<i class="ri-loader-4-line spin me-1"></i> Eliminando...');
-
-                var formData = new FormData();
-                formData.append('id', bancoId);
-                formData.append('_token', "{{ csrf_token() }}");
-                formData.append('_method', 'DELETE');
 
                 $.ajax({
                     url: "{{ route('admin.bancos.eliminar') }}",
                     type: "POST",
-                    data: formData,
-                    processData: false,
-                    contentType: false,
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                        _method: "DELETE",
+                        id: bancoId
+                    },
                     success: function(res) {
                         if (res.success) {
                             showNotification('success', res.msg);
@@ -1199,157 +1205,74 @@
                             loadResults($('#searchInput').val().trim());
                         } else {
                             showNotification('error', res.msg ||
-                                'No se pudo eliminar el banco');
+                            'No se pudo eliminar el banco');
                             submitBtn.prop('disabled', false).html(
                                 '<i class="ri-delete-bin-line me-1"></i> Sí, Eliminar');
                         }
                     },
                     error: function(xhr) {
                         let errorMsg = 'Error al eliminar el banco.';
-                        if (xhr.responseJSON?.msg) {
-                            errorMsg = xhr.responseJSON.msg;
-                        }
+                        if (xhr.responseJSON?.msg) errorMsg = xhr.responseJSON.msg;
                         showNotification('error', errorMsg);
                         submitBtn.prop('disabled', false).html(
                             '<i class="ri-delete-bin-line me-1"></i> Sí, Eliminar');
+                    },
+                    complete: function() {
+                        isProcessing = false;
                     }
                 });
             });
 
-            // Ver detalle del banco
+            // Ver detalle
             $(document).on('click', '.viewBtn', function() {
                 var data = $(this).data('bs-obj');
                 const modal = $('#modalVerBanco');
                 const content = $('#bancoDetalleContent');
-
-                // Mostrar loading
-                content.html(`
-            <div class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Cargando...</span>
-                </div>
-                <p class="mt-3">Cargando información del banco...</p>
-            </div>
-        `);
-
+                content.html(
+                    `<div class="text-center py-5"><div class="spinner-border text-primary"></div><p class="mt-3">Cargando...</p></div>`
+                    );
                 modal.modal('show');
 
                 $.ajax({
                     url: "{{ route('admin.bancos.ver', ':id') }}".replace(':id', data.id),
                     type: "GET",
                     success: function(response) {
-                        let cuentasHtml = '';
-                        if (response.cuentas && response.cuentas.length > 0) {
-                            cuentasHtml = response.cuentas.map(cuenta => `
-                        <div class="border rounded p-3 mb-2">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="mb-1">${cuenta.numero_cuenta}</h6>
-                                    <p class="mb-0 text-muted small">
-                                        <span class="badge bg-${cuenta.activa ? 'success' : 'secondary'}">${cuenta.activa ? 'Activa' : 'Inactiva'}</span>
-                                        <span class="ms-2">${cuenta.tipo_cuenta} - ${cuenta.moneda}</span>
-                                        <span class="ms-2">Saldo: ${formatCurrency(cuenta.saldo_actual, cuenta.moneda)}</span>
-                                    </p>
-                                    <p class="mb-0 small">${cuenta.sucursal?.nombre || 'Sin sucursal'}</p>
-                                </div>
+                        let cuentasHtml = response.cuentas?.length ? response.cuentas.map(c => `
+                            <div class="border rounded p-3 mb-2">
+                                <h6>${c.numero_cuenta}</h6>
+                                <p class="mb-0 small">${c.tipo_cuenta} - ${c.moneda} | Saldo: ${formatCurrency(c.saldo_actual, c.moneda)}</p>
+                                <p class="mb-0 small">${c.sucursal?.nombre || 'Sin sucursal'}</p>
                             </div>
-                        </div>
-                    `).join('');
-                        } else {
-                            cuentasHtml = `
-                        <div class="text-center py-4">
-                            <i class="ri-bank-card-line fs-3 text-muted"></i>
-                            <p class="text-muted mt-2">No hay cuentas bancarias registradas</p>
-                        </div>
-                    `;
-                        }
-
+                        `).join('') : '<p class="text-muted">No hay cuentas registradas</p>';
                         content.html(`
-                    <div class="row">
-                        <div class="col-md-4 text-center">
-                            <div class="mb-4">
-                                ${response.banco.logo ? `<img src="${response.banco.logo}" alt="Logo" class="img-fluid rounded" style="max-height: 100px;">` : 
-                                `<div class="avatar-lg mx-auto mb-3" style="background-color: ${response.banco.color || '#0d6efd'}; border-radius: 10px;">
-                                                <div class="avatar-title text-white fs-2">${response.banco.nombre.charAt(0)}</div>
-                                            </div>`}
-                            </div>
-                            <div class="d-flex align-items-center justify-content-center mb-3">
-                                <div class="me-2" style="width: 20px; height: 20px; background-color: ${response.banco.color || '#0d6efd'}; border-radius: 4px;"></div>
-                                <span class="text-muted">Color identificador</span>
-                            </div>
-                        </div>
-                        <div class="col-md-8">
-                            <h4 class="mb-3">${response.banco.nombre}</h4>
-                            <div class="row mb-3">
-                                <div class="col-6">
-                                    <label class="form-label text-muted">Código</label>
-                                    <p class="fw-medium">${response.banco.codigo}</p>
+                            <div class="row">
+                                <div class="col-md-4 text-center">
+                                    ${response.banco.logo ? `<img src="${response.banco.logo}" style="max-height:80px">` : `<div class="avatar-lg mx-auto mb-3" style="background:${response.banco.color};border-radius:10px"><div class="avatar-title text-white fs-2">${response.banco.nombre.charAt(0)}</div></div>`}
+                                    <div class="mt-2"><span class="badge" style="background:${response.banco.color}"> </span> ${response.banco.color || 'Sin color'}</div>
                                 </div>
-                                <div class="col-6">
-                                    <label class="form-label text-muted">Total Cuentas</label>
-                                    <p class="fw-medium">${response.cuentas?.length || 0}</p>
+                                <div class="col-md-8">
+                                    <h4>${response.banco.nombre}</h4>
+                                    <p>Código: ${response.banco.codigo}</p>
+                                    <p>Cuentas: ${response.cuentas?.length || 0}</p>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="mt-4">
-                        <h5 class="mb-3">Cuentas Bancarias</h5>
-                        <div class="cuentas-container" style="max-height: 300px; overflow-y: auto;">
-                            ${cuentasHtml}
-                        </div>
-                    </div>
-                `);
+                            <hr>
+                            <h5>Cuentas Bancarias</h5>
+                            <div style="max-height:300px;overflow-y:auto">${cuentasHtml}</div>
+                        `);
                     },
                     error: function() {
-                        content.html(`
-                    <div class="text-center py-5">
-                        <i class="ri-error-warning-line fs-1 text-danger"></i>
-                        <p class="mt-3">Error al cargar la información del banco</p>
-                    </div>
-                `);
+                        content.html(
+                            `<div class="text-center py-5 text-danger"><i class="ri-error-warning-line fs-1"></i><p>Error al cargar</p></div>`
+                            );
                     }
                 });
             });
 
-            // Funciones auxiliares
-            function showNotification(type, message) {
-                let toastContainer = $('#toast-container');
-                if (toastContainer.length === 0) {
-                    toastContainer = $(
-                        '<div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999"></div>'
-                    );
-                    $('body').append(toastContainer);
-                }
-
-                const toast = $(`
-            <div class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="d-flex">
-                    <div class="toast-body">${message}</div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                </div>
-            </div>
-        `);
-
-                toastContainer.append(toast);
-                const bsToast = new bootstrap.Toast(toast[0]);
-                bsToast.show();
-
-                toast.on('hidden.bs.toast', function() {
-                    $(this).remove();
-                });
-            }
-
-            function formatCurrency(amount, currency) {
-                const formatter = new Intl.NumberFormat('es-BO', {
-                    style: 'currency',
-                    currency: currency === 'USD' ? 'USD' : 'BOB',
-                    minimumFractionDigits: 2
-                });
-                return formatter.format(amount);
-            }
-
+            // Función para cargar resultados (CORREGIDA)
             function loadResults(search = '') {
+                if (isProcessing) return;
+                isProcessing = true;
                 $.ajax({
                     url: "{{ route('admin.bancos.listar') }}",
                     method: 'GET',
@@ -1357,59 +1280,71 @@
                         search: search
                     },
                     dataType: 'json',
+                    beforeSend: function() {
+                        $('#bancosTableBody').html(`
+                            <tr><td colspan="7" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="mt-2 text-muted">Cargando resultados...</p>
+                            </td></tr>
+                        `);
+                    },
                     success: function(response) {
-                        $('.bancos-table tbody').replaceWith(response.html);
-                        $('.pagination-container').html(response.pagination);
+                        if (response.html) {
+                            $('#bancosTableBody').html(response.html);
+                        }
+                        if (response.pagination) {
+                            $('.pagination-container').html(response.pagination);
+                        }
+                        if (response.total !== undefined) {
+                            $('.results-count').html(
+                                `Mostrando <span class="fw-medium">${response.from || 0}</span> a 
+                                 <span class="fw-medium">${response.to || 0}</span> de 
+                                 <span class="fw-medium">${response.total}</span> resultados`
+                            );
+                            $('#totalBancosCounter').text(response.total);
+                        }
                         if (response.stats) {
-                            $('#totalBancosCounter').text(response.stats.totalBancos);
-                            $('#bancosConCuentas').text(response.stats.bancosConCuentas);
+                            $('#totalBancosCounter').text(response.stats.totalBancos || response.total);
+                            $('#bancosConCuentas').text(response.stats.bancosConCuentas || 0);
+                            $('#totalCuentas').text(response.stats.totalCuentas || 0);
                         }
                         initTooltips();
                     },
                     error: function() {
                         showNotification('error', 'Error al cargar los resultados');
+                        $('#bancosTableBody').html(`
+                            <tr><td colspan="7" class="text-center py-5 text-danger">
+                                <i class="ri-error-warning-line display-5"></i>
+                                <p class="mt-2">Error al cargar los datos</p>
+                            </td></tr>
+                        `);
+                    },
+                    complete: function() {
+                        isProcessing = false;
                     }
                 });
             }
 
-            function initTooltips() {
-                const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-                tooltipTriggerList.forEach(tooltipTriggerEl => {
-                    if (tooltipTriggerEl._tooltip) {
-                        tooltipTriggerEl._tooltip.dispose();
-                    }
-                });
-                tooltipTriggerList.forEach(tooltipTriggerEl => {
-                    new bootstrap.Tooltip(tooltipTriggerEl, {
-                        container: 'body',
-                        trigger: 'hover'
-                    });
-                });
-            }
-
-            // Búsqueda
+            // Búsqueda con debounce
             $('#searchInput').on('input', function() {
                 const searchTerm = $(this).val().trim();
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(() => {
                     loadResults(searchTerm);
-                }, 300);
+                }, 500);
             });
 
-            // Limpiar filtros
             $('#clearFilters').on('click', function() {
                 $('#searchInput').val('');
                 loadResults();
             });
 
-            // Manejar paginación
+            // Paginación AJAX
             $(document).on('click', '.pagination-container .pagination a', function(e) {
                 e.preventDefault();
                 const url = $(this).attr('href');
                 const search = $('#searchInput').val().trim();
-
                 if (!url) return;
-
                 $.ajax({
                     url: url,
                     method: 'GET',
@@ -1417,10 +1352,28 @@
                         search: search
                     },
                     dataType: 'json',
+                    beforeSend: function() {
+                        $('#bancosTableBody').html(`
+                            <tr><td colspan="7" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="mt-2 text-muted">Cargando página...</p>
+                            </td></tr>
+                        `);
+                    },
                     success: function(response) {
-                        $('.bancos-table tbody').replaceWith(response.html);
-                        $('.pagination-container').html(response.pagination);
+                        if (response.html) $('#bancosTableBody').html(response.html);
+                        if (response.pagination) $('.pagination-container').html(response
+                            .pagination);
+                        if (response.total !== undefined) {
+                            $('.results-count').html(
+                                `Mostrando <span class="fw-medium">${response.from || 0}</span> a 
+                                 <span class="fw-medium">${response.to || 0}</span> de 
+                                 <span class="fw-medium">${response.total}</span> resultados`
+                            );
+                        }
                         initTooltips();
+                        window.history.pushState({}, '', url + (search ? '&search=' +
+                            encodeURIComponent(search) : ''));
                     },
                     error: function() {
                         showNotification('error', 'Error al cargar la página');
@@ -1428,8 +1381,36 @@
                 });
             });
 
-            // Inicializar tooltips
-            initTooltips();
+            function showNotification(type, message) {
+                let toastContainer = $('#toast-container');
+                if (toastContainer.length === 0) {
+                    toastContainer = $(
+                        '<div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999"></div>'
+                        );
+                    $('body').append(toastContainer);
+                }
+                const toast = $(`
+                    <div class="toast align-items-center text-white bg-${type} border-0" role="alert">
+                        <div class="d-flex">
+                            <div class="toast-body">${message}</div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
+                    </div>
+                `);
+                toastContainer.append(toast);
+                const bsToast = new bootstrap.Toast(toast[0]);
+                bsToast.show();
+                toast.on('hidden.bs.toast', function() {
+                    $(this).remove();
+                });
+            }
+
+            function formatCurrency(amount, currency) {
+                return new Intl.NumberFormat('es-BO', {
+                    style: 'currency',
+                    currency: currency === 'USD' ? 'USD' : 'BOB'
+                }).format(amount);
+            }
         });
     </script>
 @endpush

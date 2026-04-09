@@ -409,7 +409,7 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
         Route::post('/admin/fases/registrar', 'fasesRegistrar')->name('admin.fases.registrar');
         Route::post('/admin/fases/verificar', 'verificarNombre')->name('admin.fases.verificar');
         Route::put('/admin/fases/modificar', 'fasesModificar')->name('admin.fases.modificar');
-        Route::post('/admin/fases/eliminar', 'fasesEliminar')->name('admin.fases.eliminar');
+        Route::delete('/admin/fases/eliminar', 'fasesEliminar')->name('admin.fases.eliminar');
     });
 
     // CARGOS

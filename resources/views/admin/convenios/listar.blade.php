@@ -1,426 +1,470 @@
 @extends('admin.dashboard')
 @section('admin')
-    <div class="container-fluid">
-        <!-- Page Title -->
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="page-title-box d-sm-flex align-items-center justify-content-between bg-light rounded-3 p-3">
-                    <div>
-                        <h4 class="mb-1 fw-bold text-dark">Gestión de Convenios</h4>
-                        <p class="text-muted mb-0">Administra los convenios disponibles</p>
-                    </div>
-
-                    @if (Auth::guard('web')->user()->can('convenios.registrar'))
-                        <div class="page-title-right">
-                            <button type="button" class="btn btn-primary btn-lg waves-effect waves-light"
-                                data-bs-toggle="modal" data-bs-target="#registrar">
-                                <i class="ri-add-line align-bottom me-1"></i> Nuevo Convenio
-                            </button>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-        <!-- Filters & Stats Cards -->
-        <div class="row">
-            <div class="col-xl-3 col-md-6">
-                <div class="card border border-primary">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0">
-                                <div class="avatar-sm rounded-circle bg-primary bg-opacity-10">
-                                    <i class="ri-handshake-line fs-24 text-primary"></i>
-                                </div>
-                            </div>
-                            <div class="flex-grow-1 ms-3">
-                                <p class="text-muted mb-1">Total Convenios</p>
-                                <h4 class="mb-0" id="totalConveniosCounter">{{ $convenios->total() }}</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-xl-9">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="d-flex flex-wrap gap-3">
-                            <div class="flex-grow-1">
-                                <div class="search-box position-relative">
-                                    <input type="text" id="searchInput" class="form-control search form-control-lg ps-5"
-                                        placeholder="Buscar convenio por nombre o sigla..."
-                                        value="{{ request('search') ?? '' }}">
-                                    <i
-                                        class="ri-search-line search-icon position-absolute top-50 start-0 translate-middle-y text-muted ms-3"></i>
-                                </div>
-                            </div>
-                            <div>
-                                <button type="button" id="clearFilters" class="btn btn-outline-secondary btn-lg">
-                                    <i class="ri-refresh-line align-bottom me-1"></i> Limpiar
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- Results Table -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card border border-light shadow-sm">
-                    <div class="card-header border-bottom-dashed d-flex align-items-center justify-content-between">
-                        <h5 class="card-title mb-0 fw-bold">Listado de Convenios</h5>
-                        <div class="dropdown">
-                            <button class="btn btn-soft-secondary btn-sm dropdown-toggle" type="button"
-                                data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="ri-equalizer-line align-bottom me-1"></i> Vista
-                            </button>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item active" href="#"><i
-                                            class="ri-list-check align-bottom me-2"></i> Tabla</a></li>
-                                <li><a class="dropdown-item" href="#"><i class="ri-grid-line align-bottom me-2"></i>
-                                        Cuadrícula</a></li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-borderless table-centered align-middle table-nowrap mb-0">
-                                <thead class="table-light text-muted fw-semibold">
-                                    <tr>
-                                        <th class="px-3 py-3" width="5%">#</th>
-                                        <th class="px-3 py-3" width="15%">Imagen</th>
-                                        <th class="px-3 py-3">Nombre del Convenio</th>
-                                        <th class="px-3 py-3">Sigla</th>
-                                        <th class="px-3 py-3 text-end" width="15%">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="conveniosTableBody">
-                                    @include('admin.convenios.partials.table-body')
-                                </tbody>
-                            </table>
-                        </div>
-                        @if ($convenios->total() > 0)
-                            <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
-                                <div class="results-count text-muted">
-                                    Mostrando <span class="fw-medium">{{ $convenios->firstItem() }}</span> a
-                                    <span class="fw-medium">{{ $convenios->lastItem() }}</span> de
-                                    <span class="fw-medium">{{ $convenios->total() }}</span> resultados
-                                </div>
-                                <div class="pagination-container">
-                                    {{ $convenios->appends(request()->input())->links('pagination::bootstrap-5') }}
-                                </div>
-                            </div>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Registrar -->
-    <div class="modal fade" id="registrar" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-primary-subtle p-3 position-relative">
-                    <h5 class="modal-title fw-bold text-primary" id="registrarLabel">
-                        <i class="ri-add-line me-2 align-bottom"></i>Registrar Nuevo Convenio
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
-                </div>
-                <form id="addForm" class="needs-validation" novalidate enctype="multipart/form-data">
-                    @csrf
-                    <div class="modal-body p-4">
-                        <div class="row g-3">
-                            <div class="col-lg-12">
-                                <div class="mb-3">
-                                    <label for="nombre_registro" class="form-label fw-medium">Nombre del Convenio <span
-                                            class="text-danger">*</span></label>
-                                    <input type="text" id="nombre_registro" name="nombre"
-                                        class="form-control form-control-lg"
-                                        placeholder="Ej: Universidad Mayor de San Andrés" required>
-                                    <div class="invalid-feedback">Por favor ingresa el nombre del convenio</div>
-                                    <small id="feedback_registro" class="form-text mt-1"></small>
-                                </div>
-                            </div>
-                            <div class="col-lg-12">
-                                <div class="mb-3">
-                                    <label for="sigla_registro" class="form-label fw-medium">Sigla</label>
-                                    <input type="text" id="sigla_registro" name="sigla"
-                                        class="form-control form-control-lg" placeholder="Ej: UMSA">
-                                    <small class="form-text text-muted">Identificador abreviado del convenio
-                                        (opcional)</small>
-                                </div>
-                            </div>
-                            <div class="col-lg-12">
-                                <div class="mb-3">
-                                    <label for="imagen_registro" class="form-label fw-medium">Imagen del Convenio</label>
-                                    <input type="file" id="imagen_registro" name="imagen"
-                                        class="form-control form-control-lg" accept="image/*">
-                                    <div class="form-text">Formatos: JPG, PNG, JPEG. Tamaño máximo: 2MB.</div>
-                                    <div id="vista_previa_registro" class="mt-2"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer bg-light p-3">
-                        <button type="button" class="btn btn-soft-secondary btn-lg"
-                            data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary btn-lg addBtn" disabled>
-                            <i class="ri-save-3-line me-1 align-bottom"></i>
-                            <span class="submit-text">Registrar Convenio</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Modificar -->
-    <div class="modal fade" id="modalModificar" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-warning-subtle p-3 position-relative">
-                    <h5 class="modal-title fw-bold text-warning" id="modalModificarLabel">
-                        <i class="ri-edit-line me-2 align-bottom"></i>Editar Convenio
-                    </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form id="updateForm" class="needs-validation" novalidate enctype="multipart/form-data">
-                    @csrf
-                    @method('PUT')
-                    <input type="hidden" name="id" id="convenioId">
-                    <div class="modal-body p-4">
-                        <div class="row g-3">
-                            <div class="col-lg-12">
-                                <div class="mb-3">
-                                    <label for="nombre_edicion" class="form-label fw-medium">Nombre del Convenio <span
-                                            class="text-danger">*</span></label>
-                                    <input type="text" class="form-control form-control-lg" id="nombre_edicion"
-                                        name="nombre" required>
-                                    <div class="invalid-feedback">Por favor ingresa el nombre del convenio</div>
-                                    <small id="feedback_edicion" class="form-text mt-1"></small>
-                                </div>
-                            </div>
-                            <div class="col-lg-12">
-                                <div class="mb-3">
-                                    <label for="sigla_edicion" class="form-label fw-medium">Sigla</label>
-                                    <input type="text" class="form-control form-control-lg" id="sigla_edicion"
-                                        name="sigla">
-                                    <small class="form-text text-muted">Identificador abreviado del convenio
-                                        (opcional)</small>
-                                </div>
-                            </div>
-                            <div class="col-lg-12">
-                                <div class="mb-3">
-                                    <label for="imagen_edicion" class="form-label fw-medium">Imagen del Convenio</label>
-                                    <input type="file" id="imagen_edicion" name="imagen"
-                                        class="form-control form-control-lg" accept="image/*">
-                                    <div class="form-text">Formatos: JPG, PNG, JPEG. Tamaño máximo: 2MB.</div>
-                                    <div id="imagen_actual" class="mt-2"></div>
-                                    <div id="vista_previa_edicion" class="mt-2"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer bg-light p-3">
-                        <button type="button" class="btn btn-soft-secondary btn-lg"
-                            data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-warning btn-lg updateBtn" disabled>
-                            <i class="ri-refresh-line me-1 align-bottom"></i>
-                            <span class="submit-text">Actualizar Convenio</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Eliminar -->
-    <div class="modal fade" id="modalEliminar" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-danger-subtle p-3 position-relative">
-                    <h5 class="modal-title fw-bold text-danger" id="modalEliminarLabel">
-                        <i class="ri-delete-bin-line me-2 align-bottom"></i>Confirmar Eliminación
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
-                </div>
-                <form id="deleteForm">
-                    @csrf
-                    @method('DELETE')
-                    <input type="hidden" name="id" id="eliminarId">
-                    <div class="modal-body p-4 text-center">
-                        <div class="mb-4">
-                            <div class="avatar-xl mx-auto">
-                                <div class="avatar-title bg-danger bg-opacity-10 text-danger rounded-circle fs-2xl">
-                                    <i class="ri-alert-line"></i>
-                                </div>
-                            </div>
-                        </div>
-                        <h4 class="mb-3 fw-bold">¿Estás seguro de eliminar este convenio?</h4>
-                        <p class="text-muted mb-0">Esta acción no se puede deshacer. Si hay posgrados asociados a este
-                            convenio, deberás actualizarlos manualmente.</p>
-                        <div class="mt-3 p-3 bg-light rounded">
-                            <small class="text-danger fw-medium">Advertencia:</small>
-                            <small class="text-muted">Se recomienda verificar los registros asociados antes de eliminar
-                                este convenio.</small>
-                        </div>
-                    </div>
-                    <div class="modal-footer justify-content-center bg-light p-3">
-                        <button type="button" class="btn btn-soft-secondary btn-lg"
-                            data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-danger btn-lg btnDelete">
-                            <i class="ri-delete-bin-line me-1 align-bottom"></i>
-                            <span class="submit-text">Sí, Eliminar</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-@endsection
-
-@push('style')
     <style>
-        /* Responsive Table */
-        .table-nowrap td,
-        .table-nowrap th {
-            white-space: nowrap;
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap');
+
+        :root {
+            --conv-primary: #0d9488;
+            --conv-primary-light: #eff6ff;
+            --conv-primary-dark: #0f766e;
+            --conv-accent: #f59e0b;
+            --conv-accent-light: #fffbeb;
+            --conv-surface: #f8fafc;
+            --conv-border: #e2e8f0;
+            --conv-text: #1e293b;
+            --conv-text-muted: #64748b;
+            --conv-success: #10b981;
+            --conv-danger: #ef4444;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
         }
 
-        /* Action buttons */
-        .btn-action {
-            width: 32px;
-            height: 32px;
-            display: inline-flex;
+        .convenios-page {
+            font-family: 'DM Sans', sans-serif;
+            color: var(--conv-text);
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Page Header */
+        .convenios-header {
+            display: flex;
             align-items: center;
-            justify-content: center;
-            border-radius: 6px;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 28px;
+            padding: 24px 28px;
+            background: linear-gradient(135deg, var(--conv-primary) 0%, var(--conv-primary-dark) 100%);
+            border-radius: var(--radius-lg);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .convenios-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .convenios-header::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: 20%;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .convenios-header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.65rem;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: -0.02em;
+            position: relative;
+            z-index: 1;
+            color: white;
+        }
+
+        .convenios-header h1 i {
+            color: white;
+        }
+
+        .convenios-header p {
+            margin: 4px 0 0;
+            opacity: 0.85;
+            font-size: 0.9rem;
+            position: relative;
+            z-index: 1;
+            color: white;
+        }
+
+        .btn-new-convenio {
+            background: white;
+            color: var(--conv-primary);
+            border: none;
+            padding: 10px 24px;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.25s ease;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            z-index: 1;
+        }
+
+        .btn-new-convenio:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            background: var(--conv-primary-light);
+        }
+
+        /* Search Bar */
+        .search-bar {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--conv-border);
+        }
+
+        .search-wrapper {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .search-wrapper i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--conv-text-muted);
+            font-size: 1.1rem;
+        }
+
+        .search-wrapper input {
+            width: 100%;
+            padding: 10px 14px 10px 42px;
+            border: 1px solid var(--conv-border);
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-family: 'DM Sans', sans-serif;
+            transition: all 0.2s ease;
+            background: var(--conv-surface);
+        }
+
+        .search-wrapper input:focus {
+            outline: none;
+            border-color: var(--conv-primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            background: white;
+        }
+
+        .btn-clear {
+            padding: 10px 20px;
+            border: 1px solid var(--conv-border);
+            border-radius: var(--radius-sm);
+            background: white;
             font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--conv-text-muted);
+            cursor: pointer;
             transition: all 0.2s ease;
         }
 
-        .btn-action i {
-            font-size: 1rem;
-            line-height: 1;
+        .btn-clear:hover {
+            background: var(--conv-surface);
+            color: var(--conv-text);
         }
 
-        .btn-action:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        /* Table Card */
+        .table-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--conv-border);
+            overflow: hidden;
         }
 
-        /* Convenio Image */
-        .convenio-img {
-            width: 50px;
-            height: 50px;
+        .table-card-header {
+            padding: 18px 24px;
+            border-bottom: 1px dashed var(--conv-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .table-card-header h5 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        .table-responsive {
+            overflow-x: visible !important;
+        }
+
+        .convenios-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .convenios-table thead th {
+            background: var(--conv-surface);
+            padding: 12px 16px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--conv-text-muted);
+            border-bottom: 1px solid var(--conv-border);
+            white-space: normal;
+            vertical-align: middle;
+        }
+
+        .convenios-table tbody tr {
+            transition: background 0.15s ease;
+        }
+
+        .convenios-table tbody tr:hover {
+            background: var(--conv-primary-light);
+        }
+
+        .convenios-table tbody td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--conv-border);
+            vertical-align: middle;
+            white-space: normal;
+            font-size: 0.88rem;
+        }
+
+        .convenios-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .convenio-info-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .convenio-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: var(--conv-primary-light);
+            color: var(--conv-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .convenio-avatar img {
+            width: 100%;
+            height: 100%;
             object-fit: cover;
-            border-radius: 6px;
-            border: 1px solid #e9ecef;
         }
 
-        /* Empty state */
+        .convenio-name-text h6 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 0.92rem;
+            color: var(--conv-text);
+        }
+
+        .badge-sigla {
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 4px 10px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .status-badge.active {
+            background: #ecfdf5;
+            color: #059669;
+        }
+
+        .action-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: var(--radius-sm);
+            border: 1px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .action-btn.edit {
+            background: #fffbeb;
+            color: #d97706;
+            border-color: #fde68a;
+        }
+
+        .action-btn.edit:hover {
+            background: #fde68a;
+            transform: translateY(-1px);
+        }
+
+        .action-btn.delete {
+            background: #fef2f2;
+            color: #dc2626;
+            border-color: #fecaca;
+        }
+
+        .action-btn.delete:hover {
+            background: #fecaca;
+            transform: translateY(-1px);
+        }
+
+        .table-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--conv-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            background: var(--conv-surface);
+        }
+
+        .table-footer .results-count {
+            font-size: 0.85rem;
+            color: var(--conv-text-muted);
+        }
+
+        .pagination .page-link {
+            border-radius: var(--radius-sm) !important;
+            border: 1px solid var(--conv-border);
+            color: var(--conv-text-muted);
+            font-size: 0.85rem;
+            padding: 6px 12px;
+            margin: 0 2px;
+        }
+
+        .pagination .page-item.active .page-link {
+            background: var(--conv-primary);
+            border-color: var(--conv-primary);
+            color: white;
+        }
+
+        .pagination .page-link:hover {
+            background: var(--conv-primary-light);
+            border-color: var(--conv-primary);
+            color: var(--conv-primary);
+        }
+
         .empty-state {
-            padding: 3rem 1.5rem;
+            padding: 48px 24px;
             text-align: center;
         }
 
-        .empty-icon {
-            font-size: 4rem;
-            color: #adb5bd;
-            margin-bottom: 1rem;
+        .empty-state i {
+            font-size: 3.5rem;
+            color: #cbd5e1;
+            margin-bottom: 12px;
         }
 
-        /* Badge for sigla */
-        .badge-sigla {
-            background-color: rgba(var(--bs-info-rgb), 0.1);
-            color: var(--bs-info);
+        .empty-state p {
+            color: var(--conv-text-muted);
+            margin: 0;
+        }
+
+        .modal-content {
+            border: none;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--conv-border);
+            padding: 16px 24px;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--conv-border);
+            padding: 16px 24px;
+        }
+
+        .form-control {
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--conv-border);
+            padding: 10px 14px;
+            font-size: 0.9rem;
+        }
+
+        .form-control:focus {
+            border-color: var(--conv-primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-label {
             font-weight: 500;
-            padding: 0.25rem 0.5rem;
+            font-size: 0.85rem;
+            color: var(--conv-text);
+            margin-bottom: 6px;
         }
 
-        /* Pagination */
-        .pagination {
-            --bs-pagination-border-radius: 6px;
-            --bs-pagination-hover-bg: var(--bs-primary);
-            --bs-pagination-hover-color: #fff;
+        .image-preview {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 10px;
         }
 
-        /* Mobile optimization */
-        @media (max-width: 767.98px) {
-            .card-header {
-                flex-direction: column;
-                align-items: flex-start !important;
-                gap: 10px;
-            }
-
-            .page-title-box {
-                flex-direction: column !important;
-                align-items: flex-start !important;
-                gap: 15px;
-            }
-
-            .d-flex.justify-content-between.align-items-center {
-                flex-direction: column;
-                gap: 12px;
-            }
-
-            .search-box {
-                width: 100%;
-            }
-
-            .modal-dialog {
-                margin: 0.5rem;
-                max-width: calc(100% - 1rem);
-            }
-
-            .table-responsive {
-                font-size: 0.875rem;
-            }
-
-            .btn-group .btn {
-                padding: 0.25rem 0.5rem;
-                font-size: 0.75rem;
-            }
-
-            .convenio-img {
-                width: 40px;
-                height: 40px;
-            }
+        .image-preview img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--conv-border);
+            background: var(--conv-surface);
         }
 
-        /* Loading spinner */
-        .btn .spin {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid currentColor;
-            border-right-color: transparent;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* Toast notifications - Posición superior derecha */
         .toast-container {
             position: fixed;
             top: 20px;
             right: 20px;
-            z-index: 999999;
+            z-index: 999999 !important;
         }
 
         .toast {
             min-width: 300px;
             max-width: 350px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            border-radius: 8px;
+            border-radius: var(--radius-md);
             overflow: hidden;
             margin-bottom: 10px;
             animation: slideInRight 0.3s ease-out;
@@ -438,12 +482,235 @@
             }
         }
 
-        /* Asegurar que los toasts estén por encima de los modales */
-        .toast-container {
-            z-index: 999999 !important;
+        .btn .spin {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid currentColor;
+            border-right-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .convenios-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .search-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .table-footer {
+                flex-direction: column;
+                align-items: center;
+            }
         }
     </style>
-@endpush
+
+    <div class="container-fluid convenios-page">
+        <!-- Page Header -->
+        <div class="convenios-header">
+            <div>
+                <h1><i class="ri-handshake-line me-2"></i>Gestión de Convenios</h1>
+                <p>Administra los convenios disponibles</p>
+            </div>
+            @if (Auth::guard('web')->user()->can('convenios.registrar'))
+                <button type="button" class="btn-new-convenio" data-bs-toggle="modal" data-bs-target="#registrar">
+                    <i class="ri-add-line me-1"></i> Nuevo Convenio
+                </button>
+            @endif
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-bar">
+            <div class="search-wrapper">
+                <i class="ri-search-line"></i>
+                <input type="text" id="searchInput" class="form-control"
+                    placeholder="Buscar convenio por nombre o sigla..." value="{{ request('search') ?? '' }}">
+            </div>
+            <button type="button" id="clearFilters" class="btn-clear">
+                <i class="ri-refresh-line me-1"></i> Limpiar
+            </button>
+        </div>
+
+        <!-- Table -->
+        <div class="table-card">
+            <div class="table-card-header">
+                <h5><i class="ri-list-check me-2 text-muted"></i>Listado de Convenios</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="convenios-table">
+                    <thead>
+                        <tr>
+                            <th width="5%">#</th>
+                            <th width="15%">Logo</th>
+                            <th>Nombre del Convenio</th>
+                            <th>Sigla</th>
+                            <th width="16%" class="text-center">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="conveniosTableBody">
+                        @include('admin.convenios.partials.table-body')
+                    </tbody>
+                </table>
+            </div>
+            @if ($convenios->total() > 0)
+                <div class="table-footer">
+                    <div class="results-count">
+                        Mostrando <span class="fw-medium">{{ $convenios->firstItem() }}</span> a
+                        <span class="fw-medium">{{ $convenios->lastItem() }}</span> de
+                        <span class="fw-medium">{{ $convenios->total() }}</span> resultados
+                    </div>
+                    <div class="pagination-container">
+                        {{ $convenios->appends(request()->input())->links('pagination::bootstrap-5') }}
+                    </div>
+                </div>
+            @endif
+        </div>
+    </div>
+
+    <!-- Modal Registrar -->
+    <div class="modal fade" id="registrar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background: var(--conv-primary-light);">
+                    <h5 class="modal-title" style="color: var(--conv-primary); font-weight: 600;">
+                        <i class="ri-add-line me-2"></i>Registrar Nuevo Convenio
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="addForm" class="needs-validation" novalidate enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="nombre_registro" class="form-label">Nombre del Convenio <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" id="nombre_registro" name="nombre" class="form-control"
+                                placeholder="Ej: Universidad Mayor de San Andrés" required>
+                            <div class="invalid-feedback">Por favor ingresa el nombre del convenio</div>
+                            <small id="feedback_registro" class="form-text mt-1"></small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sigla_registro" class="form-label">Sigla</label>
+                            <input type="text" id="sigla_registro" name="sigla" class="form-control"
+                                placeholder="Ej: UMSA">
+                            <small class="form-text text-muted">Identificador abreviado del convenio (opcional)</small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="imagen_registro" class="form-label">Logo del Convenio</label>
+                            <input type="file" id="imagen_registro" name="imagen" class="form-control" accept="image/*">
+                            <div class="form-text">Formatos: JPG, PNG, JPEG. Tamaño máximo: 2MB.</div>
+                            <div id="vista_previa_registro" class="image-preview"></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn addBtn" style="background: var(--conv-primary); color: white;"
+                            disabled>
+                            <i class="ri-save-3-line me-1"></i> Registrar Convenio
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Modificar -->
+    <div class="modal fade" id="modalModificar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background: var(--conv-accent-light);">
+                    <h5 class="modal-title" style="color: #b45309; font-weight: 600;">
+                        <i class="ri-edit-line me-2"></i>Editar Convenio
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="updateForm" class="needs-validation" novalidate enctype="multipart/form-data">
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="id" id="convenioId">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="nombre_edicion" class="form-label">Nombre del Convenio <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="nombre_edicion" name="nombre" required>
+                            <div class="invalid-feedback">Por favor ingresa el nombre del convenio</div>
+                            <small id="feedback_edicion" class="form-text mt-1"></small>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sigla_edicion" class="form-label">Sigla</label>
+                            <input type="text" class="form-control" id="sigla_edicion" name="sigla">
+                        </div>
+                        <div class="mb-3">
+                            <label for="imagen_edicion" class="form-label">Logo del Convenio</label>
+                            <input type="file" id="imagen_edicion" name="imagen" class="form-control"
+                                accept="image/*">
+                            <div id="imagen_actual" class="image-preview"></div>
+                            <div id="vista_previa_edicion" class="image-preview"></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn updateBtn"
+                            style="background: var(--conv-accent); color: white;" disabled>
+                            <i class="ri-refresh-line me-1"></i> Actualizar Convenio
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Eliminar -->
+    <div class="modal fade" id="modalEliminar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" style="background: #fef2f2;">
+                    <h5 class="modal-title" style="color: #dc2626; font-weight: 600;">
+                        <i class="ri-delete-bin-line me-2"></i>Confirmar Eliminación
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="deleteForm">
+                    @csrf
+                    @method('DELETE')
+                    <input type="hidden" name="id" id="eliminarId">
+                    <div class="modal-body text-center">
+                        <div class="mb-3">
+                            <div
+                                style="width: 64px; height: 64px; margin: 0 auto; background: #fef2f2; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                <i class="ri-alert-line" style="font-size: 1.8rem; color: #dc2626;"></i>
+                            </div>
+                        </div>
+                        <h5 style="font-weight: 600;">¿Estás seguro de eliminar este convenio?</h5>
+                        <p class="text-muted mb-0">Esta acción no se puede deshacer.</p>
+                        <div class="mt-3 p-3 bg-light rounded">
+                            <small class="text-danger fw-medium">Advertencia:</small>
+                            <small class="text-muted">Se recomienda verificar los registros asociados antes de eliminar
+                                este convenio.</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-center">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btnDelete"
+                            style="background: var(--conv-danger); color: white;">
+                            <i class="ri-delete-bin-line me-1"></i> Sí, Eliminar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+@endsection
 
 @push('script')
     <script>
@@ -451,12 +718,10 @@
             let debounceTimer;
             let isProcessing = false;
 
-            // Inicializar tooltips
             $('[data-bs-toggle="tooltip"]').each(function() {
                 new bootstrap.Tooltip(this);
             });
 
-            // Resetear formularios cuando se cierran los modales
             $('#registrar, #modalModificar, #modalEliminar').on('hidden.bs.modal', function() {
                 if (this.id === 'registrar') {
                     $('#addForm')[0].reset();
@@ -482,7 +747,7 @@
                 const preview = $('#vista_previa_registro');
 
                 if (file) {
-                    if (file.size > 2 * 1024 * 1024) { // 2MB
+                    if (file.size > 2 * 1024 * 1024) {
                         showToast('error', 'La imagen no debe superar los 2MB');
                         $(this).val('');
                         preview.empty();
@@ -493,7 +758,7 @@
                     reader.onload = function(e) {
                         preview.html(`
                             <p class="mb-1 small text-muted">Vista previa:</p>
-                            <img src="${e.target.result}" class="convenio-img" alt="Vista previa" style="max-width: 120px; max-height: 120px;">
+                            <img src="${e.target.result}" alt="Vista previa">
                         `);
                     }
                     reader.readAsDataURL(file);
@@ -508,7 +773,7 @@
                 const preview = $('#vista_previa_edicion');
 
                 if (file) {
-                    if (file.size > 2 * 1024 * 1024) { // 2MB
+                    if (file.size > 2 * 1024 * 1024) {
                         showToast('error', 'La imagen no debe superar los 2MB');
                         $(this).val('');
                         preview.empty();
@@ -519,7 +784,7 @@
                     reader.onload = function(e) {
                         preview.html(`
                             <p class="mb-1 small text-muted">Vista previa nueva imagen:</p>
-                            <img src="${e.target.result}" class="convenio-img" alt="Vista previa" style="max-width: 120px; max-height: 120px;">
+                            <img src="${e.target.result}" alt="Vista previa">
                         `);
                     }
                     reader.readAsDataURL(file);
@@ -652,7 +917,6 @@
                 }, 500);
             });
 
-            // Editar convenio
             $(document).on('click', '.editBtn', function() {
                 const data = $(this).data('bs-obj');
                 $('#convenioId').val(data.id);
@@ -663,63 +927,48 @@
                 if (data.imagen) {
                     $('#imagen_actual').html(`
                         <p class="mb-1 small text-muted">Imagen actual:</p>
-                        <img src="{{ asset('') }}${data.imagen}" class="convenio-img" alt="Imagen actual" style="max-width: 120px; max-height: 120px;">
+                        <img src="{{ asset('') }}${data.imagen}" alt="Imagen actual">
                     `);
                 } else {
                     $('#imagen_actual').html('<span class="text-muted small">No hay imagen</span>');
                 }
 
-                // Reset y activar verificación
                 $('#feedback_edicion').removeClass('text-success text-danger').text('');
                 $('#vista_previa_edicion').empty();
                 $('.updateBtn').prop('disabled', false);
                 $('#updateForm').removeClass('was-validated');
                 $('#nombre_edicion').removeClass('is-valid is-invalid');
 
-                // Forzar verificación
                 setTimeout(() => {
                     $('#nombre_edicion').trigger('input');
                 }, 100);
             });
 
-            // Eliminar convenio
             $(document).on('click', '.deleteBtn', function() {
                 const data = $(this).data('bs-obj');
                 $('#eliminarId').val(data.id);
             });
 
-            // REGISTRAR CONVENIO
             $('#addForm').submit(function(e) {
                 e.preventDefault();
                 if (isProcessing) return;
-
                 const form = $(this)[0];
                 if (!form.checkValidity()) {
                     e.stopPropagation();
                     form.classList.add('was-validated');
                     return;
                 }
-
-                // Validar tamaño de imagen
                 const imagenInput = $('#imagen_registro')[0];
-                if (imagenInput.files.length > 0) {
-                    const file = imagenInput.files[0];
-                    if (file.size > 2 * 1024 * 1024) {
-                        showToast('error', 'La imagen no debe superar los 2MB');
-                        return;
-                    }
+                if (imagenInput.files.length > 0 && imagenInput.files[0].size > 2 * 1024 * 1024) {
+                    showToast('error', 'La imagen no debe superar los 2MB');
+                    return;
                 }
-
                 isProcessing = true;
                 const submitBtn = $('.addBtn');
                 const originalHtml = submitBtn.html();
-
                 submitBtn.prop('disabled', true).html(
                     '<span class="spinner-border spinner-border-sm me-2"></span>Registrando...');
-
-                // Usar FormData para enviar archivos
                 const formData = new FormData(this);
-
                 $.ajax({
                     url: "{{ route('admin.convenios.registrar') }}",
                     type: "POST",
@@ -728,15 +977,10 @@
                     contentType: false,
                     success: function(res) {
                         if (res.success) {
-                            // Cerrar modal primero
                             const modal = bootstrap.Modal.getInstance(document.getElementById(
                                 'registrar'));
                             modal.hide();
-
-                            // Mostrar toast
                             showToast('success', res.msg);
-
-                            // Recargar datos después de 500ms
                             setTimeout(() => {
                                 loadResults($('#searchInput').val().trim());
                             }, 500);
@@ -746,11 +990,9 @@
                     },
                     error: function(xhr) {
                         let errorMsg = 'Error al registrar el convenio. Intenta nuevamente.';
-                        if (xhr.responseJSON?.errors?.nombre) {
-                            errorMsg = xhr.responseJSON.errors.nombre[0];
-                        } else if (xhr.responseJSON?.msg) {
-                            errorMsg = xhr.responseJSON.msg;
-                        }
+                        if (xhr.responseJSON?.errors?.nombre) errorMsg = xhr.responseJSON.errors
+                            .nombre[0];
+                        else if (xhr.responseJSON?.msg) errorMsg = xhr.responseJSON.msg;
                         showToast('error', errorMsg);
                     },
                     complete: function() {
@@ -760,38 +1002,26 @@
                 });
             });
 
-            // ACTUALIZAR CONVENIO
             $('#updateForm').submit(function(e) {
                 e.preventDefault();
                 if (isProcessing) return;
-
                 const form = $(this)[0];
                 if (!form.checkValidity()) {
                     e.stopPropagation();
                     form.classList.add('was-validated');
                     return;
                 }
-
-                // Validar tamaño de imagen
                 const imagenInput = $('#imagen_edicion')[0];
-                if (imagenInput.files.length > 0) {
-                    const file = imagenInput.files[0];
-                    if (file.size > 2 * 1024 * 1024) {
-                        showToast('error', 'La imagen no debe superar los 2MB');
-                        return;
-                    }
+                if (imagenInput.files.length > 0 && imagenInput.files[0].size > 2 * 1024 * 1024) {
+                    showToast('error', 'La imagen no debe superar los 2MB');
+                    return;
                 }
-
                 isProcessing = true;
                 const submitBtn = $('.updateBtn');
                 const originalHtml = submitBtn.html();
-
                 submitBtn.prop('disabled', true).html(
                     '<span class="spinner-border spinner-border-sm me-2"></span>Actualizando...');
-
-                // Usar FormData para enviar archivos
                 const formData = new FormData(this);
-
                 $.ajax({
                     url: "{{ route('admin.convenios.modificar') }}",
                     type: "POST",
@@ -800,19 +1030,11 @@
                     contentType: false,
                     success: function(res) {
                         if (res.success) {
-                            // CERRAR MODAL CORRECTAMENTE
                             var modalEl = document.getElementById('modalModificar');
                             var modal = bootstrap.Modal.getInstance(modalEl);
-                            if (modal) {
-                                modal.hide();
-                            } else {
-                                $('#modalModificar').modal('hide');
-                            }
-
-                            // Mostrar toast
+                            if (modal) modal.hide();
+                            else $('#modalModificar').modal('hide');
                             showToast('success', res.msg);
-
-                            // Recargar datos inmediatamente
                             setTimeout(() => {
                                 loadResults($('#searchInput').val().trim());
                             }, 300);
@@ -822,11 +1044,9 @@
                     },
                     error: function(xhr) {
                         let errorMsg = 'Error al actualizar el convenio. Intenta nuevamente.';
-                        if (xhr.responseJSON?.errors?.nombre) {
-                            errorMsg = xhr.responseJSON.errors.nombre[0];
-                        } else if (xhr.responseJSON?.msg) {
-                            errorMsg = xhr.responseJSON.msg;
-                        }
+                        if (xhr.responseJSON?.errors?.nombre) errorMsg = xhr.responseJSON.errors
+                            .nombre[0];
+                        else if (xhr.responseJSON?.msg) errorMsg = xhr.responseJSON.msg;
                         showToast('error', errorMsg);
                     },
                     complete: function() {
@@ -836,37 +1056,25 @@
                 });
             });
 
-            // ELIMINAR CONVENIO
             $('#deleteForm').submit(function(e) {
                 e.preventDefault();
                 if (isProcessing) return;
-
                 isProcessing = true;
                 const submitBtn = $('.btnDelete');
                 const originalHtml = submitBtn.html();
-
                 submitBtn.prop('disabled', true).html(
                     '<span class="spinner-border spinner-border-sm me-2"></span>Eliminando...');
-
                 $.ajax({
                     url: "{{ route('admin.convenios.eliminar') }}",
                     type: "POST",
                     data: $(this).serialize(),
                     success: function(res) {
                         if (res.success) {
-                            // CERRAR MODAL CORRECTAMENTE
                             var modalEl = document.getElementById('modalEliminar');
                             var modal = bootstrap.Modal.getInstance(modalEl);
-                            if (modal) {
-                                modal.hide();
-                            } else {
-                                $('#modalEliminar').modal('hide');
-                            }
-
-                            // Mostrar toast
+                            if (modal) modal.hide();
+                            else $('#modalEliminar').modal('hide');
                             showToast('success', res.msg);
-
-                            // Recargar datos inmediatamente
                             setTimeout(() => {
                                 loadResults($('#searchInput').val().trim());
                             }, 300);
@@ -876,9 +1084,7 @@
                     },
                     error: function(xhr) {
                         let errorMsg = 'Error al eliminar el convenio. Intenta nuevamente.';
-                        if (xhr.responseJSON?.msg) {
-                            errorMsg = xhr.responseJSON.msg;
-                        }
+                        if (xhr.responseJSON?.msg) errorMsg = xhr.responseJSON.msg;
                         showToast('error', errorMsg);
                     },
                     complete: function() {
@@ -888,11 +1094,9 @@
                 });
             });
 
-            // FUNCIÓN PARA CARGAR RESULTADOS
             function loadResults(search = '') {
                 if (isProcessing) return;
                 isProcessing = true;
-
                 $.ajax({
                     url: '{{ route('admin.convenios.listar') }}',
                     method: 'GET',
@@ -902,40 +1106,26 @@
                     dataType: 'json',
                     beforeSend: function() {
                         $('#conveniosTableBody').html(`
-                        <tr>
-                            <td colspan="5" class="text-center py-5">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Cargando...</span>
-                                </div>
+                            <tr><td colspan="5" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
                                 <p class="mt-2 text-muted">Cargando resultados...</p>
-                            </td>
-                        </tr>
-                    `);
+                            </td></tr>`);
                     },
                     success: function(response) {
                         if (response.html) {
                             $('#conveniosTableBody').html(response.html);
-
-                            if (response.pagination) {
-                                $('.pagination-container').html(response.pagination);
-                            }
-
+                            if (response.pagination) $('.pagination-container').html(response
+                                .pagination);
                             if (response.total !== undefined) {
                                 $('.results-count').html(
                                     `Mostrando <span class="fw-medium">${response.from || 0}</span> a 
-                                 <span class="fw-medium">${response.to || 0}</span> de 
-                                 <span class="fw-medium">${response.total}</span> resultados`
+                                     <span class="fw-medium">${response.to || 0}</span> de 
+                                     <span class="fw-medium">${response.total}</span> resultados`
                                 );
-
-                                // Actualizar contador
                                 $('#totalConveniosCounter').text(response.total);
                             }
-
-                            // Re-inicializar tooltips
                             $('[data-bs-toggle="tooltip"]').each(function() {
-                                if (this._tooltip) {
-                                    this._tooltip.dispose();
-                                }
+                                if (this._tooltip) this._tooltip.dispose();
                                 new bootstrap.Tooltip(this);
                             });
                         }
@@ -944,13 +1134,10 @@
                         console.error('Error loading results:', xhr);
                         showToast('error', 'Error al cargar los resultados');
                         $('#conveniosTableBody').html(`
-                        <tr>
-                            <td colspan="5" class="text-center py-5 text-danger">
+                            <tr><td colspan="5" class="text-center py-5 text-danger">
                                 <i class="ri-error-warning-line display-5"></i>
                                 <p class="mt-2">Error al cargar los datos</p>
-                            </td>
-                        </tr>
-                    `);
+                            </td></tr>`);
                     },
                     complete: function() {
                         isProcessing = false;
@@ -958,7 +1145,6 @@
                 });
             }
 
-            // Búsqueda por texto
             $('#searchInput').on('input', function() {
                 const searchTerm = $(this).val().trim();
                 clearTimeout(debounceTimer);
@@ -967,20 +1153,16 @@
                 }, 500);
             });
 
-            // Limpiar filtros
             $('#clearFilters').on('click', function() {
                 $('#searchInput').val('');
                 loadResults();
             });
 
-            // Manejar paginación
             $(document).on('click', '.pagination a', function(e) {
                 e.preventDefault();
                 if (isProcessing) return;
-
                 const url = $(this).attr('href');
                 const search = $('#searchInput').val().trim();
-
                 $.ajax({
                     url: url,
                     method: 'GET',
@@ -990,35 +1172,24 @@
                     dataType: 'json',
                     beforeSend: function() {
                         $('#conveniosTableBody').html(`
-                        <tr>
-                            <td colspan="5" class="text-center py-5">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Cargando...</span>
-                                </div>
+                            <tr><td colspan="5" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>
                                 <p class="mt-2 text-muted">Cargando página...</p>
-                            </td>
-                        </tr>
-                    `);
+                            </td></tr>`);
                     },
                     success: function(response) {
                         if (response.html) {
                             $('#conveniosTableBody').html(response.html);
-
-                            if (response.pagination) {
-                                $('.pagination-container').html(response.pagination);
-                            }
-
+                            if (response.pagination) $('.pagination-container').html(response
+                                .pagination);
                             if (response.total !== undefined) {
                                 $('.results-count').html(
                                     `Mostrando <span class="fw-medium">${response.from || 0}</span> a 
-                                 <span class="fw-medium">${response.to || 0}</span> de 
-                                 <span class="fw-medium">${response.total}</span> resultados`
+                                     <span class="fw-medium">${response.to || 0}</span> de 
+                                     <span class="fw-medium">${response.total}</span> resultados`
                                 );
-
                                 $('#totalConveniosCounter').text(response.total);
                             }
-
-                            // Actualizar URL sin recargar
                             const newUrl = url + (search ? '&search=' + encodeURIComponent(
                                 search) : '');
                             window.history.pushState({}, '', newUrl);
@@ -1030,9 +1201,7 @@
                 });
             });
 
-            // FUNCIÓN TOAST MEJORADA - COLORES UNIFORMES
             function showToast(type, message) {
-                // Configuraciones por tipo
                 const config = {
                     success: {
                         icon: 'ri-checkbox-circle-fill',
@@ -1055,26 +1224,20 @@
                         title: 'Información'
                     }
                 };
-
                 const toastConfig = config[type] || config.info;
                 const toastId = 'toast-' + Date.now();
-
-                // Crear toast con estilo uniforme
                 const toastHtml = `
-                <div id="${toastId}" class="toast ${toastConfig.bgClass} text-white" role="alert" aria-live="assertive" aria-atomic="true">
-                    <div class="toast-header ${toastConfig.bgClass} text-white border-bottom-0">
-                        <i class="${toastConfig.icon} me-2"></i>
-                        <strong class="me-auto">${toastConfig.title}</strong>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
-                    </div>
-                    <div class="toast-body d-flex align-items-center">
-                        <i class="${toastConfig.icon} me-2 fs-5"></i>
-                        <span class="flex-grow-1">${message}</span>
-                    </div>
-                </div>
-            `;
-
-                // Añadir al contenedor
+                    <div id="${toastId}" class="toast ${toastConfig.bgClass} text-white" role="alert" aria-live="assertive" aria-atomic="true">
+                        <div class="toast-header ${toastConfig.bgClass} text-white border-bottom-0">
+                            <i class="${toastConfig.icon} me-2"></i>
+                            <strong class="me-auto">${toastConfig.title}</strong>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
+                        </div>
+                        <div class="toast-body d-flex align-items-center">
+                            <i class="${toastConfig.icon} me-2 fs-5"></i>
+                            <span class="flex-grow-1">${message}</span>
+                        </div>
+                    </div>`;
                 let container = document.getElementById('toast-container');
                 if (!container) {
                     container = document.createElement('div');
@@ -1082,25 +1245,18 @@
                     container.className = 'toast-container position-fixed top-0 end-0 p-3';
                     document.body.appendChild(container);
                 }
-
                 container.insertAdjacentHTML('afterbegin', toastHtml);
-
-                // Mostrar toast
                 const toastElement = document.getElementById(toastId);
                 const toast = new bootstrap.Toast(toastElement, {
                     autohide: true,
                     delay: 3000
                 });
-
                 toast.show();
-
-                // Eliminar cuando se oculte
                 toastElement.addEventListener('hidden.bs.toast', function() {
                     this.remove();
                 });
             }
 
-            // Validación Bootstrap
             (function() {
                 'use strict';
                 const forms = document.querySelectorAll('.needs-validation');

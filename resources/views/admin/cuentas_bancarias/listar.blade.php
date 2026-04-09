@@ -20,9 +20,9 @@
             --radius-sm: 8px;
             --radius-md: 12px;
             --radius-lg: 16px;
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
-            --shadow-lg: 0 10px 25px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
         }
 
         .cuentas-page {
@@ -32,8 +32,15 @@
         }
 
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(16px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .cuentas-header {
@@ -58,7 +65,7 @@
             right: -10%;
             width: 300px;
             height: 300px;
-            background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
             border-radius: 50%;
         }
 
@@ -69,7 +76,7 @@
             left: 20%;
             width: 200px;
             height: 200px;
-            background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
             border-radius: 50%;
         }
 
@@ -84,7 +91,9 @@
             color: white;
         }
 
-        .cuentas-header h1 i { color: white; }
+        .cuentas-header h1 i {
+            color: white;
+        }
 
         .cuentas-header p {
             margin: 4px 0 0;
@@ -150,10 +159,25 @@
             flex-shrink: 0;
         }
 
-        .stat-icon.total { background: var(--plane-primary-light); color: var(--plane-primary); }
-        .stat-icon.active { background: #ecfdf5; color: var(--plane-success); }
-        .stat-icon.inactive { background: #fef2f2; color: var(--plane-danger); }
-        .stat-icon.balance { background: var(--plane-accent-light); color: var(--plane-accent); }
+        .stat-icon.total {
+            background: var(--plane-primary-light);
+            color: var(--plane-primary);
+        }
+
+        .stat-icon.active {
+            background: #ecfdf5;
+            color: var(--plane-success);
+        }
+
+        .stat-icon.inactive {
+            background: #fef2f2;
+            color: var(--plane-danger);
+        }
+
+        .stat-icon.balance {
+            background: var(--plane-accent-light);
+            color: var(--plane-accent);
+        }
 
         .stat-info p {
             margin: 0;
@@ -288,7 +312,9 @@
             font-size: 1.05rem;
         }
 
-        .table-responsive { overflow-x: visible !important; }
+        .table-responsive {
+            overflow-x: visible !important;
+        }
 
         .cuentas-table {
             width: 100%;
@@ -369,11 +395,30 @@
             white-space: nowrap;
         }
 
-        .status-badge.active { background: #ecfdf5; color: #059669; }
-        .status-badge.inactive { background: #fef2f2; color: #dc2626; }
-        .status-badge.ahorro { background: #eff6ff; color: #2563eb; }
-        .status-badge.corriente { background: #f3e8ff; color: #9333ea; }
-        .status-badge.moneda_extranjera { background: #fef3c7; color: #d97706; }
+        .status-badge.active {
+            background: #ecfdf5;
+            color: #059669;
+        }
+
+        .status-badge.inactive {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .status-badge.ahorro {
+            background: #eff6ff;
+            color: #2563eb;
+        }
+
+        .status-badge.corriente {
+            background: #f3e8ff;
+            color: #9333ea;
+        }
+
+        .status-badge.moneda_extranjera {
+            background: #fef3c7;
+            color: #d97706;
+        }
 
         .action-btn {
             width: 34px;
@@ -474,14 +519,17 @@
             padding: 16px 24px;
         }
 
-        .modal-body { padding: 24px; }
+        .modal-body {
+            padding: 24px;
+        }
 
         .modal-footer {
             border-top: 1px solid var(--plane-border);
             padding: 16px 24px;
         }
 
-        .form-control, .form-select {
+        .form-control,
+        .form-select {
             border-radius: var(--radius-sm);
             border: 1px solid var(--plane-border);
             padding: 10px 14px;
@@ -522,8 +570,15 @@
         }
 
         @keyframes slideInRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
         }
 
         .btn .spin {
@@ -537,7 +592,9 @@
         }
 
         @keyframes spin {
-            to { transform: rotate(360deg); }
+            to {
+                transform: rotate(360deg);
+            }
         }
 
         .form-switch .form-check-input {
@@ -556,9 +613,17 @@
         }
 
         @media (max-width: 991.98px) {
-            .cuentas-header { padding: 20px; }
-            .cuentas-header h1 { font-size: 1.35rem; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .cuentas-header {
+                padding: 20px;
+            }
+
+            .cuentas-header h1 {
+                font-size: 1.35rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
         @media (max-width: 767.98px) {
@@ -566,15 +631,45 @@
                 flex-direction: column;
                 align-items: flex-start;
             }
-            .stats-grid { grid-template-columns: 1fr; }
-            .filter-bar { flex-direction: column; align-items: stretch; }
-            .filter-pills { justify-content: flex-start; }
-            .table-footer { flex-direction: column; align-items: center; }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .filter-pills {
+                justify-content: flex-start;
+            }
+
+            .table-footer {
+                flex-direction: column;
+                align-items: center;
+            }
+
             .cuentas-table thead th,
-            .cuentas-table tbody td { padding: 10px; font-size: 0.8rem; }
-            .cuenta-avatar { width: 32px; height: 32px; font-size: 0.9rem; }
-            .cuenta-name-text h6 { font-size: 0.82rem; }
-            .status-badge { font-size: 0.68rem; padding: 3px 8px; }
+            .cuentas-table tbody td {
+                padding: 10px;
+                font-size: 0.8rem;
+            }
+
+            .cuenta-avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 0.9rem;
+            }
+
+            .cuenta-name-text h6 {
+                font-size: 0.82rem;
+            }
+
+            .status-badge {
+                font-size: 0.68rem;
+                padding: 3px 8px;
+            }
         }
     </style>
 
@@ -625,7 +720,8 @@
         <div class="filter-bar">
             <div class="search-wrapper">
                 <i class="ri-search-line"></i>
-                <input type="text" id="searchInput" class="form-control" placeholder="Buscar por número de cuenta, banco o sucursal..." value="{{ request('search') ?? '' }}">
+                <input type="text" id="searchInput" class="form-control"
+                    placeholder="Buscar por número de cuenta, banco o sucursal..." value="{{ request('search') ?? '' }}">
             </div>
             <div class="filter-pills">
                 <span class="filter-pill active" data-filter="all">Todos</span>
@@ -692,13 +788,15 @@
                     <div class="modal-body">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label for="banco_id_registro" class="form-label">Banco <span class="text-danger">*</span></label>
+                                <label for="banco_id_registro" class="form-label">Banco <span
+                                        class="text-danger">*</span></label>
                                 <select class="form-select" id="banco_id_registro" name="banco_id" required>
                                     <option value="">Seleccionar Banco</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="sucursale_id_registro" class="form-label">Sucursal <span class="text-danger">*</span></label>
+                                <label for="sucursale_id_registro" class="form-label">Sucursal <span
+                                        class="text-danger">*</span></label>
                                 <select class="form-select" id="sucursale_id_registro" name="sucursale_id" required>
                                     <option value="">Seleccionar Sucursal</option>
                                 </select>
@@ -706,14 +804,17 @@
                         </div>
                         <div class="row g-3 mt-2">
                             <div class="col-12">
-                                <label for="numero_cuenta_registro" class="form-label">Número de Cuenta <span class="text-danger">*</span></label>
-                                <input type="text" id="numero_cuenta_registro" name="numero_cuenta" class="form-control" placeholder="Ej: 1234567890" required>
+                                <label for="numero_cuenta_registro" class="form-label">Número de Cuenta <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" id="numero_cuenta_registro" name="numero_cuenta"
+                                    class="form-control" placeholder="Ej: 1234567890" required>
                                 <small id="feedback_numero_cuenta_registro" class="form-text mt-1"></small>
                             </div>
                         </div>
                         <div class="row g-3 mt-2">
                             <div class="col-md-6">
-                                <label for="tipo_cuenta_registro" class="form-label">Tipo de Cuenta <span class="text-danger">*</span></label>
+                                <label for="tipo_cuenta_registro" class="form-label">Tipo de Cuenta <span
+                                        class="text-danger">*</span></label>
                                 <select class="form-select" id="tipo_cuenta_registro" name="tipo_cuenta" required>
                                     <option value="">Seleccionar Tipo</option>
                                     <option value="ahorro">Ahorro</option>
@@ -722,7 +823,8 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="moneda_registro" class="form-label">Moneda <span class="text-danger">*</span></label>
+                                <label for="moneda_registro" class="form-label">Moneda <span
+                                        class="text-danger">*</span></label>
                                 <select class="form-select" id="moneda_registro" name="moneda" required>
                                     <option value="">Seleccionar Moneda</option>
                                     <option value="BS">Bolivianos (BS)</option>
@@ -733,13 +835,16 @@
                         </div>
                         <div class="row g-3 mt-2">
                             <div class="col-md-6">
-                                <label for="saldo_inicial_registro" class="form-label">Saldo Inicial <span class="text-danger">*</span></label>
-                                <input type="number" step="0.01" min="0" id="saldo_inicial_registro" name="saldo_inicial" class="form-control" placeholder="0.00" required>
+                                <label for="saldo_inicial_registro" class="form-label">Saldo Inicial <span
+                                        class="text-danger">*</span></label>
+                                <input type="number" step="0.01" min="0" id="saldo_inicial_registro"
+                                    name="saldo_inicial" class="form-control" placeholder="0.00" required>
                             </div>
                             <div class="col-md-6 d-flex align-items-center">
                                 <div class="form-check form-switch mt-4">
                                     <input type="hidden" name="activa" value="0">
-                                    <input class="form-check-input" type="checkbox" id="activa_registro" name="activa" value="1" checked>
+                                    <input class="form-check-input" type="checkbox" id="activa_registro" name="activa"
+                                        value="1" checked>
                                     <label class="form-check-label" for="activa_registro">Cuenta Activa</label>
                                 </div>
                             </div>
@@ -747,13 +852,15 @@
                         <div class="row g-3 mt-2">
                             <div class="col-12">
                                 <label for="descripcion_registro" class="form-label">Descripción</label>
-                                <textarea class="form-control" id="descripcion_registro" name="descripcion" rows="2" placeholder="Descripción opcional..."></textarea>
+                                <textarea class="form-control" id="descripcion_registro" name="descripcion" rows="2"
+                                    placeholder="Descripción opcional..."></textarea>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn addBtn" style="background: var(--plane-primary); color: white;" disabled>
+                        <button type="submit" class="btn addBtn" style="background: var(--plane-primary); color: white;"
+                            disabled>
                             <i class="ri-save-3-line me-1"></i> Registrar Cuenta
                         </button>
                     </div>
@@ -778,13 +885,15 @@
                     <div class="modal-body">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label for="banco_id_edicion" class="form-label">Banco <span class="text-danger">*</span></label>
+                                <label for="banco_id_edicion" class="form-label">Banco <span
+                                        class="text-danger">*</span></label>
                                 <select class="form-select" id="banco_id_edicion" name="banco_id" required>
                                     <option value="">Seleccionar Banco</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="sucursale_id_edicion" class="form-label">Sucursal <span class="text-danger">*</span></label>
+                                <label for="sucursale_id_edicion" class="form-label">Sucursal <span
+                                        class="text-danger">*</span></label>
                                 <select class="form-select" id="sucursale_id_edicion" name="sucursale_id" required>
                                     <option value="">Seleccionar Sucursal</option>
                                 </select>
@@ -792,14 +901,17 @@
                         </div>
                         <div class="row g-3 mt-2">
                             <div class="col-12">
-                                <label for="numero_cuenta_edicion" class="form-label">Número de Cuenta <span class="text-danger">*</span></label>
-                                <input type="text" id="numero_cuenta_edicion" name="numero_cuenta" class="form-control" required>
+                                <label for="numero_cuenta_edicion" class="form-label">Número de Cuenta <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" id="numero_cuenta_edicion" name="numero_cuenta"
+                                    class="form-control" required>
                                 <small id="feedback_numero_cuenta_edicion" class="form-text mt-1"></small>
                             </div>
                         </div>
                         <div class="row g-3 mt-2">
                             <div class="col-md-6">
-                                <label for="tipo_cuenta_edicion" class="form-label">Tipo de Cuenta <span class="text-danger">*</span></label>
+                                <label for="tipo_cuenta_edicion" class="form-label">Tipo de Cuenta <span
+                                        class="text-danger">*</span></label>
                                 <select class="form-select" id="tipo_cuenta_edicion" name="tipo_cuenta" required>
                                     <option value="">Seleccionar Tipo</option>
                                     <option value="ahorro">Ahorro</option>
@@ -808,7 +920,8 @@
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="moneda_edicion" class="form-label">Moneda <span class="text-danger">*</span></label>
+                                <label for="moneda_edicion" class="form-label">Moneda <span
+                                        class="text-danger">*</span></label>
                                 <select class="form-select" id="moneda_edicion" name="moneda" required>
                                     <option value="">Seleccionar Moneda</option>
                                     <option value="BS">Bolivianos (BS)</option>
@@ -819,13 +932,16 @@
                         </div>
                         <div class="row g-3 mt-2">
                             <div class="col-md-6">
-                                <label for="saldo_inicial_edicion" class="form-label">Saldo Inicial <span class="text-danger">*</span></label>
-                                <input type="number" step="0.01" min="0" id="saldo_inicial_edicion" name="saldo_inicial" class="form-control" required>
+                                <label for="saldo_inicial_edicion" class="form-label">Saldo Inicial <span
+                                        class="text-danger">*</span></label>
+                                <input type="number" step="0.01" min="0" id="saldo_inicial_edicion"
+                                    name="saldo_inicial" class="form-control" required>
                             </div>
                             <div class="col-md-6 d-flex align-items-center">
                                 <div class="form-check form-switch mt-4">
                                     <input type="hidden" name="activa" value="0">
-                                    <input class="form-check-input" type="checkbox" id="activa_edicion" name="activa" value="1">
+                                    <input class="form-check-input" type="checkbox" id="activa_edicion" name="activa"
+                                        value="1">
                                     <label class="form-check-label" for="activa_edicion">Cuenta Activa</label>
                                 </div>
                             </div>
@@ -839,7 +955,8 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn updateBtn" style="background: var(--plane-accent); color: white;" disabled>
+                        <button type="submit" class="btn updateBtn"
+                            style="background: var(--plane-accent); color: white;" disabled>
                             <i class="ri-refresh-line me-1"></i> Actualizar Cuenta
                         </button>
                     </div>
@@ -863,19 +980,22 @@
                     <input type="hidden" name="id" id="eliminarId">
                     <div class="modal-body text-center">
                         <div class="mb-3">
-                            <div style="width: 64px; height: 64px; margin: 0 auto; background: #fef2f2; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <div
+                                style="width: 64px; height: 64px; margin: 0 auto; background: #fef2f2; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                                 <i class="ri-alert-line" style="font-size: 1.8rem; color: #dc2626;"></i>
                             </div>
                         </div>
                         <h5 style="font-weight: 600;">¿Estás seguro de eliminar esta cuenta bancaria?</h5>
                         <p class="text-muted mb-0">Esta acción no se puede deshacer.</p>
                         <div class="alert alert-warning mt-3" id="warning-pagos" style="display: none;">
-                            <i class="ri-alert-line me-1"></i> <strong>Advertencia:</strong> Esta cuenta tiene pagos asociados y no puede ser eliminada.
+                            <i class="ri-alert-line me-1"></i> <strong>Advertencia:</strong> Esta cuenta tiene pagos
+                            asociados y no puede ser eliminada.
                         </div>
                     </div>
                     <div class="modal-footer justify-content-center">
                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btnDelete" style="background: var(--plane-danger); color: white;">
+                        <button type="submit" class="btn btnDelete"
+                            style="background: var(--plane-danger); color: white;">
                             <i class="ri-delete-bin-line me-1"></i> Sí, Eliminar
                         </button>
                     </div>
@@ -889,6 +1009,7 @@
     <script>
         $(document).ready(function() {
             let debounceTimer;
+            let isProcessing = false;
             let currentFilter = 'all';
 
             function cargarBancos() {
@@ -899,7 +1020,8 @@
                         if (response.success) {
                             let options = '<option value="">Seleccionar Banco</option>';
                             response.bancos.forEach(banco => {
-                                options += '<option value="' + banco.id + '">' + banco.nombre + ' (' + banco.codigo + ')</option>';
+                                options += '<option value="' + banco.id + '">' + banco.nombre +
+                                    ' (' + banco.codigo + ')</option>';
                             });
                             $('#banco_id_registro, #banco_id_edicion').html(options);
                         }
@@ -915,7 +1037,8 @@
                         if (response.success) {
                             let options = '<option value="">Seleccionar Sucursal</option>';
                             response.sucursales.forEach(sucursal => {
-                                options += '<option value="' + sucursal.id + '">' + sucursal.nombre + ' - ' + sucursal.direccion + '</option>';
+                                options += '<option value="' + sucursal.id + '">' + sucursal
+                                    .nombre + ' - ' + sucursal.direccion + '</option>';
                             });
                             $('#sucursale_id_registro, #sucursale_id_edicion').html(options);
                         }
@@ -957,11 +1080,13 @@
                 const submitBtn = $('.addBtn');
                 const feedback = $('#feedback_numero_cuenta_registro');
 
-                let valido = bancoId && sucursalId && numeroCuenta && tipoCuenta && moneda && saldoInicial && !feedback.hasClass('text-danger');
+                let valido = bancoId && sucursalId && numeroCuenta && tipoCuenta && moneda && saldoInicial && !
+                    feedback.hasClass('text-danger');
                 submitBtn.prop('disabled', !valido);
             }
 
-            $('#banco_id_registro, #sucursale_id_registro, #tipo_cuenta_registro, #moneda_registro, #saldo_inicial_registro').on('change', validarFormularioRegistro);
+            $('#banco_id_registro, #sucursale_id_registro, #tipo_cuenta_registro, #moneda_registro, #saldo_inicial_registro')
+                .on('change', validarFormularioRegistro);
             $('#saldo_inicial_registro').on('input', validarFormularioRegistro);
 
             $('#numero_cuenta_registro').on('input', function() {
@@ -990,10 +1115,14 @@
                         },
                         success: function(res) {
                             if (res.exists) {
-                                feedback.addClass('text-danger').html('<i class="ri-error-warning-line me-1"></i> Esta cuenta ya existe');
+                                feedback.addClass('text-danger').html(
+                                    '<i class="ri-error-warning-line me-1"></i> Esta cuenta ya existe'
+                                    );
                                 $('.addBtn').prop('disabled', true);
                             } else {
-                                feedback.addClass('text-success').html('<i class="ri-checkbox-circle-line me-1"></i> Número disponible');
+                                feedback.addClass('text-success').html(
+                                    '<i class="ri-checkbox-circle-line me-1"></i> Número disponible'
+                                    );
                                 validarFormularioRegistro();
                             }
                         }
@@ -1003,8 +1132,11 @@
 
             $('#addForm').submit(function(e) {
                 e.preventDefault();
+                if (isProcessing) return;
+                isProcessing = true;
                 const submitBtn = $('.addBtn');
-                submitBtn.prop('disabled', true).html('<i class="ri-loader-4-line spin me-1"></i> Registrando...');
+                submitBtn.prop('disabled', true).html(
+                    '<i class="ri-loader-4-line spin me-1"></i> Registrando...');
 
                 $.ajax({
                     url: "{{ route('admin.cuentas-bancarias.registrar') }}",
@@ -1018,7 +1150,6 @@
                         } else {
                             showNotification('error', res.msg);
                         }
-                        submitBtn.prop('disabled', false).html('<i class="ri-save-3-line me-1"></i> Registrar Cuenta');
                     },
                     error: function(xhr) {
                         let errorMsg = 'Error al registrar la cuenta bancaria.';
@@ -1026,7 +1157,11 @@
                             errorMsg = Object.values(xhr.responseJSON.errors)[0][0];
                         }
                         showNotification('error', errorMsg);
-                        submitBtn.prop('disabled', false).html('<i class="ri-save-3-line me-1"></i> Registrar Cuenta');
+                    },
+                    complete: function() {
+                        isProcessing = false;
+                        submitBtn.prop('disabled', false).html(
+                            '<i class="ri-save-3-line me-1"></i> Registrar Cuenta');
                     }
                 });
             });
@@ -1056,11 +1191,13 @@
                 const submitBtn = $('.updateBtn');
                 const feedback = $('#feedback_numero_cuenta_edicion');
 
-                let valido = bancoId && sucursalId && numeroCuenta && tipoCuenta && moneda && saldoInicial && !feedback.hasClass('text-danger');
+                let valido = bancoId && sucursalId && numeroCuenta && tipoCuenta && moneda && saldoInicial && !
+                    feedback.hasClass('text-danger');
                 submitBtn.prop('disabled', !valido);
             }
 
-            $('#banco_id_edicion, #sucursale_id_edicion, #tipo_cuenta_edicion, #moneda_edicion, #saldo_inicial_edicion').on('change', validarFormularioEdicion);
+            $('#banco_id_edicion, #sucursale_id_edicion, #tipo_cuenta_edicion, #moneda_edicion, #saldo_inicial_edicion')
+                .on('change', validarFormularioEdicion);
             $('#saldo_inicial_edicion').on('input', validarFormularioEdicion);
 
             $('#numero_cuenta_edicion').on('input', function() {
@@ -1091,10 +1228,14 @@
                         },
                         success: function(res) {
                             if (res.exists) {
-                                feedback.addClass('text-danger').html('<i class="ri-error-warning-line me-1"></i> Esta cuenta ya existe');
+                                feedback.addClass('text-danger').html(
+                                    '<i class="ri-error-warning-line me-1"></i> Esta cuenta ya existe'
+                                    );
                                 $('.updateBtn').prop('disabled', true);
                             } else {
-                                feedback.addClass('text-success').html('<i class="ri-checkbox-circle-line me-1"></i> Número disponible');
+                                feedback.addClass('text-success').html(
+                                    '<i class="ri-checkbox-circle-line me-1"></i> Número disponible'
+                                    );
                                 validarFormularioEdicion();
                             }
                         }
@@ -1104,8 +1245,11 @@
 
             $('#updateForm').submit(function(e) {
                 e.preventDefault();
+                if (isProcessing) return;
+                isProcessing = true;
                 const submitBtn = $('.updateBtn');
-                submitBtn.prop('disabled', true).html('<i class="ri-loader-4-line spin me-1"></i> Actualizando...');
+                submitBtn.prop('disabled', true).html(
+                    '<i class="ri-loader-4-line spin me-1"></i> Actualizando...');
 
                 $.ajax({
                     url: "{{ route('admin.cuentas-bancarias.modificar') }}",
@@ -1119,11 +1263,14 @@
                         } else {
                             showNotification('error', res.msg);
                         }
-                        submitBtn.prop('disabled', false).html('<i class="ri-refresh-line me-1"></i> Actualizar Cuenta');
                     },
                     error: function() {
                         showNotification('error', 'Error al actualizar la cuenta bancaria.');
-                        submitBtn.prop('disabled', false).html('<i class="ri-refresh-line me-1"></i> Actualizar Cuenta');
+                    },
+                    complete: function() {
+                        isProcessing = false;
+                        submitBtn.prop('disabled', false).html(
+                            '<i class="ri-refresh-line me-1"></i> Actualizar Cuenta');
                     }
                 });
             });
@@ -1137,13 +1284,19 @@
 
             $('#deleteForm').submit(function(e) {
                 e.preventDefault();
+                if (isProcessing) return;
+                isProcessing = true;
                 const submitBtn = $('.btnDelete');
-                submitBtn.prop('disabled', true).html('<i class="ri-loader-4-line spin me-1"></i> Eliminando...');
+                submitBtn.prop('disabled', true).html(
+                    '<i class="ri-loader-4-line spin me-1"></i> Eliminando...');
 
                 $.ajax({
                     url: "{{ route('admin.cuentas-bancarias.eliminar') }}",
                     type: "POST",
-                    data: { id: $('#eliminarId').val(), _token: "{{ csrf_token() }}" },
+                    data: {
+                        id: $('#eliminarId').val(),
+                        _token: "{{ csrf_token() }}"
+                    },
                     success: function(res) {
                         if (res.success) {
                             showNotification('success', res.msg);
@@ -1151,16 +1304,21 @@
                             loadResults();
                         } else {
                             if (res.msg && res.msg.indexOf('pagos') !== -1) {
-                                $('#warning-pagos').show().html('<i class="ri-alert-line me-1"></i> <strong>Advertencia:</strong> ' + res.msg);
+                                $('#warning-pagos').show().html(
+                                    '<i class="ri-alert-line me-1"></i> <strong>Advertencia:</strong> ' +
+                                    res.msg);
                             } else {
                                 showNotification('error', res.msg || 'No se pudo eliminar');
                             }
                         }
-                        submitBtn.prop('disabled', false).html('<i class="ri-delete-bin-line me-1"></i> Sí, Eliminar');
                     },
                     error: function() {
                         showNotification('error', 'Error al eliminar la cuenta bancaria.');
-                        submitBtn.prop('disabled', false).html('<i class="ri-delete-bin-line me-1"></i> Sí, Eliminar');
+                    },
+                    complete: function() {
+                        isProcessing = false;
+                        submitBtn.prop('disabled', false).html(
+                            '<i class="ri-delete-bin-line me-1"></i> Sí, Eliminar');
                     }
                 });
             });
@@ -1168,44 +1326,81 @@
             function showNotification(type, message) {
                 let toastContainer = $('#toast-container');
                 if (toastContainer.length === 0) {
-                    toastContainer = $('<div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999"></div>');
+                    toastContainer = $(
+                        '<div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999"></div>'
+                        );
                     $('body').append(toastContainer);
                 }
 
                 const toast = $(
                     '<div class="toast align-items-center text-white bg-' + type + ' border-0" role="alert">' +
-                        '<div class="d-flex">' +
-                            '<div class="toast-body">' + message + '</div>' +
-                            '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>' +
-                        '</div>' +
+                    '<div class="d-flex">' +
+                    '<div class="toast-body">' + message + '</div>' +
+                    '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>' +
+                    '</div>' +
                     '</div>'
                 );
 
                 toastContainer.append(toast);
                 const bsToast = new bootstrap.Toast(toast[0]);
                 bsToast.show();
-                toast.on('hidden.bs.toast', function() { $(this).remove(); });
+                toast.on('hidden.bs.toast', function() {
+                    $(this).remove();
+                });
             }
 
             function loadResults() {
+                if (isProcessing) return;
+                isProcessing = true;
                 var search = $('#searchInput').val().trim();
                 $.ajax({
                     url: "{{ route('admin.cuentas-bancarias.listar') }}",
                     method: "GET",
-                    data: { search: search, filter: currentFilter },
+                    data: {
+                        search: search,
+                        filter: currentFilter
+                    },
                     dataType: "json",
+                    beforeSend: function() {
+                        $('#cuentasTableBody').html(`
+                            <tr><td colspan="9" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="mt-2 text-muted">Cargando resultados...</p>
+                            </td></tr>
+                        `);
+                    },
                     success: function(response) {
-                        $('#cuentasTableBody').replaceWith(response.html);
-                        $('.pagination-container').html(response.pagination);
-                        if (response.from !== undefined) {
-                            $('#showing-count').text(response.from);
-                            $('#to-count').text(response.to);
+                        if (response.html) {
+                            $('#cuentasTableBody').html(response.html);
+                        }
+                        if (response.pagination) {
+                            $('.pagination-container').html(response.pagination);
+                        }
+                        if (response.total !== undefined) {
+                            $('#totalCuentasCounter').text(response.total);
+                            $('#showing-count').text(response.from || 0);
+                            $('#to-count').text(response.to || 0);
                             $('#total-count').text(response.total);
+                        }
+                        // Actualizar estadísticas si vienen en la respuesta
+                        if (response.stats) {
+                            $('#totalActivas').text(response.stats.activas || 0);
+                            $('#totalInactivas').text(response.stats.inactivas || 0);
+                            $('#totalSaldo').text(response.stats.saldo_total || '0.00');
                         }
                         initTooltips();
                     },
                     error: function() {
                         showNotification('error', 'Error al cargar los resultados');
+                        $('#cuentasTableBody').html(`
+                            <tr><td colspan="9" class="text-center py-5 text-danger">
+                                <i class="ri-error-warning-line display-5"></i>
+                                <p class="mt-2">Error al cargar los datos</p>
+                            </td></tr>
+                        `);
+                    },
+                    complete: function() {
+                        isProcessing = false;
                     }
                 });
             }
@@ -1214,14 +1409,16 @@
                 $('[data-bs-toggle="tooltip"]').each(function() {
                     if (this._tooltip) this._tooltip.dispose();
                 });
-                $('[data-bs-toggle="tooltip"]').tooltip({ container: 'body' });
+                $('[data-bs-toggle="tooltip"]').tooltip({
+                    container: 'body'
+                });
             }
 
             $('#searchInput').on('input', function() {
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(function() {
                     loadResults();
-                }, 300);
+                }, 500);
             });
 
             $('#clearFilters').on('click', function() {
@@ -1240,23 +1437,44 @@
 
             $(document).on('click', '.pagination-container .pagination a', function(e) {
                 e.preventDefault();
+                if (isProcessing) return;
                 var url = $(this).attr('href');
                 if (!url) return;
 
                 $.ajax({
                     url: url,
                     method: "GET",
-                    data: { search: $('#searchInput').val().trim(), filter: currentFilter },
+                    data: {
+                        search: $('#searchInput').val().trim(),
+                        filter: currentFilter
+                    },
                     dataType: "json",
+                    beforeSend: function() {
+                        $('#cuentasTableBody').html(`
+                            <tr><td colspan="9" class="text-center py-5">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="mt-2 text-muted">Cargando página...</p>
+                            </td></tr>
+                        `);
+                    },
                     success: function(response) {
-                        $('#cuentasTableBody').replaceWith(response.html);
-                        $('.pagination-container').html(response.pagination);
-                        if (response.from !== undefined) {
-                            $('#showing-count').text(response.from);
-                            $('#to-count').text(response.to);
+                        if (response.html) {
+                            $('#cuentasTableBody').html(response.html);
+                        }
+                        if (response.pagination) {
+                            $('.pagination-container').html(response.pagination);
+                        }
+                        if (response.total !== undefined) {
+                            $('#totalCuentasCounter').text(response.total);
+                            $('#showing-count').text(response.from || 0);
+                            $('#to-count').text(response.to || 0);
                             $('#total-count').text(response.total);
                         }
                         initTooltips();
+                        window.history.pushState({}, '', url);
+                    },
+                    error: function() {
+                        showNotification('error', 'Error al cargar la página');
                     }
                 });
             });

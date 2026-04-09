@@ -1,44 +1,38 @@
 @forelse ($convenios as $n => $convenio)
-    <tr data-nombre="{{ strtolower($convenio->nombre) }}" data-sigla="{{ strtolower($convenio->sigla ?? '') }}">
-        <td class="text-center">{{ $convenios->firstItem() + $n }}</td>
+    <tr>
+        <td class="text-center text-muted">{{ $convenios->firstItem() + $n }}</td>
         <td>
-            <div class="d-flex justify-content-center">
+            <div class="convenio-avatar">
                 @if ($convenio->imagen)
-                    <img src="{{ asset($convenio->imagen) }}" class="w-100 convenio-img" alt="Imagen convenio">
+                    <img src="{{ asset($convenio->imagen) }}" alt="{{ $convenio->nombre }}">
                 @else
-                    <div class="avatar-sm">
-                        <div class="avatar-title bg-secondary bg-opacity-10 text-secondary rounded-circle">
-                            <i class="ri-image-line"></i>
-                        </div>
-                    </div>
+                    <i class="ri-handshake-line"></i>
                 @endif
             </div>
         </td>
         <td>
-            <div class="d-flex align-items-center">
-                <div class="flex-grow-1">
-                    <h6 class="mb-0">{{ $convenio->nombre }}</h6>
-                </div>
+            <div class="convenio-name-text">
+                <h6>{{ $convenio->nombre }}</h6>
             </div>
         </td>
         <td>
             @if ($convenio->sigla)
-                <span class="badge bg-success">{{ $convenio->sigla }}</span>
+                <span class="badge-sigla">{{ $convenio->sigla }}</span>
             @else
-                <span class="text-muted small">Sin sigla</span>
+                <span class="text-muted small">—</span>
             @endif
         </td>
         <td class="text-center">
-            <div class="btn-group" role="group">
+            <div class="d-flex align-items-center justify-content-center gap-2">
                 @if (Auth::guard('web')->user()->can('convenios.editar'))
-                    <button type="button" title="Editar Convenio" class="btn btn-warning btn-sm editBtn"
+                    <button type="button" title="Editar Convenio" class="action-btn edit editBtn"
                         data-bs-obj='@json($convenio)' data-bs-toggle="modal"
                         data-bs-target="#modalModificar">
                         <i class="ri-edit-line"></i>
                     </button>
                 @endif
                 @if (Auth::guard('web')->user()->can('convenios.eliminar'))
-                    <button type="button" title="Eliminar Convenio" class="btn btn-danger btn-sm deleteBtn"
+                    <button type="button" title="Eliminar Convenio" class="action-btn delete deleteBtn"
                         data-bs-obj='@json($convenio)' data-bs-toggle="modal"
                         data-bs-target="#modalEliminar">
                         <i class="ri-delete-bin-line"></i>
@@ -49,10 +43,10 @@
     </tr>
 @empty
     <tr>
-        <td colspan="5" class="text-center py-4">
-            <div class="text-muted">
-                <i class="ri-inbox-line display-4"></i>
-                <p class="mt-2">No se tienen registros de Convenios</p>
+        <td colspan="5">
+            <div class="empty-state">
+                <i class="ri-inbox-line"></i>
+                <p>No se tienen registros de Convenios</p>
             </div>
         </td>
     </tr>
