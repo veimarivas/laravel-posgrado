@@ -142,11 +142,12 @@ class DocentesController extends Controller
         $modulo->docente_id = $request->docente_id;
         $modulo->save();
 
-        $docente = $modulo->docente->persona;
+        $docente = $modulo->docente;
+        $persona = $docente->persona;
 
         return response()->json([
             'success' => true,
-            'docente_nombre' => trim("{$docente->apellido_paterno} {$docente->apellido_materno}, {$docente->nombres}"),
+            'docente_nombre' => trim("{$persona->apellido_paterno} {$persona->apellido_materno}, {$persona->nombres}"),
             'docente_id' => $docente->id,
         ]);
     }
