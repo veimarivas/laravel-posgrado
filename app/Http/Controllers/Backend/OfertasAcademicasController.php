@@ -1281,7 +1281,7 @@ class OfertasAcademicasController extends Controller
 
             $docente = trim(
                 optional($modulo->docente?->persona)->nombres . ' ' .
-                optional($modulo->docente?->persona)->apellido_paterno
+                    optional($modulo->docente?->persona)->apellido_paterno
             );
             $eventos[] = [
                 'title'         => $title,
@@ -1412,7 +1412,7 @@ class OfertasAcademicasController extends Controller
         $modulo = $horario->modulo;
         $docenteNombre = trim(
             optional($modulo->docente?->persona)->nombres . ' ' .
-            optional($modulo->docente?->persona)->apellido_paterno
+                optional($modulo->docente?->persona)->apellido_paterno
         ) ?: null;
         $eventos = [];
         foreach ($modulo->horarios as $h) {
@@ -1425,7 +1425,7 @@ class OfertasAcademicasController extends Controller
             $estado = $h->estado ?? 'Confirmado';
             $estadoLabel = match ($estado) {
                 'Confirmado'  => '[✅ Confirmado]',
-                'Desarrollado'=> '[✔️ Desarrollado]',
+                'Desarrollado' => '[✔️ Desarrollado]',
                 'Postergado'  => '[⏸️ Postergado]',
                 default       => '',
             };
@@ -1496,7 +1496,7 @@ class OfertasAcademicasController extends Controller
         $moduloFresh = $modulo->fresh();
         $docenteNombre = trim(
             optional($moduloFresh->docente?->persona)->nombres . ' ' .
-            optional($moduloFresh->docente?->persona)->apellido_paterno
+                optional($moduloFresh->docente?->persona)->apellido_paterno
         ) ?: null;
         $eventos = [];
         foreach ($moduloFresh->horarios as $horario) {
@@ -1682,6 +1682,7 @@ class OfertasAcademicasController extends Controller
             ->with([
                 'modulos.horarios.trabajador_cargo.trabajador.persona',
                 'modulos.horarios.sucursal_cuenta.cuenta',
+                'modulos.docente.persona',
                 'sucursal.sede',
                 'programa'
             ]);
@@ -1705,8 +1706,8 @@ class OfertasAcademicasController extends Controller
         foreach ($ofertas as $oferta) {
             foreach ($oferta->modulos as $modulo) {
                 foreach ($modulo->horarios as $horario) {
-                    $start = $horario->fecha . 'T' . $horario->hora_inicio;
-                    $end = $horario->fecha . 'T' . $horario->hora_fin;
+                    $start = \Carbon\Carbon::parse($horario->fecha)->format('Y-m-d') . 'T' . \Carbon\Carbon::parse($horario->hora_inicio)->format('H:i:s');
+                    $end = \Carbon\Carbon::parse($horario->fecha)->format('Y-m-d') . 'T' . \Carbon\Carbon::parse($horario->hora_fin)->format('H:i:s');
 
                     $responsable = optional($horario->trabajador_cargo)->trabajador?->persona?->nombres . ' ' .
                         optional($horario->trabajador_cargo)->trabajador?->persona?->apellido_paterno ?? 'Sin responsable';
@@ -1722,6 +1723,9 @@ class OfertasAcademicasController extends Controller
 
                     $title = $modulo->nombre . ' - ' . $responsable . ' (' . $cargo . ') ' . $estadoLabel;
 
+                    $docente = optional($modulo->docente)->persona;
+                    $docenteNombre = $docente ? $docente->nombres . ' ' . $docente->apellido_paterno : 'Sin docente';
+
                     $eventos[] = [
                         'title' => $title,
                         'start' => $start,
@@ -1732,16 +1736,18 @@ class OfertasAcademicasController extends Controller
                             'oferta_nombre' => $oferta->programa->nombre ?? 'Sin programa',
                             'modulo_id' => $modulo->id,
                             'modulo_nombre' => $modulo->nombre,
+                            'modulo_color' => $modulo->color ?? '#eeeeee',
                             'horario_id' => $horario->id,
                             'responsable' => $responsable,
                             'cargo' => $cargo,
+                            'docente' => $docenteNombre,
+                            'docente_id' => $modulo->docente_id,
                             'estado' => $estado,
-                            // 👇 Usamos el color de la oferta académica
                             'color_oferta' => $oferta->color ?? '#cccccc',
-                            // Opcional: también puedes mantener el color del módulo
                             'color_modulo' => $modulo->color ?? '#eeeeee',
                             'sede' => optional($oferta->sucursal->sede)->nombre ?? 'Sin sede',
                             'sucursal' => optional($oferta->sucursal)->nombre ?? 'Sin sucursal',
+                            'cuenta_notificacion' => optional(optional($horario->sucursal_cuenta)->cuenta)->correo ?? '',
                         ]
                     ];
                 }
@@ -1790,51 +1796,122 @@ class OfertasAcademicasController extends Controller
             return response()->json(['success' => false, 'msg' => 'Fase inválida.'], 422);
         }
 
-        // Validación para fase 2 → 3 (planes de pago)
+        // Si viene confirmed=true, ejecutar el cambio directamente
+        if ($request->confirmed) {
+            $oferta->fase_id = $nuevaFase->id;
+            $oferta->save();
+
+            $oferta->refresh();
+            $oferta->load(['fase', 'posgrado.convenio', 'sucursal.sede', 'modalidad', 'programa', 'modulos', 'plan_concepto']);
+
+            $filaHtml = view('admin.ofertas.partials.fila-oferta', [
+                'oferta' => $oferta,
+                'loop' => (object) ['iteration' => 1]
+            ])->render();
+
+            $accionesHtml = view('admin.ofertas.partials.acciones-celda', compact('oferta'))->render();
+
+            return response()->json([
+                'success' => true,
+                'msg' => 'Fase cambiada exitosamente a ' . $nuevaFase->nombre . '.',
+                'reload' => true,
+                'oferta_id' => $oferta->id,
+                'fase' => [
+                    'id' => $nuevaFase->id,
+                    'nombre' => $nuevaFase->nombre,
+                    'n_fase' => $nuevaFase->n_fase,
+                    'color' => $nuevaFase->color,
+                ],
+                'bg_color' => $this->hexToRgb($nuevaFase->color, 0.12),
+                'total_inscritos' => $oferta->totalInscritos(),
+                'total_preinscritos' => $oferta->totalPreInscritos(),
+                'fila_html' => $filaHtml,
+                'acciones_html' => $accionesHtml,
+            ]);
+        }
+
+        // Fase 1 → Fase 2: Solo retornar flag para mostrar modal de confirmación
+        if ($faseActual->n_fase == 1 && $nuevaFaseNumero == 2) {
+            return response()->json([
+                'success' => true,
+                'confirm_required' => true,
+                'confirm_type' => 'fase1_to_2',
+                'msg' => 'Esta acción aprobará la oferta académica para poder registrar planes de pago y módulos correspondientes al programa.',
+                'siguiente_fase' => [
+                    'n_fase' => $nuevaFaseNumero,
+                    'nombre' => $nuevaFase->nombre
+                ]
+            ]);
+        }
+
+        // Fase 2 → Fase 3: Verificar módulos y planes de pago
         if ($faseActual->n_fase == 2 && $nuevaFaseNumero == 3) {
+            $tieneModulos = $oferta->modulos()->exists();
             $tienePlanesPago = $oferta->plan_concepto()->exists();
-            if (!$tienePlanesPago) {
+
+            if (!$tieneModulos || !$tienePlanesPago) {
+                $errores = [];
+                if (!$tieneModulos) {
+                    $errores[] = 'registrar los módulos';
+                }
+                if (!$tienePlanesPago) {
+                    $errores[] = 'registrar al menos un plan de pago';
+                }
+
                 return response()->json([
                     'success' => false,
-                    'msg' => '❌ No se puede pasar a la fase de inscripciones.<br><br>' .
-                        'Para avanzar a la fase 3 (Inscripciones), primero debe registrar ' .
-                        '<strong>al menos un plan de pago</strong> para esta oferta académica.<br><br>' .
+                    'msg' => '❌ No se puede pasar a la fase de inscripciones.<br><br>Para avanzar a la fase 3 (Inscripciones), es necesario: <strong>' . implode(' y ', $errores) . '</strong>.<br><br>' .
                         '<a href="#" class="btn btn-sm btn-info mt-2 ver-planes-btn" ' .
                         'data-oferta-id="' . $oferta->id . '" ' .
                         'data-oferta-codigo="' . $oferta->codigo . '">' .
                         '<i class="ri-eye-line"></i> Ver planes de pago</a>'
                 ], 422);
             }
+
+            return response()->json([
+                'success' => true,
+                'confirm_required' => true,
+                'confirm_type' => 'fase2_to_3',
+                'msg' => 'La oferta académica pasará a fase de Inscripciones. Los estudiantes podrán inscribirse en esta oferta.',
+                'siguiente_fase' => [
+                    'n_fase' => $nuevaFaseNumero,
+                    'nombre' => $nuevaFase->nombre
+                ]
+            ]);
         }
 
-        // Actualizar fase
+        // Fase 3 → Fase 4: Advertencia de desarrollo
+        if ($faseActual->n_fase == 3 && $nuevaFaseNumero == 4) {
+            return response()->json([
+                'success' => true,
+                'confirm_required' => true,
+                'confirm_type' => 'fase3_to_4',
+                'msg' => '⚠️ Al pasar a la fase de Desarrollo, <strong>ya no se podrán realizar nuevas inscripciones</strong> en esta oferta académica. Los módulos programados se ejecutarán.',
+                'siguiente_fase' => [
+                    'n_fase' => $nuevaFaseNumero,
+                    'nombre' => $nuevaFase->nombre
+                ]
+            ]);
+        }
+
+        // Por defecto, cambiar sin confirmación (retroceder de fase u otros casos)
         $oferta->fase_id = $nuevaFase->id;
         $oferta->save();
 
-        // Recargar relaciones actualizadas
         $oferta->refresh();
-        $oferta->load([
-            'fase',
-            'posgrado.convenio',
-            'sucursal.sede',
-            'modalidad',
-            'programa',
-            'modulos',
-            'plan_concepto'
-        ]);
+        $oferta->load(['fase', 'posgrado.convenio', 'sucursal.sede', 'modalidad', 'programa', 'modulos', 'plan_concepto']);
 
-        // Generar HTML actualizado para toda la fila
         $filaHtml = view('admin.ofertas.partials.fila-oferta', [
             'oferta' => $oferta,
-            'loop' => (object) ['iteration' => 1] // Solo para estructura
+            'loop' => (object) ['iteration' => 1]
         ])->render();
 
-        // Obtener solo las acciones si solo necesitas eso
         $accionesHtml = view('admin.ofertas.partials.acciones-celda', compact('oferta'))->render();
 
         return response()->json([
             'success' => true,
             'msg' => 'Fase cambiada exitosamente a ' . $nuevaFase->nombre . '.',
+            'reload' => true,
             'oferta_id' => $oferta->id,
             'fase' => [
                 'id' => $nuevaFase->id,
@@ -1845,12 +1922,10 @@ class OfertasAcademicasController extends Controller
             'bg_color' => $this->hexToRgb($nuevaFase->color, 0.12),
             'total_inscritos' => $oferta->totalInscritos(),
             'total_preinscritos' => $oferta->totalPreInscritos(),
-            'fila_html' => $filaHtml, // HTML completo de la fila
-            'acciones_html' => $accionesHtml, // HTML solo de acciones
-            'update_type' => 'fila_completa' // Indicador para el JS
+            'fila_html' => $filaHtml,
+            'acciones_html' => $accionesHtml,
         ]);
     }
-
 
 
     // === NUEVO: Actualizar oferta ===
@@ -1971,6 +2046,7 @@ class OfertasAcademicasController extends Controller
             'posgrado',
             'modulos',
             'plan_concepto.concepto',
+            'plan_concepto.plan_pago',
             'fase'
         ])->findOrFail($id);
 
@@ -2984,25 +3060,25 @@ class OfertasAcademicasController extends Controller
         $participantes = [];
         $cuotasCercanas = [];
         $cuotasAtrasadas = [];
-        
+
         $hoy = now();
         $fechaLimiteCercana = $hoy->copy()->addDays(5);
 
         foreach ($oferta->inscripciones->where('estado', '!=', 'Retirado') as $inscripcion) {
             $persona = $inscripcion->estudiante->persona;
             $nombreCompleto = trim(($persona->apellido_paterno ?? '') . ' ' . ($persona->apellido_materno ?? '') . ' ' . ($persona->nombres ?? ''));
-            
+
             $totalPagado = 0;
             $cuotasData = [];
-            
+
             foreach ($inscripcion->cuotas as $cuota) {
                 $pagado = $cuota->pago_total_bs - $cuota->pago_pendiente_bs;
                 $totalPagado += $pagado;
-                
+
                 $estadoCuota = $cuota->pago_terminado ? 'pagada' : 'pendiente';
                 $fechaVencimiento = \Carbon\Carbon::parse($cuota->fecha_pago);
                 $diasRestantes = $hoy->diffInDays($fechaVencimiento, false);
-                
+
                 $cuotasData[] = [
                     'id' => $cuota->id,
                     'n_cuota' => $cuota->n_cuota,
@@ -3031,7 +3107,7 @@ class OfertasAcademicasController extends Controller
                             'dias_restantes' => $diasRestantes
                         ];
                     }
-                    
+
                     // Cuotas atrasadas (fecha ya pasó)
                     if ($fechaVencimiento->lt($hoy)) {
                         $cuotasAtrasadas[] = [
@@ -3081,30 +3157,44 @@ class OfertasAcademicasController extends Controller
     {
         $request->validate([
             'nueva_fecha' => 'required|date',
+            'plan_id' => 'nullable|exists:planes_pagos,id',
+            'concepto_id' => 'nullable|exists:conceptos,id',
+            'n_cuota' => 'nullable|integer|min:1',
         ]);
 
-        $nuevaFecha = $request->nueva_fecha;
-        
-        // Actualizar solo cuotas pendientes de la oferta
-        $inscripciones = Inscripcione::where('ofertas_academica_id', $id)
-            ->where('estado', '!=', 'Retirado')
-            ->with('cuotas')
-            ->get();
+        $query = Cuota::whereHas('inscripcion', function ($q) use ($id) {
+            $q->where('ofertas_academica_id', $id)
+                ->where('estado', 'Inscrito');
+        })->where('pago_terminado', 'no');
 
-        $actualizados = 0;
-        foreach ($inscripciones as $inscripcion) {
-            foreach ($inscripcion->cuotas as $cuota) {
-                if (!$cuota->pago_terminado) {
-                    $cuota->fecha_pago = $nuevaFecha;
-                    $cuota->save();
-                    $actualizados++;
-                }
+        if ($request->filled('plan_id')) {
+            $query->whereHas('inscripcion', fn($q) => $q->where('planes_pago_id', $request->plan_id));
+        }
+
+        if ($request->filled('concepto_id')) {
+            // Filtrar por concepto (el nombre de la cuota contiene el nombre del concepto)
+            $concepto = Concepto::find($request->concepto_id);
+            if ($concepto) {
+                $query->where('nombre', 'like', '%' . $concepto->nombre . '%');
             }
+        }
+
+        if ($request->filled('n_cuota')) {
+            $query->where('n_cuota', $request->n_cuota);
+        }
+
+        $cuotas = $query->get();
+        $actualizados = 0;
+
+        foreach ($cuotas as $cuota) {
+            $cuota->fecha_pago = $request->nueva_fecha;
+            $cuota->save();
+            $actualizados++;
         }
 
         return response()->json([
             'success' => true,
-            'message' => "Se actualizaron las fechas de {$actualizados} cuotas pendientes",
+            'message' => "Se actualizaron {$actualizados} fechas correctamente.",
             'actualizados' => $actualizados
         ]);
     }
@@ -3116,7 +3206,7 @@ class OfertasAcademicasController extends Controller
         ]);
 
         $cuota = Cuota::findOrFail($cuotaId);
-        
+
         if ($cuota->pago_terminado) {
             return response()->json([
                 'success' => false,
@@ -3133,6 +3223,95 @@ class OfertasAcademicasController extends Controller
         ]);
     }
 
+    public function cuotasPendientesOferta($id)
+    {
+        try {
+            $inscripciones = Inscripcione::where('ofertas_academica_id', $id)
+                ->where('estado', 'Inscrito')
+                ->with(['estudiante.persona', 'cuotas', 'planesPago'])
+                ->get();
+
+            $cuotasData = [];
+            foreach ($inscripciones as $inscripcion) {
+                $persona = $inscripcion->estudiante->persona;
+                $nombreEstudiante = trim(($persona->apellido_paterno ?? '') . ' ' . ($persona->apellido_materno ?? '') . ' ' . ($persona->nombres ?? ''));
+                $planNombre = $inscripcion->planesPago->nombre ?? '-';
+
+                foreach ($inscripcion->cuotas as $cuota) {
+                    if ($cuota->pago_terminado !== 'si') {
+                        $cuotasData[] = [
+                            'id' => $cuota->id,
+                            'estudiante_nombre' => $nombreEstudiante,
+                            'plan_nombre' => $planNombre,
+                            'concepto_nombre' => $cuota->nombre ?? '-',
+                            'n_cuota' => $cuota->n_cuota,
+                            'pago_total_bs' => $cuota->pago_total_bs,
+                            'fecha_pago' => $cuota->fecha_pago
+                        ];
+                    }
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'cuotas' => $cuotasData
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error en cuotasPendientesOferta: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function cuotasPorFiltro(Request $request, $id)
+    {
+        $planId = $request->plan_id;
+        $conceptoId = $request->concepto_id;
+        $nCuota = $request->n_cuota;
+
+        $query = Cuota::whereHas('inscripcion', function ($q) use ($id, $planId) {
+            $q->where('ofertas_academica_id', $id)
+                ->where('estado', 'Inscrito');
+            if ($planId) {
+                $q->where('planes_pago_id', $planId);
+            }
+        })->where('pago_terminado', 'no')
+            ->with(['inscripcion.estudiante.persona', 'inscripcion.planesPago']);
+
+        if ($conceptoId) {
+            $concepto = Concepto::find($conceptoId);
+            if ($concepto) {
+                $query->where('nombre', 'like', '%' . $concepto->nombre . '%');
+            }
+        }
+
+        if ($nCuota) {
+            $query->where('n_cuota', $nCuota);
+        }
+
+        $cuotas = $query->get();
+
+        $cuotasData = $cuotas->map(function ($cuota) {
+            $persona = $cuota->inscripcion->estudiante->persona;
+            return [
+                'id' => $cuota->id,
+                'estudiante_nombre' => trim(($persona->apellido_paterno ?? '') . ' ' . ($persona->apellido_materno ?? '') . ' ' . ($persona->nombres ?? '')),
+                'plan_nombre' => $cuota->inscripcion->planesPago->nombre ?? '-',
+                'concepto_nombre' => $cuota->nombre,
+                'n_cuota' => $cuota->n_cuota,
+                'pago_total_bs' => $cuota->pago_total_bs,
+                'fecha_pago' => $cuota->fecha_pago
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'cuotas' => $cuotasData
+        ]);
+    }
+
     public function generarMensajeCercana($cuotaId)
     {
         $cuota = Cuota::with([
@@ -3145,7 +3324,7 @@ class OfertasAcademicasController extends Controller
         $ofertaNombre = $cuota->inscripcion->oferta->programa->nombre ?? 'la oferta';
         $fecha = \Carbon\Carbon::parse($cuota->fecha_pago)->format('d/m/Y');
         $monto = number_format($cuota->pago_pendiente_bs, 2);
-        
+
         // Calcular total pagado
         $totalPagado = $cuota->pago_total_bs - $cuota->pago_pendiente_bs;
 
@@ -3169,7 +3348,7 @@ class OfertasAcademicasController extends Controller
         $nombre = trim(($persona->apellido_paterno ?? '') . ' ' . ($persona->apellido_materno ?? '') . ' ' . ($persona->nombres ?? ''));
         $ofertaNombre = $cuota->inscripcion->oferta->programa->nombre ?? 'la oferta';
         $monto = number_format($cuota->pago_pendiente_bs, 2);
-        
+
         $totalPagado = $cuota->pago_total_bs - $cuota->pago_pendiente_bs;
         $diasAtraso = now()->diffInDays(\Carbon\Carbon::parse($cuota->fecha_pago), false);
 
@@ -3179,6 +3358,34 @@ class OfertasAcademicasController extends Controller
             'nombre' => $nombre,
             'celular' => $persona->celular ?? '',
             'mensaje' => $mensaje
+        ]);
+    }
+
+    public function obtenerInfoInscripcion($id)
+    {
+        $oferta = OfertasAcademica::with(['programa', 'inscripciones.estudiante.persona'])
+            ->findOrFail($id);
+
+        // Obtener la última inscripción creada (la que acabamos de crear)
+        $ultimaInscripcion = $oferta->inscripciones()->latest()->first();
+
+        if (!$ultimaInscripcion || !$ultimaInscripcion->estudiante) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No se encontró la inscripción'
+            ]);
+        }
+
+        $estudiante = $ultimaInscripcion->estudiante;
+        $persona = $estudiante->persona;
+
+        $estudianteNombre = trim(($persona->apellido_paterno ?? '') . ' ' . ($persona->apellido_materno ?? '') . ' ' . ($persona->nombres ?? ''));
+        $programaNombre = $oferta->programa->nombre ?? 'Sin programa';
+
+        return response()->json([
+            'success' => true,
+            'estudiante_nombre' => $estudianteNombre,
+            'programa_nombre' => $programaNombre
         ]);
     }
 }

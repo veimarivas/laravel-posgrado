@@ -1,6 +1,6 @@
 <!-- Modal para convertir Pre-Inscrito a Inscrito -->
 <div class="modal fade modal-profile" id="convertirModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border-0 shadow" style="border-radius: var(--radius-lg); overflow: hidden;">
 
             <div class="modal-header border-0 py-3 px-4" style="background: linear-gradient(135deg, #0f766e 0%, #0d5f59 100%); color: #fff;">
@@ -57,8 +57,8 @@
                             <div>
                                 <div class="fw-semibold" style="font-size: 0.85rem; color: #1e293b;">¿Qué sucederá al convertir?</div>
                                 <ul class="mb-0 mt-1" style="font-size: 0.8rem; color: #64748b; padding-left: 16px;">
-                                    <li>Se generarán matriculaciones en todos los módulos</li>
-                                    <li>Se crearán las cuotas según el plan de pago seleccionado</li>
+                                    <li>Se generarán las cuotas según el plan de pago y montos configurados</li>
+                                    <li>Se crearán las matriculaciones en todos los módulos</li>
                                     <li>El estado cambiará a <strong class="text-success">Inscrito</strong> permanentemente</li>
                                 </ul>
                             </div>
@@ -81,6 +81,18 @@
                                 Cargando planes disponibles...
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Vista Previa de Cuotas -->
+                <div class="card border-0 shadow-sm mb-3" style="border-radius: var(--radius-md); overflow: hidden; display: none;" id="cuotasPreviewConversionCard">
+                    <div class="card-header border-0 py-2 px-3" style="background: #f0fdfa;">
+                        <h6 class="mb-0 d-flex align-items-center gap-2" style="font-size: 0.88rem; font-weight: 600; color: #0f766e;">
+                            <i class="ri-file-list-3-line"></i>Vista Previa de Cuotas
+                            <span class="text-muted fw-normal" style="font-size: 0.75rem;">(Configure los montos antes de confirmar)</span>
+                        </h6>
+                    </div>
+                    <div class="card-body p-3" id="cuotasPreviewConversionContainer">
                     </div>
                 </div>
 

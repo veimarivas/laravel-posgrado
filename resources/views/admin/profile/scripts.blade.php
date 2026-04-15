@@ -1157,10 +1157,18 @@
                     `;
                         });
                         container.html(html);
+                        
+                        // Agregar evento para mostrar preview de cuotas al seleccionar plan
                         container.find('.plan-radio').on('change', function() {
                             $('.plan-pago-card').removeClass('border-primary');
                             $(this).closest('.plan-pago-card').addClass('border-primary');
+                            generarPreviewCuotasConversion(ofertaId, $(this).val());
                         });
+                        
+                        // Generar preview automáticamente para el primer plan
+                        if (response.planes.length > 0) {
+                            generarPreviewCuotasConversion(ofertaId, response.planes[0].id);
+                        }
                     } else {
                         container.html(`
                     <div class="alert alert-warning">
@@ -1189,6 +1197,314 @@
             });
         }
 
+        // Función para generar preview de cuotas en la conversión
+        function generarPreviewCuotasConversion(ofertaId, planId) {
+            const container = $('#cuotasPreviewConversionContainer');
+            const card = $('#cuotasPreviewConversionCard');
+            
+            card.show();
+            container.html(`
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Generando vista previa de cuotas...</p>
+                </div>
+            `);
+
+            $.ajax({
+                url: '{{ route("admin.inscripciones.generar-cuotas-preview") }}',
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    oferta_id: ofertaId,
+                    planes_pago_id: planId
+                },
+                success: function(res) {
+                    if (res.success) {
+                        renderizarCuotasPreviewConversion(res.cuotas_preview);
+                    } else {
+                        container.html(`
+                            <div class="alert alert-danger">
+                                <i class="ri-error-warning-line me-2"></i>
+                                ${res.msg || 'Error al generar cuotas'}
+                            </div>
+                        `);
+                    }
+                },
+                error: function() {
+                    container.html(`
+                        <div class="alert alert-danger">
+                            <i class="ri-error-warning-line me-2"></i>
+                            Error al generar la vista previa
+                        </div>
+                    `);
+                }
+            });
+        }
+
+        // Renderizar cuotas agrupadas para la conversión (igual que en inscripciones)
+        function renderizarCuotasPreviewConversion(cuotas) {
+            const container = $('#cuotasPreviewConversionContainer');
+            
+            const grouped = {};
+            let totalGeneral = 0;
+            
+            cuotas.forEach(cuota => {
+                const conceptoKey = `${cuota.concepto_id}-${cuota.concepto_nombre}`;
+                if (!grouped[conceptoKey]) {
+                    grouped[conceptoKey] = {
+                        concepto_id: cuota.concepto_id,
+                        concepto_nombre: cuota.concepto_nombre,
+                        n_cuotas_total: cuota.n_cuotas,
+                        original_pago_total: cuota.pago_total_bs,
+                        cuotas: [],
+                        total_concepto: 0
+                    };
+                }
+                grouped[conceptoKey].cuotas.push(cuota);
+                grouped[conceptoKey].total_concepto += cuota.pago_total_bs;
+                totalGeneral += cuota.pago_total_bs;
+            });
+
+            const primeraFecha = cuotas[0]?.fecha_pago || '';
+            const diaActual = primeraFecha ? parseInt(primeraFecha.split('-')[2]) : 14;
+
+            let html = `
+                <div class="mb-3 p-2 rounded" style="background: #f0fdfa; border-left: 3px solid #0f766e;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span style="font-size: 0.85rem; font-weight: 600; color: #0f766e;">TOTAL A PAGAR</span>
+                        <span style="font-size: 1.1rem; font-weight: 700; color: #0f766e;" id="total-general-cuotas-conversion">Bs. ${totalGeneral.toFixed(2)}</span>
+                    </div>
+                </div>
+                
+                <div class="mb-3 p-2 rounded" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-4">
+                            <label style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; color: #64748b;">Cambiar día en todas las fechas</label>
+                            <input type="number" class="form-control form-control-sm" id="cambiar-dia-fecha-conversion" value="${diaActual}" min="1" max="31"
+                                style="border-radius: 4px; border: 1px solid #e2e8f0;">
+                        </div>
+                        <div class="col-md-4">
+                            <button type="button" class="btn btn-sm btn-primary" id="btn-aplicar-dia-conversion" style="border-radius: 4px; padding: 6px 12px;">
+                                <i class="ri-calendar-line me-1"></i>Aplicar día
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">`;
+
+            Object.values(grouped).forEach(grupo => {
+                const tieneMultiplesCuotas = grupo.cuotas.length > 1;
+                
+                html += `
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center p-2 rounded" style="background: #f8fafc; border-bottom: 2px solid #0f766e;">
+                            <div class="d-flex align-items-center gap-2">
+                                <span style="font-weight: 600; color: #1e293b;">${grupo.concepto_nombre}</span>
+                                ${tieneMultiplesCuotas ? `
+                                    <div class="d-flex align-items-center gap-1">
+                                        <input type="number" class="form-control form-control-sm" 
+                                            id="monto-cuota-conversion-${grupo.concepto_id}"
+                                            placeholder="Monto cuota" 
+                                            min="0" step="0.01"
+                                            style="width: 100px; border-radius: 4px; border: 1px solid #e2e8f0; font-size: 0.75rem;"
+                                            data-concepto-id="${grupo.concepto_id}"
+                                            data-total-concepto="${grupo.total_concepto}"
+                                            data-n-cuotas="${grupo.n_cuotas_total}">
+                                        <button type="button" class="btn btn-xs btn-outline-success btn-aplicar-monto-conversion" 
+                                            data-concepto-id="${grupo.concepto_id}" 
+                                            title="Aplicar monto a todas las cuotas"
+                                            style="padding: 2px 6px; font-size: 0.7rem;">
+                                            <i class="ri-check-line"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-xs btn-outline-warning btn-invertir-montos-conversion" 
+                                            data-concepto-id="${grupo.concepto_id}" 
+                                            title="Invertir montos entre cuotas" 
+                                            style="padding: 2px 6px; font-size: 0.7rem;">
+                                            <i class="ri-swap-line"></i> Invertir
+                                        </button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <span style="font-weight: 600; color: #10b981;" class="total-concepto-display-conversion" data-concepto-id="${grupo.concepto_id}">Bs. ${grupo.total_concepto.toFixed(2)} <span style="font-size: 0.75rem; color: #64748b;">(${grupo.n_cuotas_total} cuota${grupo.n_cuotas_total > 1 ? 's' : ''})</span></span>
+                        </div>
+                        <table class="table table-sm mb-0" style="font-size: 0.8rem;">
+                            <thead>
+                                <tr style="background: #f8fafc;">
+                                    <th style="padding: 6px 10px; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; color: #64748b;">N°</th>
+                                    <th style="padding: 6px 10px; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; color: #64748b; text-align: end;">MONTO (Bs)</th>
+                                    <th style="padding: 6px 10px; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; color: #64748b; text-align: center;">FECHA PAGO</th>
+                                </tr>
+                            </thead>
+                            <tbody class="cuotas-grupo-body-conversion" data-concepto-id="${grupo.concepto_id}">`;
+
+                grupo.cuotas.forEach(cuota => {
+                    html += `
+                        <tr>
+                            <td style="padding: 6px 10px; text-align: center;">
+                                <span class="badge rounded-pill" style="background: #0f766e; color: white; font-size: 0.7rem; font-weight: 600;">${cuota.n_cuota}</span>
+                            </td>
+                            <td style="padding: 6px 10px; text-align: end;">
+                                <input type="number" class="form-control form-control-sm text-end fw-bold monto-cuota-input-conversion" 
+                                    value="${cuota.pago_total_bs}" 
+                                    data-concepto-id="${cuota.concepto_id}"
+                                    data-n-cuota="${cuota.n_cuota}"
+                                    data-original-monto="${cuota.pago_total_bs}"
+                                    readonly
+                                    style="border-radius: 4px; border: 1px solid #e2e8f0; font-size: 0.8rem; background: #f8fafc; padding: 4px 8px; cursor: not-allowed;">
+                            </td>
+                            <td style="padding: 6px 10px; text-align: center;">
+                                <input type="date" class="form-control form-control-sm fecha-pago-input-conversion"
+                                    value="${cuota.fecha_pago}"
+                                    data-concepto-id="${cuota.concepto_id}"
+                                    data-n-cuota="${cuota.n_cuota}"
+                                    style="border-radius: 4px; border: 1px solid #e2e8f0; font-size: 0.8rem; padding: 4px 8px;">
+                            </td>
+                        </tr>`;
+                });
+
+                html += `</tbody></table></div>`;
+            });
+
+            html += `</div><div id="cuotas-error-message-conversion" class="mt-2" style="display:none;"></div>`;
+            
+            container.html(html);
+            
+            // Eventos
+            $('#btn-aplicar-dia-conversion').on('click', function() {
+                const nuevoDia = parseInt($('#cambiar-dia-fecha-conversion').val());
+                if (nuevoDia < 1 || nuevoDia > 31) {
+                    showToast('warning', 'El día debe estar entre 1 y 31');
+                    return;
+                }
+                $('.fecha-pago-input-conversion').each(function() {
+                    const fechaActual = $(this).val();
+                    if (fechaActual) {
+                        const partes = fechaActual.split('-');
+                        const nuevaFecha = `${partes[0]}-${partes[1].padStart(2, '0')}-${nuevoDia.toString().padStart(2, '0')}`;
+                        $(this).val(nuevaFecha);
+                    }
+                });
+                showToast('success', 'Días actualizados en todas las fechas');
+            });
+            
+            // Aplicar monto a cuotas
+            $('.btn-aplicar-monto-conversion').on('click', function() {
+                const conceptoId = $(this).data('concepto-id');
+                const inputMonto = $(`#monto-cuota-conversion-${conceptoId}`);
+                const montoIngresado = parseFloat(inputMonto.val());
+                
+                if (isNaN(montoIngresado) || montoIngresado <= 0) {
+                    showToast('warning', 'Ingrese un monto válido mayor a 0');
+                    return;
+                }
+                
+                const totalConcepto = parseFloat(inputMonto.data('total-concepto'));
+                const nCuotas = parseInt(inputMonto.data('n-cuotas'));
+                
+                if (montoIngresado > totalConcepto) {
+                    showToast('warning', `El monto no puede ser mayor al total del concepto (Bs. ${totalConcepto.toFixed(2)})`);
+                    return;
+                }
+                
+                const grupoBody = $(`.cuotas-grupo-body-conversion[data-concepto-id="${conceptoId}"]`);
+                const inputs = grupoBody.find('.monto-cuota-input-conversion');
+                
+                const cuotasConMonto = nCuotas - 1;
+                const montoUltimaCuota = totalConcepto - (montoIngresado * cuotasConMonto);
+                
+                if (montoUltimaCuota <= 0) {
+                    showToast('warning', `El monto mínimo por cuota debe ser mayor a Bs. ${(totalConcepto / nCuotas).toFixed(2)} para que ninguna cuota sea 0`);
+                    return;
+                }
+                
+                inputs.each(function(index) {
+                    let montoFinal;
+                    if (index < cuotasConMonto) {
+                        montoFinal = montoIngresado;
+                    } else {
+                        montoFinal = montoUltimaCuota;
+                    }
+                    $(this).val(montoFinal.toFixed(2));
+                });
+                
+                actualizarTotalesPorConceptoConversion();
+                validarMontosCeroConversion();
+                showToast('success', `Cuotas actualizadas: ${cuotasConMonto} cuota(s) de Bs. ${montoIngresado.toFixed(2)} + 1 cuota de Bs. ${montoUltimaCuota.toFixed(2)}`);
+            });
+            
+            // Invertir montos
+            $('.btn-invertir-montos-conversion').on('click', function() {
+                const conceptoId = $(this).data('concepto-id');
+                const grupoBody = $(`.cuotas-grupo-body-conversion[data-concepto-id="${conceptoId}"]`);
+                const inputs = grupoBody.find('.monto-cuota-input-conversion');
+                
+                const valores = [];
+                inputs.each(function() {
+                    valores.push(parseFloat($(this).val()) || 0);
+                });
+                
+                valores.reverse();
+                
+                inputs.each(function(index) {
+                    $(this).val(valores[index].toFixed(2));
+                });
+                
+                actualizarTotalesPorConceptoConversion();
+                validarMontosCeroConversion();
+                showToast('success', 'Montos invertidos correctamente');
+            });
+            
+            validarMontosCeroConversion();
+        }
+
+        function actualizarTotalesPorConceptoConversion() {
+            $('.cuotas-grupo-body-conversion').each(function() {
+                const conceptoId = $(this).data('concepto-id');
+                let total = 0;
+                
+                $(this).find('.monto-cuota-input-conversion').each(function() {
+                    total += parseFloat($(this).val()) || 0;
+                });
+                
+                const display = $(`.total-concepto-display-conversion[data-concepto-id="${conceptoId}"]`);
+                const numCuotas = $(this).find('.monto-cuota-input-conversion').length;
+                display.html(`Bs. ${total.toFixed(2)} <span style="font-size: 0.75rem; color: #64748b;">(${numCuotas} cuota${numCuotas > 1 ? 's' : ''})</span>`);
+            });
+            
+            let totalGeneral = 0;
+            $('.monto-cuota-input-conversion').each(function() {
+                totalGeneral += parseFloat($(this).val()) || 0;
+            });
+            $('#total-general-cuotas-conversion').text(`Bs. ${totalGeneral.toFixed(2)}`);
+        }
+
+        function validarMontosCeroConversion() {
+            let tieneCero = false;
+            
+            $('.monto-cuota-input-conversion').each(function() {
+                const monto = parseFloat($(this).val()) || 0;
+                if (monto === 0) {
+                    tieneCero = true;
+                }
+            });
+            
+            const errorDiv = $('#cuotas-error-message-conversion');
+            if (tieneCero) {
+                errorDiv.html(`
+                    <div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill" style="background:#fef2f2;color:#dc2626;font-size:0.8rem;">
+                        <i class="ri-error-warning-line"></i> No se puede asignar monto 0 a ninguna cuota
+                    </div>
+                `).show();
+                $('#confirmarConversionBtn').prop('disabled', true).addClass('opacity-50');
+            } else {
+                errorDiv.hide();
+                $('#confirmarConversionBtn').prop('disabled', false).removeClass('opacity-50');
+            }
+        }
+
         // Cambiar estilo al seleccionar plan
         $(document).on('click', '.plan-radio', function() {
             $('.plan-pago-card').removeClass('border-primary');
@@ -1200,6 +1516,7 @@
             const btn = $(this);
             const originalText = btn.html();
             const inscripcionId = $('#convertirModal').data('inscripcion-id');
+            const ofertaId = $('#convertirModal').data('oferta-id');
             const planPagoId = $('input[name="plan_pago"]:checked').val();
             const observacion = $('#observacionConversion').val();
 
@@ -1207,6 +1524,24 @@
                 showToast('error', 'Por favor selecciona un plan de pago para continuar');
                 return;
             }
+
+            // Recolectar datos de cuotas personalizadas
+            const cuotasData = [];
+            $('.cuotas-grupo-body-conversion').each(function() {
+                const conceptoId = $(this).data('concepto-id');
+                $(this).find('tr').each(function() {
+                    const nCuota = $(this).find('.monto-cuota-input-conversion').data('n-cuota');
+                    const fechaPago = $(this).find('.fecha-pago-input-conversion').val();
+                    const montoPorCuota = parseFloat($(this).find('.monto-cuota-input-conversion').val());
+
+                    cuotasData.push({
+                        concepto_id: conceptoId,
+                        n_cuota: nCuota,
+                        fecha_pago: fechaPago,
+                        monto_bs: montoPorCuota
+                    });
+                });
+            });
 
             // Deshabilitar botón y mostrar loading
             btn.prop('disabled', true).html(`
@@ -1220,25 +1555,36 @@
                 data: {
                     _token: '{{ csrf_token() }}',
                     inscripcion_id: inscripcionId,
+                    oferta_id: ofertaId,
                     plan_pago_id: planPagoId,
-                    observacion: observacion
+                    observacion: observacion,
+                    cuotas_data: cuotasData
                 },
                 success: function(response) {
                     if (response.success) {
                         showToast('success', response.message);
-
-                        // Cerrar modal después de un breve retraso
+                        
+                        // Obtener la inscripción creada/actualizada
+                        const nuevaInscripcionId = response.inscripcion_id;
+                        const estudianteNombre = $('#convertirEstudianteNombre').text();
+                        const programaNombre = $('#convertirProgramaNombre').text();
+                        
+                        // Cerrar modal de conversión y abrir modal de subir comprobante
+                        $('#convertirModal').modal('hide');
+                        
+                        // Abrir modal de subir comprobante con los datos
                         setTimeout(() => {
-                            $('#convertirModal').modal('hide');
-
-                            // Recargar la tabla de inscripciones
-                            loadMarketingData(currentPage);
-
-                            // Resetear formulario
+                            // Resetear formulario de conversión
                             $('input[name="plan_pago"]').prop('checked', false);
                             $('#observacionConversion').val('');
                             $('.plan-pago-card').removeClass('border-primary');
-                        }, 1500);
+                            
+                            // Abrir modal de subir comprobante
+                            abrirModalSubirComprobante(nuevaInscripcionId, estudianteNombre, programaNombre);
+                            
+                            // Recargar la tabla de inscripciones
+                            loadMarketingData(currentPage);
+                        }, 500);
                     } else {
                         showToast('error', response.message ||
                             'Error al convertir la inscripción');
@@ -1782,6 +2128,89 @@
             $('#documentosTableContainer').html(html);
         }
 
+        // Función para abrir modal de subir comprobante programáticamente
+        function abrirModalSubirComprobante(inscripcionId, estudiante, programa) {
+            $('#respaldo_inscripcione_id').val(inscripcionId);
+            $('#respaldo_estudiante').text(estudiante);
+            $('#respaldo_programa').text(programa);
+            $('#cuotasCheckboxContainer').html(
+                '<div class="text-muted">Cargando cuotas pendientes...</div>');
+
+            $.ajax({
+                url: `/admin/profile/marketing/inscripcion/${inscripcionId}/cuotas`,
+                method: 'GET',
+                success: function(response) {
+                    if (response.success && response.cuotas.length > 0) {
+                        const grupos = {};
+                        response.cuotas.forEach(cuota => {
+                            const tipo = cuota.tipo || 'Otros';
+                            if (!grupos[tipo]) grupos[tipo] = [];
+                            grupos[tipo].push(cuota);
+                        });
+
+                        const iconos = {
+                            'Matrícula': 'ri-graduation-cap-line text-primary',
+                            'Colegiatura': 'ri-book-open-line text-success',
+                            'Otros': 'ri-money-dollar-circle-line text-warning'
+                        };
+
+                        let html = '';
+                        for (const [tipo, cuotas] of Object.entries(grupos)) {
+                            html += `
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <i class="${iconos[tipo] || iconos['Otros']}" style="font-size: 1rem;"></i>
+                                <span class="fw-semibold" style="font-size: 0.85rem;">${tipo}</span>
+                            </div>`;
+                            cuotas.forEach(cuota => {
+                                html += `
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" 
+                                    name="cuota_ids[]" 
+                                    value="${cuota.id}" 
+                                    id="cuota_${cuota.id}"
+                                    style="cursor:pointer;">
+                                <label class="form-check-label" for="cuota_${cuota.id}" style="cursor:pointer; font-size: 0.82rem;">
+                                    ${cuota.nombre} - <span class="text-success fw-semibold">Bs. ${parseFloat(cuota.pendiente_bs).toFixed(2)}</span>
+                                </label>
+                            </div>`;
+                            });
+                            html += '</div>';
+                        }
+
+                        $('#cuotasCheckboxContainer').html(html);
+                    } else {
+                        $('#cuotasCheckboxContainer').html(
+                            '<div class="text-muted">No hay cuotas pendientes</div>');
+                    }
+                },
+                error: function() {
+                    $('#cuotasCheckboxContainer').html(
+                        '<div class="text-danger">Error al cargar cuotas</div>');
+                }
+            });
+
+            // Resetear campos del formulario
+            $('#respaldo_archivo').val('');
+            $('#respaldo_observaciones').val('');
+            $('#cuota_ids_input').val('');
+
+            // Agregar evento para actualizar el campo oculto con los checkboxes seleccionados
+            setTimeout(() => {
+                $('#cuotasCheckboxContainer').off('change', 'input[type="checkbox"]');
+                $('#cuotasCheckboxContainer').on('change', 'input[type="checkbox"]', function() {
+                    const selected = [];
+                    $('#cuotasCheckboxContainer input[type="checkbox"]:checked').each(function() {
+                        selected.push($(this).val());
+                    });
+                    $('#cuota_ids_input').val(selected.join(','));
+                });
+            }, 100);
+
+            // Mostrar el modal
+            $('#modalSubirRespaldo').modal('show');
+        }
+
         // Abrir modal de subir comprobante
         $(document).on('click', '.btn-subir-respaldo', function() {
             const inscripcionId = $(this).data('inscripcion-id');
@@ -1865,9 +2294,31 @@
         $('#formSubirRespaldo').on('submit', function(e) {
             e.preventDefault();
 
-            const formData = new FormData(this);
             const btn = $('#btnSubirRespaldo');
             const originalText = btn.html();
+            
+            // Obtener los IDs de las cuotas seleccionadas
+            const cuotaIds = [];
+            $('#cuotasCheckboxContainer input[type="checkbox"]:checked').each(function() {
+                cuotaIds.push($(this).val());
+            });
+            
+            if (cuotaIds.length === 0) {
+                showToast('error', 'Debe seleccionar al menos una cuota');
+                return;
+            }
+
+            // Crear FormData manualmente
+            const formData = new FormData();
+            formData.append('_token', '{{ csrf_token() }}');
+            formData.append('inscripcione_id', $('#respaldo_inscripcione_id').val());
+            formData.append('observaciones', $('#respalado_observaciones').val() || '');
+            formData.append('archivo', $('#respaldo_archivo')[0].files[0]);
+            
+            // Agregar cada cuota como array
+            cuotaIds.forEach(function(id) {
+                formData.append('cuota_ids[]', id);
+            });
 
             btn.prop('disabled', true).html(
                 '<span class="spinner-border spinner-border-sm me-1"></span> Subiendo...');
@@ -1882,8 +2333,6 @@
                     if (response.success) {
                         showToast('success', response.message);
                         $('#modalSubirRespaldo').modal('hide');
-                        // Opcional: recargar la tabla de documentos para mostrar algún cambio
-                        // loadDocumentosData(docsCurrentPage);
                     } else {
                         showToast('error', response.message);
                     }

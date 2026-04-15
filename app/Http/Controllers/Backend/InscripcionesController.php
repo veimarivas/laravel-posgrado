@@ -260,14 +260,18 @@ class InscripcionesController extends Controller
 
         if (!$inscripcion) {
             $user = Auth::user();
-            $trabajadorCargo = $user->persona->trabajador->trabajadores_cargos()
-                ->where('estado', 'Vigente')
-                ->first();
+            $trabajadorCargo = null;
+            
+            if ($user->persona && $user->persona->trabajador) {
+                $trabajadorCargo = $user->persona->trabajador->trabajadores_cargos()
+                    ->where('estado', 'Vigente')
+                    ->first();
+            }
 
             $inscripcion = Inscripcione::create([
                 'ofertas_academica_id' => $request->oferta_id,
                 'estudiante_id' => $request->estudiante_id,
-                'trabajadores_cargo_id' => $trabajadorCargo->id,
+                'trabajadores_cargo_id' => $trabajadorCargo?->id,
                 'estado' => 'Inscrito',
                 'fecha_registro' => now(),
                 'planes_pago_id' => $request->planes_pago_id,
@@ -304,7 +308,8 @@ class InscripcionesController extends Controller
 
         return response()->json([
             'success' => true,
-            'msg' => 'Inscripción completada exitosamente. Cuotas y matrículas registradas correctamente.'
+            'msg' => 'Inscripción completada exitosamente. Cuotas y matrículas registradas correctamente.',
+            'inscripcion_id' => $inscripcion->id
         ]);
     }
 
@@ -904,6 +909,30 @@ class InscripcionesController extends Controller
             ->where('pago_terminado', 'no')
             ->get();
         return response()->json($cuotas);
+    }
+
+    public function actualizarFechasIndividual(Request $request)
+    {
+        $request->validate([
+            'actualizaciones' => 'required|array',
+            'actualizaciones.*.cuota_id' => 'required|exists:cuotas,id',
+            'actualizaciones.*.fecha_pago' => 'required|date',
+        ]);
+
+        $actualizados = 0;
+        foreach ($request->actualizaciones as $actualizacion) {
+            $cuota = Cuota::find($actualizacion['cuota_id']);
+            if ($cuota && !$cuota->pago_terminado) {
+                $cuota->fecha_pago = $actualizacion['fecha_pago'];
+                $cuota->save();
+                $actualizados++;
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'msg' => "Se actualizaron {$actualizados} fechas correctamente"
+        ]);
     }
 
     /*public function registrarConAsesor(Request $request)

@@ -200,6 +200,8 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
 
         Route::get('/admin/ofertas/{id}/planes-inscripcion', [OfertasAcademicasController::class, 'obtenerPlanesPagoParaInscripcion'])->name('admin.ofertas.planes-inscripcion');
 
+        Route::get('/admin/ofertas/{id}/info-inscripcion', [OfertasAcademicasController::class, 'obtenerInfoInscripcion'])->name('admin.ofertas.info-inscripcion');
+
         Route::get(
             '/admin/ofertas/{id}/exportar-estado-financiero',
             [OfertasAcademicasController::class, 'exportarEstadoFinancieroParticipantes']
@@ -544,6 +546,13 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
         Route::post('/admin/pagos/registrar', 'registrarPago')->name('admin.pagos.registrar');
 
         Route::get('/admin/inscripciones/{inscripcion}/cuotas-pendientes', 'cuotasPendientes')->name('admin.inscripciones.cuotas-pendientes');
+        Route::post('/admin/inscripciones/actualizar-fechas-individual', 'actualizarFechasIndividual')->name('admin.inscripciones.actualizar-fechas-individual');
+
+        // Cuotas pendientes de oferta (para cambio masivo)
+        Route::get('/admin/ofertas/{id}/cuotas-pendientes', [OfertasAcademicasController::class, 'cuotasPendientesOferta'])
+            ->name('admin.ofertas.cuotas-pendientes');
+        Route::get('/admin/ofertas/{id}/cuotas-filtro', [OfertasAcademicasController::class, 'cuotasPorFiltro'])
+            ->name('admin.ofertas.cuotas-filtro');
 
         // web.php
         Route::post('/inscripciones/convertir-pre-inscrito/{inscripcion}', [InscripcionesController::class, 'convertirPreInscrito'])

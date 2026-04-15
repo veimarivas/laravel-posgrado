@@ -1,10 +1,6 @@
 <script>
-    $(document).on('click', '.change-phase', function() {
-        const btn = $(this);
-        const id = btn.data('oferta-id');
-        const dir = btn.data('direction');
-        const row = btn.closest('tr');
-
+    // Función para ejecutar el cambio de fase después de la confirmación
+    function ejecutarCambioFase(id, dir, btn, row) {
         const originalHtml = btn.html();
         btn.html('<i class="ri-loader-4-line spin"></i>');
         btn.prop('disabled', true);
@@ -14,91 +10,94 @@
             method: 'POST',
             data: {
                 direction: dir,
+                confirmed: true,
                 _token: '{{ csrf_token() }}'
             },
             success: function(res) {
                 if (res.success) {
                     mostrarToast('success', res.msg || 'Fase cambiada exitosamente.');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    mostrarToast('error', res.msg || 'Error al cambiar la fase.');
+                }
+            },
+            error: function(xhr) {
+                if (xhr.status === 422) {
+                    mostrarToast('error', xhr.responseJSON?.msg || 'Error de validación.');
+                } else {
+                    mostrarToast('error', 'Error al cambiar la fase.');
+                }
+            },
+            complete: function() {
+                btn.html(originalHtml);
+                btn.prop('disabled', false);
+            }
+        });
+    }
 
-                    // Si se devuelve HTML completo de la fila
-                    if (res.fila_html) {
-                        // Reemplazar la fila completa
-                        row.replaceWith(res.fila_html);
-                    } else {
-                        // Actualizar solo los elementos necesarios
+    $(document).on('click', '.change-phase', function() {
+        const btn = $(this);
+        const id = btn.data('oferta-id');
+        const dir = btn.data('direction');
+        const row = btn.closest('tr');
 
-                        // 1. Actualizar fase
-                        const faseCell = row.find('.fase-celda');
-                        if (res.fase) {
-                            faseCell.html(`
-                            <div class="d-flex flex-column align-items-center gap-1">
-                                <span class="badge text-white px-3 py-1 fase-badge"
-                                    style="background-color: ${res.fase.color}; font-size: 0.85rem; min-width: 100px;">
-                                    ${res.fase.nombre}
-                                </span>
-                                <small class="text-muted fase-numero" style="font-size: 0.75rem;">
-                                    Fase ${res.fase.n_fase}
-                                </small>
-                            </div>
-                        `);
-                        }
+        // Primera llamada para verificar si necesita confirmación
+        $.ajax({
+            url: `/admin/ofertas/${id}/cambiar-fase`,
+            method: 'POST',
+            data: {
+                direction: dir,
+                _token: '{{ csrf_token() }}'
+            },
+            success: function(res) {
+                if (res.success && res.confirm_required) {
+                    // Mostrar modal de confirmación según el tipo
+                    let titulo = '';
+                    let confirmButtonText = 'Confirmar';
+                    let confirmButtonClass = 'btn btn-primary';
 
-                        // 2. Actualizar color de fondo de la fila
-                        if (res.bg_color) {
-                            row.css('background-color', res.bg_color);
-                        }
-
-                        // 3. Actualizar contador de inscritos
-                        if (res.total_inscritos !== undefined) {
-                            const inscritosBadge = row.find('.badge.bg-success');
-                            if (inscritosBadge.length) {
-                                inscritosBadge.html(
-                                    `<i class="ri-user-follow-line me-1"></i>${res.total_inscritos}`
-                                    );
-                            }
-                        }
-
-                        // 4. Actualizar contador de pre-inscritos
-                        if (res.total_preinscritos !== undefined) {
-                            const preInscritosContainer = row.find('.badge.bg-secondary').closest(
-                                'div');
-                            if (res.total_preinscritos > 0) {
-                                if (preInscritosContainer.length) {
-                                    preInscritosContainer.find('.badge').html(
-                                        `<i class="ri-user-add-line me-1"></i>${res.total_preinscritos}`
-                                        );
-                                } else {
-                                    // Crear el badge si no existe
-                                    const inscritosDiv = row.find('.d-flex.flex-column.gap-1');
-                                    if (inscritosDiv.length) {
-                                        inscritosDiv.append(`
-                                        <div>
-                                            <span class="badge bg-secondary bg-gradient rounded-pill px-3 py-1"
-                                                style="font-size: 0.75rem; min-width: 50px;">
-                                                <i class="ri-user-add-line me-1"></i>
-                                                ${res.total_preinscritos}
-                                            </span>
-                                        </div>
-                                    `);
-                                    }
-                                }
-                            } else {
-                                // Eliminar el badge si no hay pre-inscritos
-                                preInscritosContainer.closest('div').remove();
-                            }
-                        }
-
-                        // 5. Actualizar acciones
-                        if (res.acciones_html) {
-                            row.find('.acciones-celda').html(res.acciones_html);
-                        }
+                    if (res.confirm_type === 'fase1_to_2') {
+                        titulo = 'Aprobar Oferta Académica';
+                        confirmButtonText = 'Sí, aprobar';
+                        confirmButtonClass = 'btn btn-success';
+                    } else if (res.confirm_type === 'fase2_to_3') {
+                        titulo = 'Pasar a Fase de Inscripciones';
+                        confirmButtonText = 'Sí, continuar';
+                        confirmButtonClass = 'btn btn-primary';
+                    } else if (res.confirm_type === 'fase3_to_4') {
+                        titulo = 'Pasar a Fase de Desarrollo';
+                        confirmButtonText = 'Sí, pasar a desarrollo';
+                        confirmButtonClass = 'btn btn-warning';
                     }
 
-                    // Reinicializar eventos y componentes
-                    refreshFeather();
-                    inicializarEventosOfertas();
-
+                    Swal.fire({
+                        icon: 'info',
+                        title: titulo,
+                        html: res.msg,
+                        showCancelButton: true,
+                        confirmButtonText: confirmButtonText,
+                        cancelButtonText: 'Cancelar',
+                        confirmButtonColor: res.confirm_type === 'fase3_to_4' ? '#f59e0b' : '#0d9488',
+                        cancelButtonColor: '#6c757d',
+                        customClass: {
+                            confirmButton: confirmButtonClass,
+                            cancelButton: 'btn btn-secondary'
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            ejecutarCambioFase(id, dir, btn, row);
+                        }
+                    });
+                } else if (res.success) {
+                    // No requiere confirmación, cambiar directamente
+                    mostrarToast('success', res.msg || 'Fase cambiada exitosamente.');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
                 } else {
+                    // Error sin confirmación
                     if (res.msg && res.msg.includes('plan de pago')) {
                         Swal.fire({
                             icon: 'warning',
@@ -114,10 +113,7 @@
                             }
                         }).then((result) => {
                             if (result.dismiss === 'cancel') {
-                                const ofertaId = id;
-                                const ofertaCodigo = row.find('td:nth-child(2)').text()
-                                    .trim();
-
+                                const ofertaCodigo = row.find('td:nth-child(2)').text().trim();
                                 $('#planes_oferta_codigo').text(ofertaCodigo);
                                 $('#loadingPlanes').show();
                                 $('#planesPagoContainer').hide();
@@ -125,12 +121,11 @@
                                 $('#modalVerPlanesPago').modal('show');
 
                                 $.ajax({
-                                    url: `/admin/ofertas/${ofertaId}/planes-pago`,
+                                    url: `/admin/ofertas/${id}/planes-pago`,
                                     method: 'GET',
                                     success: function(res) {
                                         $('#loadingPlanes').hide();
-                                        if (res.success && res.planes.length >
-                                            0) {
+                                        if (res.success && res.planes.length > 0) {
                                             renderizarPlanesPago(res.planes);
                                             $('#planesPagoContainer').show();
                                         } else {
@@ -155,27 +150,15 @@
                 } else {
                     mostrarToast('error', 'Error al cambiar la fase.');
                 }
-            },
-            complete: function() {
-                btn.html(originalHtml);
-                btn.prop('disabled', false);
             }
         });
     });
 
-    // Función para reinicializar eventos
     function inicializarEventosOfertas() {
-        // Reasignar eventos a los botones de cambio de fase
-        $('.change-phase').off('click').on('click', function() {
-            // El código del evento ya está definido arriba
-        });
-
-        // Reasignar eventos a otros botones si es necesario
+        $('.change-phase').off('click');
         $('.editOfertaBtn, .editFase2Btn, .verPlanesPagoBtn, .inscribirEstudianteBtn').off('click');
-        // ... código para inicializar otros eventos ...
     }
 
-    // Llamar al cargar la página
     $(document).ready(function() {
         inicializarEventosOfertas();
     });

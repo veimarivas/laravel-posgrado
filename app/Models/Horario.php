@@ -21,7 +21,7 @@ class Horario extends Model
 
     // Agrega este cast
     protected $casts = [
-        'fecha' => 'date',
+        'fecha' => 'date:Y-m-d',
     ];
 
     public function modulo()

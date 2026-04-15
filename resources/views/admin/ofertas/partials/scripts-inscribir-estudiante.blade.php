@@ -217,13 +217,14 @@
             $('#cuotas-preview-section').show();
             $('#cuotas-preview-container').empty();
             $('#confirmar-cuotas-btn').hide();
-            $('#generar-cuotas-btn').show().prop('disabled', !planSeleccionado);
+            if (planSeleccionado) {
+                generarVistaPreviaCuotas();
+            }
         } else if (estado === 'Pre-Inscrito') {
             $('#adelanto-section').show();
             $('#cuotas-preview-section').hide();
             $('#cuotas-preview-container').empty();
-            $('#generar-cuotas-btn').hide();
-            $('#confirmar-cuotas-btn').hide();
+            $('#generar-cuotas-btn, #confirmar-cuotas-btn').hide();
         } else {
             $('#adelanto-section, #cuotas-preview-section').hide();
             $('#generar-cuotas-btn, #confirmar-cuotas-btn').hide();
@@ -237,28 +238,25 @@
 
         if (estado === 'Inscrito' && planId) {
             $('#cuotas-preview-section').show();
-            $('#cuotas-preview-container').empty();
-            $('#confirmar-cuotas-btn').hide();
-            $('#generar-cuotas-btn').show().prop('disabled', false);
+            generarVistaPreviaCuotas();
         } else if (estado === 'Pre-Inscrito') {
-            $('#generar-cuotas-btn').hide();
-            $('#confirmar-cuotas-btn').hide();
+            $('#cuotas-preview-section').hide();
+            $('#generar-cuotas-btn, #confirmar-cuotas-btn').hide();
         }
     });
 
-    // Generar vista previa de cuotas
-    $('#generar-cuotas-btn').on('click', function() {
+    // Función para generar vista previa de cuotas automáticamente
+    function generarVistaPreviaCuotas() {
         const planId = $('#planes_pago_select').val();
         const ofertaId = $('#oferta_id_inscripcion').val();
 
-        if (!planId) {
-            mostrarToast('warning', 'Seleccione un plan de pago primero.');
-            return;
-        }
+        if (!planId) return;
 
         $('#cuotas-preview-container').html(
             '<div class="text-center py-3"><div class="spinner-border" style="color:var(--ofertas-primary);width:1.5rem;height:1.5rem;" role="status"></div><p class="text-muted mt-2 mb-0 small">Generando cuotas...</p></div>'
         );
+        $('#confirmar-cuotas-btn').hide();
+        $('#generar-cuotas-btn').hide();
 
         $.ajax({
             url: "{{ route('admin.inscripciones.generar-cuotas-preview') }}",
@@ -270,9 +268,8 @@
             },
             success: function(res) {
                 if (res.success) {
-                    renderizarCuotasPreview(res.cuotas_preview);
+                    renderizarCuotasPreviewAgrupadas(res.cuotas_preview);
                     $('#confirmar-cuotas-btn').show();
-                    $('#generar-cuotas-btn').hide();
                 } else {
                     $('#cuotas-preview-container').html(
                         `<div class="text-center py-3"><div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill" style="background:#fef2f2;color:#dc2626;font-size:0.82rem;"><i class="ri-error-warning-line"></i>${res.msg}</div></div>`
@@ -285,66 +282,335 @@
                 );
             }
         });
-    });
-
-    // Renderizar cuotas preview
-    function renderizarCuotasPreview(cuotas) {
-        let html = `
-        <div class="table-responsive">
-            <table class="table table-sm" style="font-size:0.82rem;">
-                <thead>
-                    <tr style="background:var(--ofertas-surface);">
-                        <th style="padding:8px 12px;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--ofertas-text-muted);border-bottom:1px solid var(--ofertas-border);">CONCEPTO</th>
-                        <th style="padding:8px 12px;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--ofertas-text-muted);border-bottom:1px solid var(--ofertas-border);text-align:center;">N°</th>
-                        <th style="padding:8px 12px;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--ofertas-text-muted);border-bottom:1px solid var(--ofertas-border);text-align:end;">MONTO</th>
-                        <th style="padding:8px 12px;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--ofertas-text-muted);border-bottom:1px solid var(--ofertas-border);text-align:center;">FECHA PAGO</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-
-        cuotas.forEach(cuota => {
-            html += `
-                <tr>
-                    <td style="padding:8px 12px;border-bottom:1px solid var(--ofertas-border);font-weight:500;">${cuota.concepto_nombre}</td>
-                    <td style="padding:8px 12px;border-bottom:1px solid var(--ofertas-border);text-align:center;">
-                        <span class="badge rounded-pill" style="background:var(--ofertas-primary-light);color:var(--ofertas-primary);font-size:0.72rem;font-weight:600;">${cuota.n_cuota}</span>
-                    </td>
-                    <td style="padding:8px 12px;border-bottom:1px solid var(--ofertas-border);text-align:end;">
-                        <input type="number" class="form-control form-control-sm text-end fw-bold" value="${cuota.pago_total_bs}" readonly
-                            style="border-radius:var(--radius-sm);border:1px solid var(--ofertas-border);font-size:0.82rem;background:var(--ofertas-surface);">
-                    </td>
-                    <td style="padding:8px 12px;border-bottom:1px solid var(--ofertas-border);text-align:center;">
-                        <input type="date" class="form-control form-control-sm fecha-pago-input"
-                            value="${cuota.fecha_pago}"
-                            data-concepto-id="${cuota.concepto_id}"
-                            data-n-cuota="${cuota.n_cuota}"
-                            style="border-radius:var(--radius-sm);border:1px solid var(--ofertas-border);font-size:0.82rem;">
-                    </td>
-                </tr>`;
-        });
-
-        html += `</tbody></table></div>`;
-        $('#cuotas-preview-container').html(html);
     }
 
-    // Confirmar cuotas
+    // Renderizar cuotas agrupadas por concepto con herramientas avanzadas
+    function renderizarCuotasPreviewAgrupadas(cuotas) {
+        // Guardar datos originales para referencia
+        window.cuotasOriginalData = JSON.parse(JSON.stringify(cuotas));
+        
+        const grouped = {};
+        let totalGeneral = 0;
+        
+        cuotas.forEach(cuota => {
+            const conceptoKey = `${cuota.concepto_id}-${cuota.concepto_nombre}`;
+            if (!grouped[conceptoKey]) {
+                grouped[conceptoKey] = {
+                    concepto_id: cuota.concepto_id,
+                    concepto_nombre: cuota.concepto_nombre,
+                    n_cuotas_total: cuota.n_cuotas,
+                    original_pago_total: cuota.pago_total_bs,
+                    cuotas: [],
+                    total_concepto: 0
+                };
+            }
+            grouped[conceptoKey].cuotas.push(cuota);
+            grouped[conceptoKey].total_concepto += cuota.pago_total_bs;
+            totalGeneral += cuota.pago_total_bs;
+        });
+
+        // Extraer día de la primera fecha para el selector
+        const primeraFecha = cuotas[0]?.fecha_pago || '';
+        const diaActual = primeraFecha ? parseInt(primeraFecha.split('-')[2]) : 14;
+
+        let html = `
+            <div class="mb-3 p-2 rounded" style="background: var(--ofertas-primary-light); border-left: 3px solid var(--ofertas-primary);">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span style="font-size: 0.85rem; font-weight: 600; color: var(--ofertas-primary);">TOTAL A PAGAR</span>
+                    <span style="font-size: 1.1rem; font-weight: 700; color: var(--ofertas-primary);" id="total-general-cuotas">Bs. ${totalGeneral.toFixed(2)}</span>
+                </div>
+            </div>
+            
+            <div class="mb-3 p-2 rounded" style="background: var(--ofertas-surface); border: 1px solid var(--ofertas-border);">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-4">
+                        <label style="font-size: 0.7rem; font-weight: 600; text-transform: uppercase; color: var(--ofertas-text-muted);">Cambiar día en todas las fechas</label>
+                        <input type="number" class="form-control form-control-sm" id="cambiar-dia-fecha" value="${diaActual}" min="1" max="31"
+                            style="border-radius: 4px; border: 1px solid var(--ofertas-border);">
+                    </div>
+                    <div class="col-md-4">
+                        <button type="button" class="btn btn-sm btn-primary" id="btn-aplicar-dia" style="border-radius: 4px; padding: 6px 12px;">
+                            <i class="ri-calendar-line me-1"></i>Aplicar día
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-responsive">`;
+
+        Object.values(grouped).forEach(grupo => {
+            const tieneMultiplesCuotas = grupo.cuotas.length > 1;
+            
+            html += `
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center p-2 rounded" style="background: var(--ofertas-surface); border-bottom: 2px solid var(--ofertas-primary);">
+                        <div class="d-flex align-items-center gap-2">
+                            <span style="font-weight: 600; color: var(--ofertas-text);">${grupo.concepto_nombre}</span>
+                            ${tieneMultiplesCuotas ? `
+                                <div class="d-flex align-items-center gap-1">
+                                    <input type="number" class="form-control form-control-sm" 
+                                        id="monto-cuota-${grupo.concepto_id}"
+                                        placeholder="Monto cuota" 
+                                        min="0" step="0.01"
+                                        style="width: 100px; border-radius: 4px; border: 1px solid var(--ofertas-border); font-size: 0.75rem;"
+                                        data-concepto-id="${grupo.concepto_id}"
+                                        data-total-concepto="${grupo.total_concepto}"
+                                        data-n-cuotas="${grupo.n_cuotas_total}">
+                                    <button type="button" class="btn btn-xs btn-outline-success btn-aplicar-monto" 
+                                        data-concepto-id="${grupo.concepto_id}" 
+                                        title="Aplicar monto a todas las cuotas"
+                                        style="padding: 2px 6px; font-size: 0.7rem;">
+                                        <i class="ri-check-line"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-xs btn-outline-warning btn-invertir-montos" 
+                                        data-concepto-id="${grupo.concepto_id}" 
+                                        title="Invertir montos entre cuotas" 
+                                        style="padding: 2px 6px; font-size: 0.7rem;">
+                                        <i class="ri-swap-line"></i> Invertir
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <span style="font-weight: 600; color: var(--ofertas-success);" class="total-concepto-display" data-concepto-id="${grupo.concepto_id}">Bs. ${grupo.total_concepto.toFixed(2)} <span style="font-size: 0.75rem; color: var(--ofertas-text-muted);">(${grupo.n_cuotas_total} cuota${grupo.n_cuotas_total > 1 ? 's' : ''})</span></span>
+                    </div>
+                    <table class="table table-sm mb-0" style="font-size: 0.8rem;">
+                        <thead>
+                            <tr style="background: var(--ofertas-surface);">
+                                <th style="padding: 6px 10px; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; color: var(--ofertas-text-muted);">N°</th>
+                                <th style="padding: 6px 10px; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; color: var(--ofertas-text-muted); text-align: end;">MONTO (Bs)</th>
+                                <th style="padding: 6px 10px; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; color: var(--ofertas-text-muted); text-align: center;">FECHA PAGO</th>
+                            </tr>
+                        </thead>
+                        <tbody class="cuotas-grupo-body" data-concepto-id="${grupo.concepto_id}">`;
+
+            grupo.cuotas.forEach(cuota => {
+                html += `
+                    <tr>
+                        <td style="padding: 6px 10px; text-align: center;">
+                            <span class="badge rounded-pill" style="background: var(--ofertas-primary); color: white; font-size: 0.7rem; font-weight: 600;">${cuota.n_cuota}</span>
+                        </td>
+                        <td style="padding: 6px 10px; text-align: end;">
+                            <input type="number" class="form-control form-control-sm text-end fw-bold monto-cuota-input" 
+                                value="${cuota.pago_total_bs}" 
+                                data-concepto-id="${cuota.concepto_id}"
+                                data-n-cuota="${cuota.n_cuota}"
+                                data-original-monto="${cuota.pago_total_bs}"
+                                readonly
+                                style="border-radius: 4px; border: 1px solid var(--ofertas-border); font-size: 0.8rem; background: var(--ofertas-surface); padding: 4px 8px; cursor: not-allowed;">
+                        </td>
+                        <td style="padding: 6px 10px; text-align: center;">
+                            <input type="date" class="form-control form-control-sm fecha-pago-input fecha-pago-grupo"
+                                value="${cuota.fecha_pago}"
+                                data-concepto-id="${cuota.concepto_id}"
+                                data-n-cuota="${cuota.n_cuota}"
+                                style="border-radius: 4px; border: 1px solid var(--ofertas-border); font-size: 0.8rem; padding: 4px 8px;">
+                        </td>
+                    </tr>`;
+            });
+
+            html += `</tbody></table></div>`;
+        });
+
+        html += `</div>`;
+        
+        // Agregardiv para mensajes de error
+        html += `<div id="cuotas-error-message" class="mt-2" style="display:none;"></div>`;
+        
+        $('#cuotas-preview-container').html(html);
+        
+        // Eventos para cambio de día
+        $('#btn-aplicar-dia').on('click', function() {
+            const nuevoDia = parseInt($('#cambiar-dia-fecha').val());
+            if (nuevoDia < 1 || nuevoDia > 31) {
+                mostrarToast('warning', 'El día debe estar entre 1 y 31');
+                return;
+            }
+            
+            $('.fecha-pago-input').each(function() {
+                const fechaActual = $(this).val();
+                if (fechaActual) {
+                    const partes = fechaActual.split('-');
+                    const nuevaFecha = `${partes[0]}-${partes[1].padStart(2, '0')}-${nuevoDia.toString().padStart(2, '0')}`;
+                    $(this).val(nuevaFecha);
+                }
+            });
+            
+            mostrarToast('success', 'Días actualizados en todas las fechas');
+        });
+        
+// Evento para aplicar monto a todas las cuotas de un concepto
+        $('.btn-aplicar-monto').on('click', function() {
+            const conceptoId = $(this).data('concepto-id');
+            const inputMonto = $(`#monto-cuota-${conceptoId}`);
+            const montoIngresado = parseFloat(inputMonto.val());
+            
+            if (isNaN(montoIngresado) || montoIngresado <= 0) {
+                mostrarToast('warning', 'Ingrese un monto válido mayor a 0');
+                return;
+            }
+            
+            const totalConcepto = parseFloat(inputMonto.data('total-concepto'));
+            const nCuotas = parseInt(inputMonto.data('n-cuotas'));
+            
+            if (montoIngresado > totalConcepto) {
+                mostrarToast('warning', `El monto no puede ser mayor al total del concepto (Bs. ${totalConcepto.toFixed(2)})`);
+                return;
+            }
+            
+            const grupoBody = $(`.cuotas-grupo-body[data-concepto-id="${conceptoId}"]`);
+            const inputs = grupoBody.find('.monto-cuota-input');
+            
+            // Calcular: las primeras n-1 cuotas reciben el monto ingresado
+            // La última cuota recibe el resto para completar el total del concepto
+            const cuotasConMonto = nCuotas - 1;
+            const montoUltimaCuota = totalConcepto - (montoIngresado * cuotasConMonto);
+            
+            if (montoUltimaCuota <= 0) {
+                mostrarToast('warning', `El monto mínimo por cuota debe ser mayor a Bs. ${(totalConcepto / nCuotas).toFixed(2)} para que ninguna cuota sea 0`);
+                return;
+            }
+            
+            inputs.each(function(index) {
+                let montoFinal;
+                if (index < cuotasConMonto) {
+                    montoFinal = montoIngresado;
+                } else {
+                    montoFinal = montoUltimaCuota;
+                }
+                $(this).val(montoFinal.toFixed(2));
+            });
+            
+actualizarTotalesPorConcepto();
+            validarMontosCero();
+            mostrarToast('success', `Cuotas actualizadas: ${cuotasConMonto} cuota(s) de Bs. ${montoIngresado.toFixed(2)} + 1 cuota de Bs. ${montoUltimaCuota.toFixed(2)}`);
+        });
+        
+        // Eventos para cambio de monto (ya no editable, solo lectura)
+        $('.monto-cuota-input').on('change', function() {
+            actualizarTotalesPorConcepto();
+            validarMontosCero();
+        });
+        
+        // Inicializar validación
+        validarMontosCero();
+        
+        // Evento para invertir montos
+        $('.btn-invertir-montos').on('click', function() {
+            const conceptoId = $(this).data('concepto-id');
+            const grupoBody = $(`.cuotas-grupo-body[data-concepto-id="${conceptoId}"]`);
+            const inputs = grupoBody.find('.monto-cuota-input');
+            
+            const valores = [];
+            inputs.each(function() {
+                valores.push(parseFloat($(this).val()) || 0);
+            });
+            
+            valores.reverse();
+            
+            inputs.each(function(index) {
+                $(this).val(valores[index].toFixed(2));
+            });
+            
+            actualizarTotalesPorConcepto();
+            validarMontosCero();
+            mostrarToast('success', 'Montos invertidos correctamente');
+        });
+    }
+
+    // Función para actualizar totales por concepto después de cambiar montos
+    function actualizarTotalesPorConcepto() {
+        $('.cuotas-grupo-body').each(function() {
+            const conceptoId = $(this).data('concepto-id');
+            let total = 0;
+            
+            $(this).find('.monto-cuota-input').each(function() {
+                total += parseFloat($(this).val()) || 0;
+            });
+            
+            const display = $(`.total-concepto-display[data-concepto-id="${conceptoId}"]`);
+            const numCuotas = $(this).find('.monto-cuota-input').length;
+            display.html(`Bs. ${total.toFixed(2)} <span style="font-size: 0.75rem; color: var(--ofertas-text-muted);">(${numCuotas} cuota${numCuotas > 1 ? 's' : ''})</span>`);
+        });
+        
+        // Actualizar total general
+        let totalGeneral = 0;
+        $('.monto-cuota-input').each(function() {
+            totalGeneral += parseFloat($(this).val()) || 0;
+        });
+        $('#total-general-cuotas').text(`Bs. ${totalGeneral.toFixed(2)}`);
+    }
+
+    // Función para validar que no haya cuotas con monto 0
+    function validarMontosCero() {
+        let tieneCero = false;
+        let primerConceptoCero = '';
+        
+        $('.monto-cuota-input').each(function() {
+            const monto = parseFloat($(this).val()) || 0;
+            if (monto === 0) {
+                tieneCero = true;
+                const nombreConcepto = $(this).closest('.cuotas-grupo-body').data('concepto-id');
+                if (!primerConceptoCero) {
+                    primerConceptoCero = $(this).closest('.mb-4').find('span').text().split('Bs.')[0].trim();
+                }
+            }
+        });
+        
+        const errorDiv = $('#cuotas-error-message');
+        if (tieneCero) {
+            errorDiv.html(`
+                <div class="d-inline-flex align-items-center gap-2 px-3 py-2 rounded-pill" style="background:#fef2f2;color:#dc2626;font-size:0.8rem;">
+                    <i class="ri-error-warning-line"></i> No se puede asignar monto 0 a ninguna cuota
+                </div>
+            `).show();
+            $('#confirmar-cuotas-btn').prop('disabled', true).addClass('opacity-50');
+        } else {
+            errorDiv.hide();
+            $('#confirmar-cuotas-btn').prop('disabled', false).removeClass('opacity-50');
+        }
+    }
+
+    // Generar vista previa de cuotas (botón manual)
+    $('#generar-cuotas-btn').on('click', function() {
+        generarVistaPreviaCuotas();
+    });
+
+    // Confirmar cuotas - maneja la nueva estructura agrupada
     $('#confirmar-cuotas-btn').on('click', function() {
         const ofertaId = $('#oferta_id_inscripcion').val();
         const estudianteId = $('#estudiante_id_inscripcion').val();
         const planId = $('#planes_pago_select').val();
 
-        const cuotasData = [];
-        $('#cuotas-preview-container tbody tr').each(function() {
-            const conceptoId = $(this).find('.fecha-pago-input').data('concepto-id');
-            const nCuota = $(this).find('.fecha-pago-input').data('n-cuota');
-            const fechaPago = $(this).find('.fecha-pago-input').val();
-            const montoPorCuota = parseFloat($(this).find('input[type="number"]').val());
+        // Validar que no haya montos en 0
+        let tieneCero = false;
+        $('.monto-cuota-input').each(function() {
+            if (parseFloat($(this).val()) === 0) {
+                tieneCero = true;
+            }
+        });
+        
+        if (tieneCero) {
+            mostrarToast('error', 'No puede haber cuotas con monto 0. Verifique los montos.');
+            return;
+        }
 
-            cuotasData.push({
-                concepto_id: conceptoId,
-                n_cuota: nCuota,
-                fecha_pago: fechaPago,
-                monto_bs: montoPorCuota
+        const cuotasData = [];
+        
+        // Recorrer cada grupo de cuotas por concepto
+        $('.cuotas-grupo-body').each(function() {
+            const conceptoId = $(this).data('concepto-id');
+            
+            $(this).find('tr').each(function() {
+                const nCuota = $(this).find('.monto-cuota-input').data('n-cuota');
+                const fechaPago = $(this).find('.fecha-pago-input').val();
+                const montoPorCuota = parseFloat($(this).find('.monto-cuota-input').val());
+
+                cuotasData.push({
+                    concepto_id: conceptoId,
+                    n_cuota: nCuota,
+                    fecha_pago: fechaPago,
+                    monto_bs: montoPorCuota
+                });
             });
         });
 
@@ -363,7 +629,22 @@
                 mostrarToast(res.success ? 'success' : 'error', res.msg);
                 if (res.success) {
                     $('#modalInscribirEstudiante').modal('hide');
-                    location.reload();
+                    
+                    // Abrir modal de subir comprobante después de confirmar
+                    if (res.inscripcion_id) {
+                        const ofertaId = $('#oferta_id_inscripcion').val();
+                        setTimeout(() => {
+                            $.ajax({
+                                url: '/admin/ofertas/' + ofertaId + '/info-inscripcion',
+                                method: 'GET',
+                                success: function(info) {
+                                    if (info.success) {
+                                        abrirModalSubirComprobanteOfertas(res.inscripcion_id, info.estudiante_nombre, info.programa_nombre);
+                                    }
+                                }
+                            });
+                        }, 300);
+                    }
                 }
             },
             error: function(xhr) {
@@ -744,4 +1025,141 @@
             }
         });
     });
+
+    // Función para abrir modal de subir comprobante en ofertas
+    function abrirModalSubirComprobanteOfertas(inscripcionId, estudianteNombre, programaNombre) {
+        // Crear el modal si no existe
+        if (!$('#modalSubirComprobanteOfertas').length) {
+            const modalHtml = `
+<div class="modal fade" id="modalSubirComprobanteOfertas" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #0f766e 0%, #0d5f59 100%); color: white;">
+                <h5 class="modal-title"><i class="ri-upload-cloud-line me-2"></i>Subir Comprobante de Pago</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formSubirComprobanteOfertas" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Estudiante</label>
+                        <p class="form-control-plaintext fw-medium" id="comp_estudiante"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Programa</label>
+                        <p class="form-control-plaintext" id="comp_programa"></p>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cuotas a las que aplica el pago *</label>
+                        <div id="comp_cuotas_checkbox"></div>
+                        <input type="hidden" name="comp_cuota_ids" id="comp_cuota_ids">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Comprobante *</label>
+                        <input type="file" class="form-control" name="archivo" id="comp_archivo" accept=".pdf,.jpg,.jpeg,.png" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Observaciones</label>
+                        <textarea class="form-control" name="observaciones" id="comp_observaciones" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" style="background: #0f766e; border-color: #0f766e;">Subir Comprobante</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>`;
+            $('body').append(modalHtml);
+        }
+
+        // Set values
+        $('#comp_estudiante').text(estudianteNombre);
+        $('#comp_programa').text(programaNombre);
+        $('#comp_cuota_ids').val('');
+        
+        $('#comp_cuotas_checkbox').html('<div class="text-muted">Cargando...</div>');
+
+        // Load cuotas
+        $.ajax({
+            url: `/admin/profile/marketing/inscripcion/${inscripcionId}/cuotas`,
+            method: 'GET',
+            success: function(response) {
+                if (response.success && response.cuotas.length > 0) {
+                    let html = '';
+                    response.cuotas.forEach(cuota => {
+                        html += `
+<div class="form-check">
+    <input class="form-check-input comp-cuota-checkbox" type="checkbox" 
+        value="${cuota.id}" id="comp_cuota_${cuota.id}">
+    <label class="form-check-label" for="comp_cuota_${cuota.id}">
+        ${cuota.nombre} - <span class="text-success fw-semibold">Bs. ${parseFloat(cuota.pendiente_bs).toFixed(2)}</span>
+    </label>
+</div>`;
+                    });
+                    $('#comp_cuotas_checkbox').html(html);
+                    
+                    // Event to update hidden input
+                    $('.comp-cuota-checkbox').on('change', function() {
+                        const selected = [];
+                        $('.comp-cuota-checkbox:checked').each(function() {
+                            selected.push($(this).val());
+                        });
+                        $('#comp_cuota_ids').val(selected.join(','));
+                    });
+                } else {
+                    $('#comp_cuotas_checkbox').html('<div class="text-muted">No hay cuotas pendientes</div>');
+                }
+            }
+        });
+
+        $('#comp_archivo').val('');
+        $('#comp_observaciones').val('');
+
+        $('#modalSubirComprobanteOfertas').modal('show');
+
+        // Handle form submit
+        $('#formSubirComprobanteOfertas').off('submit');
+        $('#formSubirComprobanteOfertas').on('submit', function(e) {
+            e.preventDefault();
+            
+            const cuotaIds = [];
+            $('.comp-cuota-checkbox:checked').each(function() {
+                cuotaIds.push($(this).val());
+            });
+            
+            if (cuotaIds.length === 0) {
+                mostrarToast('error', 'Debe seleccionar al menos una cuota');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('_token', '{{ csrf_token() }}');
+            formData.append('inscripcione_id', inscripcionId);
+            formData.append('observaciones', $('#comp_observaciones').val() || '');
+            formData.append('archivo', $('#comp_archivo')[0].files[0]);
+            cuotaIds.forEach(function(id) {
+                formData.append('cuota_ids[]', id);
+            });
+
+            $.ajax({
+                url: '{{ route("admin.profile.marketing.subir-respaldo") }}',
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    if (response.success) {
+                        mostrarToast('success', response.message);
+                        $('#modalSubirComprobanteOfertas').modal('hide');
+                    } else {
+                        mostrarToast('error', response.message);
+                    }
+                },
+                error: function(xhr) {
+                    mostrarToast('error', 'Error al subir el comprobante');
+                }
+            });
+        });
+    }
 </script>

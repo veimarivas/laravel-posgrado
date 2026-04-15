@@ -260,6 +260,7 @@
                         <div id="cuotasCheckboxContainer">
                             <div style="color:var(--conc-text-muted);">Cargando cuotas pendientes...</div>
                         </div>
+                        <input type="hidden" name="cuota_ids" id="cuota_ids_input">
                         <div class="form-text">Seleccione una o varias cuotas. Solo se muestran cuotas con saldo pendiente.</div>
                     </div>
                     <div class="mb-3">
