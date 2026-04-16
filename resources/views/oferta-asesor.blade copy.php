@@ -22,114 +22,6 @@
     <!-- Animaciones CSS (opcional) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <style>
-        /* Variables personalizadas para el diseño mejorado */
-        :root {
-            --accent-light: #7dd87d;
-            --bg-card-dark: #0d2840;
-            --bg-card-hover: #123a56;
-            --glass-bg: rgba(255, 255, 255, 0.08);
-            --glass-border: rgba(255, 255, 255, 0.12);
-            --shadow-soft: 0 4px 30px rgba(0, 0, 0, 0.1);
-            --shadow-hover: 0 20px 50px rgba(94, 201, 177, 0.2);
-            --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            --gradient-premium: linear-gradient(135deg, #032A4A 0%, #1a4a6e 50%, #032A4A 100%);
-        }
-
-        /* Animaciones base */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translateY(0);
-            }
-
-            50% {
-                transform: translateY(-10px);
-            }
-        }
-
-        @keyframes shimmer {
-            0% {
-                background-position: -200% 0;
-            }
-
-            100% {
-                background-position: 200% 0;
-            }
-        }
-
-        @keyframes pulse-soft {
-
-            0%,
-            100% {
-                opacity: 1;
-            }
-
-            50% {
-                opacity: 0.7;
-            }
-        }
-
-        @keyframes rotate {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        @keyframes glow {
-
-            0%,
-            100% {
-                box-shadow: 0 0 20px rgba(94, 201, 177, 0.3);
-            }
-
-            50% {
-                box-shadow: 0 0 40px rgba(94, 201, 177, 0.6);
-            }
-        }
-
-        /* Animaciones aplicadas */
-        .animate-fade-in-up {
-            animation: fadeInUp 0.8s ease-out forwards;
-            opacity: 0;
-        }
-
-        .animate-delay-1 {
-            animation-delay: 0.1s;
-        }
-
-        .animate-delay-2 {
-            animation-delay: 0.2s;
-        }
-
-        .animate-delay-3 {
-            animation-delay: 0.3s;
-        }
-
-        .animate-delay-4 {
-            animation-delay: 0.4s;
-        }
-
-        .animate-delay-5 {
-            animation-delay: 0.5s;
-        }
-
         /* Estilos específicos para la página de detalle */
         .oferta-hero {
             background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
@@ -137,20 +29,6 @@
             padding: 100px 0 60px;
             position: relative;
             overflow: hidden;
-        }
-
-        .oferta-hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background:
-                radial-gradient(circle at 20% 80%, rgba(94, 201, 177, 0.15) 0%, transparent 40%),
-                radial-gradient(circle at 80% 20%, rgba(94, 201, 177, 0.1) 0%, transparent 40%),
-                radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 60%);
-            pointer-events: none;
         }
 
         .oferta-hero .container {
@@ -179,89 +57,53 @@
         }
 
         .oferta-hero h1 {
-            font-size: 3.5rem;
+            font-size: 3rem;
             margin-bottom: 20px;
-            line-height: 1.1;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            position: relative;
-        }
-
-        .oferta-hero h1::after {
-            content: '';
-            position: absolute;
-            bottom: -8px;
-            left: 0;
-            width: 80px;
-            height: 4px;
-            background: var(--accent);
-            border-radius: 2px;
+            line-height: 1.2;
         }
 
         .oferta-hero p {
-            font-size: 1.25rem;
+            font-size: 1.2rem;
             margin-bottom: 30px;
             opacity: 0.9;
-            line-height: 1.7;
-            max-width: 600px;
         }
 
         .hero-actions {
             display: flex;
             gap: 20px;
             flex-wrap: wrap;
-            margin-top: 10px;
         }
 
         .btn-inscribirse {
             background: var(--accent);
             color: white;
             border: none;
-            padding: 18px 36px;
+            padding: 15px 30px;
             border-radius: 50px;
             font-weight: 600;
             font-size: 1.1rem;
             cursor: pointer;
-            transition: var(--transition-smooth);
+            transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(94, 201, 177, 0.3);
-        }
-
-        .btn-inscribirse::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-            transition: 0.6s;
         }
 
         .btn-inscribirse:hover {
             background: var(--accent-dark);
             transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(94, 201, 177, 0.4);
-        }
-
-        .btn-inscribirse:hover::before {
-            left: 100%;
         }
 
         .btn-contactar {
             background: transparent;
             color: white;
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            padding: 18px 36px;
+            border: 2px solid white;
+            padding: 15px 30px;
             border-radius: 50px;
             font-weight: 600;
             font-size: 1.1rem;
             cursor: pointer;
-            transition: var(--transition-smooth);
+            transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
             gap: 10px;
@@ -270,218 +112,124 @@
         .btn-contactar:hover {
             background: white;
             color: var(--primary-dark);
-            border-color: white;
         }
 
         .info-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 25px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
             margin-bottom: 60px;
         }
 
         .info-card {
             background: white;
-            border-radius: 20px;
-            padding: 30px 25px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-            border: 1px solid rgba(94, 201, 177, 0.15);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.05);
             text-align: center;
-            transition: var(--transition-smooth);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .info-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #5EC9B1, #7dd87d);
-            transform: scaleX(0);
             transition: transform 0.3s ease;
         }
 
         .info-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 15px 40px rgba(94, 201, 177, 0.15);
-            border-color: rgba(94, 201, 177, 0.3);
-        }
-
-        .info-card:hover::before {
-            transform: scaleX(1);
+            transform: translateY(-10px);
         }
 
         .info-card i {
-            font-size: 2.2rem;
+            font-size: 2.5rem;
             color: var(--accent);
-            margin-bottom: 18px;
-            display: inline-block;
-            transition: var(--transition-smooth);
-        }
-
-        .info-card:hover i {
-            transform: scale(1.1);
-            color: var(--accent-dark);
+            margin-bottom: 20px;
         }
 
         .info-card h3 {
-            font-size: 1.1rem;
+            font-size: 1.5rem;
             margin-bottom: 10px;
-            color: var(--primary-dark);
-            font-weight: 600;
-        }
-
-        .info-card p {
-            font-size: 0.95rem;
-            color: #666;
-            line-height: 1.5;
         }
 
         .descripcion-section {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 30px;
-            padding: 80px 50px;
-            margin: 80px 0;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .descripcion-section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background:
-                radial-gradient(circle at 10% 90%, rgba(94, 201, 177, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 90% 10%, rgba(94, 201, 177, 0.08) 0%, transparent 40%);
-            pointer-events: none;
+            background: #f8f9fa;
+            border-radius: 20px;
+            padding: 50px;
+            margin: 60px 0;
         }
 
         .descripcion-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 35px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
         }
 
         .descripcion-card {
             background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.06);
-            border: 1px solid rgba(94, 201, 177, 0.2);
-            transition: var(--transition-smooth);
-        }
-
-        .descripcion-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 50px rgba(94, 201, 177, 0.12);
-            border-color: rgba(94, 201, 177, 0.4);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid var(--accent);
         }
 
         .descripcion-card h3 {
             color: var(--primary-dark);
-            font-size: 1.6rem;
+            font-size: 1.8rem;
             margin-bottom: 20px;
             display: flex;
             align-items: center;
             gap: 15px;
-            font-weight: 700;
         }
 
         .descripcion-card h3 i {
             color: var(--accent);
-            font-size: 1.4rem;
         }
 
         .descripcion-card p {
-            line-height: 1.9;
+            line-height: 1.8;
             color: #555;
-            font-size: 1.05rem;
+            font-size: 1.1rem;
         }
 
         .modulos-list {
             display: flex;
             flex-direction: column;
-            gap: 25px;
+            gap: 20px;
         }
 
         .modulo-item {
             background: white;
-            border-radius: 20px;
-            padding: 35px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.06);
-            border: 1px solid rgba(94, 201, 177, 0.15);
-            transition: var(--transition-smooth);
-        }
-
-        .modulo-item:hover {
-            transform: translateX(10px);
-            box-shadow: 0 15px 50px rgba(94, 201, 177, 0.12);
-            border-color: rgba(94, 201, 177, 0.3);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .modulo-header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
             flex-wrap: wrap;
             margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid rgba(94, 201, 177, 0.15);
-        }
-
-        .modulo-title {
-            flex: 1;
         }
 
         .modulo-title h3 {
             font-size: 1.5rem;
             color: var(--primary-dark);
-            font-weight: 700;
-            line-height: 1.4;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .modulo-title h3::before {
-            content: '';
-            width: 8px;
-            height: 8px;
-            background: var(--accent);
-            border-radius: 50%;
-            flex-shrink: 0;
         }
 
         .modulo-docente {
             display: flex;
             align-items: center;
-            gap: 15px;
-            margin-top: 25px;
-            padding: 15px 20px;
-            background: rgba(94, 201, 177, 0.08);
-            border-radius: 50px;
-            width: fit-content;
+            gap: 10px;
+            margin-top: 20px;
         }
 
         .modulo-docente img {
-            width: 45px;
-            height: 45px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
             object-fit: cover;
-            border: 2px solid var(--accent);
         }
 
         .modulo-docente-info h4 {
             margin: 0;
             font-size: 1rem;
-            font-weight: 600;
-            color: var(--primary-dark);
         }
 
         .modulo-docente-info p {
@@ -514,45 +262,20 @@
         }
 
         .plan-credito-card {
-            background: var(--bg-card-dark);
-            border-radius: 24px;
-            padding: 35px;
-            box-shadow: var(--shadow-soft);
-            border: 1px solid var(--glass-border);
+            background: #1a4a6e;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            border: 2px solid #5EC9B1;
             position: relative;
             overflow: hidden;
-            transition: var(--transition-smooth);
+            transition: all 0.3s ease;
             color: white;
         }
 
-        .plan-credito-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, #5EC9B1, #7dd87d, #5EC9B1);
-            background-size: 200% 100%;
-            animation: shimmer 3s infinite linear;
-        }
-
-        .plan-credito-card::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: radial-gradient(circle at 100% 0%, rgba(94, 201, 177, 0.15) 0%, transparent 50%);
-            pointer-events: none;
-        }
-
         .plan-credito-card:hover {
-            transform: translateY(-8px);
-            box-shadow: var(--shadow-hover);
-            border-color: rgba(94, 201, 177, 0.4);
-            background: var(--bg-card-hover);
+            transform: translateY(-5px);
+            box-shadow: 0 20px 50px rgba(94, 201, 177, 0.15);
         }
 
         .plan-header {
@@ -607,61 +330,37 @@
         }
 
         .plan-cuota {
-            background: linear-gradient(135deg, #032A4A 0%, #1a4a6e 50%, #032A4A 100%);
-            background-size: 200% 200%;
-            border-radius: 20px;
-            padding: 30px;
+            background: linear-gradient(135deg, var(--primary-dark), var(--secondary));
+            border-radius: 15px;
+            padding: 25px;
             text-align: center;
             color: white;
-            margin-bottom: 30px;
-            box-shadow: inset 0 2px 10px rgba(255, 255, 255, 0.1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .plan-cuota::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(94, 201, 177, 0.1) 0%, transparent 50%);
-            animation: rotate 10s linear infinite;
+            margin-bottom: 25px;
         }
 
         .cuota-label {
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             opacity: 0.9;
-            margin-bottom: 8px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            font-weight: 600;
+            margin-bottom: 5px;
         }
 
         .cuota-monto {
-            font-size: 3rem;
+            font-size: 2.8rem;
             font-weight: 800;
             line-height: 1;
-            margin: 15px 0;
-            background: linear-gradient(135deg, #fff, #5EC9B1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            margin: 10px 0;
         }
 
         .cuota-periodo {
-            font-size: 1.1rem;
+            font-size: 1rem;
             opacity: 0.9;
-            font-weight: 500;
         }
 
         .plan-detalle {
-            background: var(--glass-bg);
-            border-radius: 16px;
-            padding: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
             margin-bottom: 25px;
-            border: 1px solid var(--glass-border);
         }
 
         .detalle-item {
@@ -743,38 +442,28 @@
         }
 
         .plan-info-card {
-            background: var(--bg-card-dark);
-            border-radius: 24px;
-            padding: 40px;
+            background: #1a4a6e;
+            border-radius: 20px;
+            padding: 30px;
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
-            border: 1px dashed #5EC9B1;
+            border: 2px dashed #5EC9B1;
             color: white;
-            transition: var(--transition-smooth);
-        }
-
-        .plan-info-card:hover {
-            background: var(--bg-card-hover);
-            border-style: solid;
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-hover);
         }
 
         .info-icon {
-            width: 90px;
-            height: 90px;
-            background: linear-gradient(135deg, #5EC9B1, #4BB39C);
+            width: 80px;
+            height: 80px;
+            background: #5EC9B1;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 2.2rem;
-            margin-bottom: 25px;
-            box-shadow: 0 10px 30px rgba(94, 201, 177, 0.3);
-            animation: float 4s ease-in-out infinite;
+            font-size: 2rem;
+            margin-bottom: 20px;
         }
 
         .plan-info-card h4 {
@@ -913,16 +602,15 @@
 
         /* Estilos para la sección de asesor - ACTUALIZADO CON PALETA DE COLORES */
         .asesor-section {
-            background: linear-gradient(135deg, #032A4A 0%, #1a4a6e 50%, #032A4A 100%);
-            background-size: 200% 200%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             color: white;
-            padding: 100px 0;
-            border-radius: 30px;
-            margin: 80px 0;
+            padding: 80px 0;
+            border-radius: 20px;
+            margin: 60px 0;
             position: relative;
             overflow: hidden;
-            border: 1px solid rgba(94, 201, 177, 0.3);
-            box-shadow: 0 30px 80px rgba(3, 42, 74, 0.4);
+            border: 2px solid rgba(94, 201, 177, 0.3);
+            box-shadow: 0 20px 60px rgba(3, 42, 74, 0.3);
         }
 
         .asesor-section::before {
@@ -933,56 +621,42 @@
             right: 0;
             bottom: 0;
             background:
-                radial-gradient(circle at 20% 30%, rgba(94, 201, 177, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 80% 70%, rgba(94, 201, 177, 0.1) 0%, transparent 50%),
-                radial-gradient(circle at 50% 100%, rgba(94, 201, 177, 0.1) 0%, transparent 30%);
+                radial-gradient(circle at 20% 30%, rgba(94, 201, 177, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(94, 201, 177, 0.1) 0%, transparent 50%);
             z-index: 1;
-            pointer-events: none;
         }
 
         .asesor-content {
             position: relative;
             z-index: 2;
-            display: grid;
-            grid-template-columns: 0.9fr 1.4fr;
+            display: flex;
+            align-items: center;
             gap: 50px;
-            align-items: start;
-        }
-
-        @media (max-width: 1100px) {
-            .asesor-content {
-                grid-template-columns: 1fr;
-            }
+            flex-wrap: wrap;
         }
 
         .asesor-info {
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
+            flex: 1;
+            min-width: 300px;
         }
 
         .asesor-form {
-            background: rgba(255, 255, 255, 0.98);
-            border-radius: 24px;
-            padding: 45px;
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+            flex: 1;
+            min-width: 300px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
             border: 1px solid rgba(94, 201, 177, 0.3);
-            backdrop-filter: blur(20px);
-            transition: var(--transition-smooth);
-        }
-
-        .asesor-form:hover {
-            box-shadow: 0 40px 100px rgba(94, 201, 177, 0.15);
-            transform: translateY(-3px);
+            backdrop-filter: blur(10px);
         }
 
         .asesor-section h2 {
-            font-size: 2.5rem;
+            font-size: 2.8rem;
+            margin-bottom: 20px;
             color: white;
             position: relative;
             display: inline-block;
-            font-weight: 700;
-            letter-spacing: -0.02em;
         }
 
         .asesor-section h2 span {
@@ -993,7 +667,7 @@
         .asesor-section h2 span::after {
             content: '';
             position: absolute;
-            bottom: 6px;
+            bottom: 8px;
             left: 0;
             width: 100%;
             height: 10px;
@@ -1003,60 +677,51 @@
         }
 
         .asesor-section p {
-            font-size: 1.1rem;
-            line-height: 1.6;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
             opacity: 0.9;
+            line-height: 1.6;
         }
 
         .asesor-card {
             display: flex;
             align-items: center;
             gap: 20px;
-            background: rgba(255, 255, 255, 0.12);
+            background: rgba(255, 255, 255, 0.15);
             padding: 25px;
-            border-radius: 18px;
-            backdrop-filter: blur(15px);
-            margin-bottom: 5px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            margin-bottom: 30px;
             border: 1px solid rgba(94, 201, 177, 0.3);
-            transition: var(--transition-smooth);
+            transition: all 0.3s ease;
         }
 
         .asesor-card:hover {
-            background: rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.2);
             transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
-            border-color: rgba(94, 201, 177, 0.5);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
         }
 
         .asesor-card img {
-            width: 80px;
-            height: 80px;
+            width: 100px;
+            height: 100px;
             border-radius: 50%;
             object-fit: cover;
             border: 3px solid var(--accent);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
         }
 
         .asesor-card-info h4 {
-            margin: 0 0 6px;
-            font-size: 1.4rem;
+            margin: 0 0 10px;
+            font-size: 1.5rem;
             color: white;
-            font-weight: 700;
         }
 
         .asesor-card-info p {
             margin: 0;
-            font-size: 0.95rem;
+            font-size: 1rem;
             opacity: 0.9;
             color: rgba(255, 255, 255, 0.9);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .asesor-card-info p i {
-            color: var(--accent);
-            width: 18px;
         }
 
         /* Formulario mejorado */
@@ -1193,15 +858,16 @@
         .asesor-beneficios {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 15px;
-            padding: 20px;
+            padding: 25px;
+            margin-top: 30px;
             border: 1px solid rgba(94, 201, 177, 0.3);
             backdrop-filter: blur(5px);
         }
 
         .asesor-beneficios h4 {
             color: white;
-            margin-bottom: 12px;
-            font-size: 1.2rem;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -1221,14 +887,14 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-bottom: 10px;
-            font-size: 0.9rem;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
             color: rgba(255, 255, 255, 0.9);
         }
 
         .asesor-beneficios li i {
             color: var(--accent);
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             min-width: 20px;
         }
 
@@ -1268,61 +934,55 @@
 
         .form-section {
             background: rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
             border-left: 4px solid var(--accent);
         }
 
         .form-section h4 {
             color: var(--primary-dark);
             margin-bottom: 20px;
-            padding-bottom: 12px;
+            padding-bottom: 10px;
             border-bottom: 2px solid rgba(94, 201, 177, 0.2);
-            font-size: 1.2rem;
-            font-weight: 700;
         }
 
         .form-row {
             display: flex;
-            gap: 18px;
-            margin-bottom: 18px;
+            gap: 15px;
+            margin-bottom: 15px;
         }
 
         .form-row .form-group {
             flex: 1;
         }
 
-        .form-row:last-child {
-            margin-bottom: 0;
-        }
-
         .form-control {
             width: 100%;
-            padding: 14px 18px;
+            padding: 12px 15px;
             border: 2px solid rgba(94, 201, 177, 0.2);
-            border-radius: 10px;
+            border-radius: 8px;
             font-size: 1rem;
-            transition: var(--transition-smooth);
+            transition: all 0.3s ease;
         }
 
         .form-control:focus {
             border-color: var(--accent);
             outline: none;
-            box-shadow: 0 0 0 4px rgba(94, 201, 177, 0.15);
+            box-shadow: 0 0 0 3px rgba(94, 201, 177, 0.2);
         }
 
         .form-control-file {
             width: 100%;
-            padding: 15px;
+            padding: 10px;
             border: 2px dashed rgba(94, 201, 177, 0.3);
-            border-radius: 10px;
+            border-radius: 8px;
             background: rgba(94, 201, 177, 0.05);
         }
 
         .form-text {
-            font-size: 0.9rem;
-            margin-top: 8px;
+            font-size: 0.85rem;
+            margin-top: 5px;
             color: #6c757d;
         }
 
@@ -1350,34 +1010,18 @@
 
         /* Estilos para la sección de plan asignado */
         .plan-asignado-section {
+            margin-top: 30px;
             color: white;
         }
 
         .plan-asignado-card {
-            background: var(--bg-card-dark);
-            border: 1px solid #5EC9B1;
-            border-radius: 18px;
-            padding: 25px;
+            background: rgba(94, 201, 177, 0.1);
+            border: 2px solid #5EC9B1;
+            border-radius: 15px;
+            padding: 20px;
             position: relative;
             overflow: hidden;
             color: white;
-            box-shadow: var(--shadow-soft);
-            transition: var(--transition-smooth);
-        }
-
-        .plan-asignado-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: linear-gradient(90deg, #5EC9B1, #7dd87d);
-        }
-
-        .plan-asignado-card:hover {
-            box-shadow: var(--shadow-hover);
-            transform: translateY(-3px);
         }
 
         .plan-asignado-header {
@@ -1803,6 +1447,17 @@
                         </div>
                     </div>
 
+                    <div class="asesor-beneficios">
+                        <h4><i class="fas fa-star"></i> Beneficios de la asesoría personalizada</h4>
+                        <ul>
+                            <li><i class="fas fa-check-circle"></i> Guía paso a paso en la inscripción</li>
+                            <li><i class="fas fa-check-circle"></i> Información detallada del programa</li>
+                            <li><i class="fas fa-check-circle"></i> Asesoramiento financiero personalizado</li>
+                            <li><i class="fas fa-check-circle"></i> Resolución de dudas inmediata</li>
+                            <li><i class="fas fa-check-circle"></i> Seguimiento continuo durante tu formación</li>
+                        </ul>
+                    </div>
+
                     <!-- Plan de Pago Asignado (si existe) -->
                     <!-- Dentro del asesor-info, después de la sección asesor-beneficios -->
                     @if ($planPagoSeleccionado && $conceptosDetalle->isNotEmpty())
@@ -1911,19 +1566,7 @@
                                 </div>
                             </div>
                         </div>
-                    @else
-                        <div class="asesor-beneficios">
-                            <h4><i class="fas fa-star"></i> Beneficios de la asesoría personalizada</h4>
-                            <ul>
-                                <li><i class="fas fa-check-circle"></i> Guía paso a paso en la inscripción</li>
-                                <li><i class="fas fa-check-circle"></i> Información detallada del programa</li>
-                                <li><i class="fas fa-check-circle"></i> Asesoramiento financiero personalizado</li>
-                                <li><i class="fas fa-check-circle"></i> Resolución de dudas inmediata</li>
-                                <li><i class="fas fa-check-circle"></i> Seguimiento continuo durante tu formación</li>
-                            </ul>
-                        </div>
                     @endif
-
                 </div>
 
                 <!-- FORMULARIO REORGANIZADO -->

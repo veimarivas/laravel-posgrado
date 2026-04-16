@@ -14,6 +14,8 @@ class PagoRespaldo extends Model
         'archivo',
         'observaciones',
         'estado',
+        'monto',
+        'fecha_pago',
     ];
 
     public function inscripcion()

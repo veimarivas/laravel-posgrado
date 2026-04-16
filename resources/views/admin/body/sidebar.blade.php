@@ -379,6 +379,12 @@
                                 </a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link {{ request()->routeIs('admin.contabilidad.deudas-pendientes') ? 'active' : '' }}"
+                                    href="{{ route('admin.contabilidad.deudas-pendientes') }}">
+                                    <i class="ri-alert-line"></i> Deudas Pendientes
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('admin.bancos.*') ? 'active' : '' }}"
                                     href="{{ route('admin.bancos.listar') }}">
                                     <i class="ri-bank-line"></i> Bancos

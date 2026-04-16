@@ -911,6 +911,33 @@ class InscripcionesController extends Controller
         return response()->json($cuotas);
     }
 
+    public function cuotasAgrupadas(Inscripcione $inscripcion)
+    {
+        // Cargar todas las cuotas agrupadas por concepto
+        $cuotas = $inscripcion->cuotas()
+            ->with('concepto')
+            ->orderBy('concepto_id')
+            ->orderBy('n_cuota')
+            ->get()
+            ->groupBy('concepto_id')
+            ->map(function ($grupos) {
+                $primer = $grupos->first();
+                return [
+                    'concepto_nombre' => $primer->concepto->nombre ?? 'Sin concepto',
+                    'cuotas' => $grupos->map(function ($c) {
+                        return [
+                            'n_cuota' => $c->n_cuota,
+                            'pago_total_bs' => $c->pago_total_bs,
+                            'fecha_pago' => $c->fecha_pago,
+                            'pago_terminado' => $c->pago_terminado,
+                        ];
+                    })->values(),
+                ];
+            })->values();
+
+        return response()->json($cuotas->values());
+    }
+
     public function actualizarFechasIndividual(Request $request)
     {
         $request->validate([

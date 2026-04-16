@@ -3157,30 +3157,44 @@ class OfertasAcademicasController extends Controller
     {
         $request->validate([
             'nueva_fecha' => 'required|date',
+            'cuota_ids' => 'nullable|string',
             'plan_id' => 'nullable|exists:planes_pagos,id',
             'concepto_id' => 'nullable|exists:conceptos,id',
             'n_cuota' => 'nullable|integer|min:1',
         ]);
 
-        $query = Cuota::whereHas('inscripcion', function ($q) use ($id) {
-            $q->where('ofertas_academica_id', $id)
-                ->where('estado', 'Inscrito');
-        })->where('pago_terminado', 'no');
-
-        if ($request->filled('plan_id')) {
-            $query->whereHas('inscripcion', fn($q) => $q->where('planes_pago_id', $request->plan_id));
-        }
-
-        if ($request->filled('concepto_id')) {
-            // Filtrar por concepto (el nombre de la cuota contiene el nombre del concepto)
-            $concepto = Concepto::find($request->concepto_id);
-            if ($concepto) {
-                $query->where('nombre', 'like', '%' . $concepto->nombre . '%');
+        if ($request->filled('cuota_ids')) {
+            $cuotaIds = array_filter(array_map('intval', explode(',', $request->cuota_ids)));
+            
+            if (empty($cuotaIds)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se seleccionaron cuotas válidas.'
+                ], 422);
             }
-        }
 
-        if ($request->filled('n_cuota')) {
-            $query->where('n_cuota', $request->n_cuota);
+            $query = Cuota::whereIn('id', $cuotaIds)
+                ->where('pago_terminado', 'no');
+        } else {
+            $query = Cuota::whereHas('inscripcion', function ($q) use ($id) {
+                $q->where('ofertas_academica_id', $id)
+                    ->where('estado', 'Inscrito');
+            })->where('pago_terminado', 'no');
+
+            if ($request->filled('plan_id')) {
+                $query->whereHas('inscripcion', fn($q) => $q->where('planes_pago_id', $request->plan_id));
+            }
+
+            if ($request->filled('concepto_id')) {
+                $concepto = Concepto::find($request->concepto_id);
+                if ($concepto) {
+                    $query->where('nombre', 'like', '%' . $concepto->nombre . '%');
+                }
+            }
+
+            if ($request->filled('n_cuota')) {
+                $query->where('n_cuota', $request->n_cuota);
+            }
         }
 
         $cuotas = $query->get();
@@ -3277,8 +3291,7 @@ class OfertasAcademicasController extends Controller
             if ($planId) {
                 $q->where('planes_pago_id', $planId);
             }
-        })->where('pago_terminado', 'no')
-            ->with(['inscripcion.estudiante.persona', 'inscripcion.planesPago']);
+        })->with(['inscripcion.estudiante.persona', 'inscripcion.planesPago']);
 
         if ($conceptoId) {
             $concepto = Concepto::find($conceptoId);
@@ -3291,25 +3304,26 @@ class OfertasAcademicasController extends Controller
             $query->where('n_cuota', $nCuota);
         }
 
-        $cuotas = $query->get();
+        $cuotas = $query->orderBy('inscripcione_id')->orderBy('nombre')->orderBy('n_cuota')->get();
 
         $cuotasData = $cuotas->map(function ($cuota) {
-            $persona = $cuota->inscripcion->estudiante->persona;
+            $persona = $cuota->inscripcion->estudiante->persona ?? null;
+            $programa = $cuota->inscripcion->oferta->programa->nombre ?? '';
             return [
                 'id' => $cuota->id,
-                'estudiante_nombre' => trim(($persona->apellido_paterno ?? '') . ' ' . ($persona->apellido_materno ?? '') . ' ' . ($persona->nombres ?? '')),
+                'estudiante_nombre' => $persona ? trim(($persona->apellido_paterno ?? '') . ' ' . ($persona->apellido_materno ?? '') . ' ' . ($persona->nombres ?? '')) : 'N/A',
+                'estudiante_telefono' => $persona->celular ?? '',
                 'plan_nombre' => $cuota->inscripcion->planesPago->nombre ?? '-',
-                'concepto_nombre' => $cuota->nombre,
+                'programa_nombre' => $programa,
+                'concepto_nombre' => $cuota->nombre ?? '-',
                 'n_cuota' => $cuota->n_cuota,
                 'pago_total_bs' => $cuota->pago_total_bs,
-                'fecha_pago' => $cuota->fecha_pago
+                'fecha_pago' => $cuota->fecha_pago,
+                'pago_terminado' => $cuota->pago_terminado
             ];
         });
 
-        return response()->json([
-            'success' => true,
-            'cuotas' => $cuotasData
-        ]);
+        return response()->json($cuotasData);
     }
 
     public function generarMensajeCercana($cuotaId)

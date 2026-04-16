@@ -519,6 +519,7 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
         Route::get('/admin/contabilidad/estudiante/{id}', 'detalleContable')->name('admin.contabilidad.estudiante');
         Route::get('/admin/contabilidad/cobradores', 'cobradoresReporte')->name('admin.contabilidad.cobradores');
         Route::get('/admin/contabilidad/cobradores/{tcId}/detalle', 'cobradoresDetalle')->name('admin.contabilidad.cobradores.detalle');
+        Route::get('/admin/contabilidad/deudas-pendientes', 'deudasPendientes')->name('admin.contabilidad.deudas-pendientes');
     });
 
     // INSCRIPCIONES
@@ -546,6 +547,7 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
         Route::post('/admin/pagos/registrar', 'registrarPago')->name('admin.pagos.registrar');
 
         Route::get('/admin/inscripciones/{inscripcion}/cuotas-pendientes', 'cuotasPendientes')->name('admin.inscripciones.cuotas-pendientes');
+        Route::get('/admin/inscripciones/{inscripcion}/cuotas-agrupadas', 'cuotasAgrupadas')->name('admin.inscripciones.cuotas-agrupadas');
         Route::post('/admin/inscripciones/actualizar-fechas-individual', 'actualizarFechasIndividual')->name('admin.inscripciones.actualizar-fechas-individual');
 
         // Cuotas pendientes de oferta (para cambio masivo)

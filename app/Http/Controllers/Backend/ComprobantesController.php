@@ -122,6 +122,8 @@ class ComprobantesController extends Controller
                     'observaciones' => $comprobante->observaciones,
                     'estado' => $comprobante->estado,
                     'inscripcion_id' => $comprobante->inscripcione_id,
+                    'monto' => (float) $comprobante->monto,
+                    'fecha_pago' => $comprobante->fecha_pago,
                 ],
                 'estudiante' => [
                     'nombre' => $estudiante->nombres . ' ' . $estudiante->apellido_paterno,
@@ -151,7 +153,8 @@ class ComprobantesController extends Controller
                         'pago_total_bs'   => $cuota->pago_total_bs,
                     ];
                 }),
-                'archivo_url' => Storage::url($comprobante->archivo)
+                'archivo_url' => Storage::url($comprobante->archivo),
+                'total_pendiente' => (float) $cuotasPendientes->sum('pago_pendiente_bs')
             ]);
         } catch (\Exception $e) {
             \Log::error('Error al obtener detalle del comprobante: ' . $e->getMessage());

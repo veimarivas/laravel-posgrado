@@ -13,7 +13,9 @@ use App\Models\Estudiante;
 use App\Models\GradosAcademico;
 use App\Models\MovimientosBancarios;
 use App\Models\MovimientosCaja;
+use App\Models\OfertasAcademica;
 use App\Models\Pago;
+use App\Models\PagoRespaldo;
 use App\Models\PagosCuota;
 use App\Models\Persona;
 use App\Models\Profesione;
@@ -1799,5 +1801,135 @@ class EstudiantesController extends Controller
             return redirect()->route('admin.contabilidad.buscar')
                 ->with('error', 'Estudiante no encontrado');
         }
+    }
+
+    /**
+     * Ver estudiantes con deudas pendientes por oferta académica
+     */
+    public function deudasPendientes(Request $request)
+    {
+        $hoy = now()->toDateString();
+        
+        $query = OfertasAcademica::with(['inscripciones' => function ($q) {
+                $q->where('inscripciones.estado', 'Inscrito')
+                    ->with(['estudiante.persona', 'cuotas']);
+            }])
+            ->whereHas('fase', function ($q) {
+                $q->whereIn('nombre', ['Inscripciones', 'En Desarrollo']);
+            })
+            ->whereHas('inscripciones', function ($q) {
+                $q->where('inscripciones.estado', 'Inscrito')
+                    ->whereHas('cuotas', function ($q2) {
+                        $q2->where('pago_terminado', 'no');
+                    });
+            });
+
+        if ($request->filled('oferta_id')) {
+            $query->where('id', $request->oferta_id);
+        }
+
+        $ofertas = $query->orderBy('codigo')->get();
+
+        $resultados = [];
+        foreach ($ofertas as $oferta) {
+            $estudiantesConDeuda = [];
+            
+            foreach ($oferta->inscripciones as $inscripcion) {
+                $estudiante = $inscripcion->estudiante;
+                $persona = $estudiante->persona;
+                $nombreCompleto = $persona->nombres . ' ' . $persona->apellido_paterno . ' ' . ($persona->apellido_materno ?? '');
+                
+                $cuotas = Cuota::where('inscripcione_id', $inscripcion->id)
+                    ->where('pago_terminado', 'no')
+                    ->orderBy('n_cuota')
+                    ->orderBy('fecha_pago')
+                    ->get();
+
+                if ($cuotas->isEmpty()) {
+                    continue;
+                }
+
+                $pendientes = $cuotas->where('fecha_pago', '>', $hoy)->count();
+                $retrasadas = $cuotas->where('fecha_pago', '<=', $hoy)->count();
+                
+                if ($retrasadas === 0) {
+                    continue;
+                }
+
+                $montoTotal = $cuotas->sum('pago_total_bs');
+
+                $comprobantesPendientes = PagoRespaldo::where('inscripcione_id', $inscripcion->id)
+                    ->where('estado', 'pendiente')
+                    ->with('cuotas')
+                    ->get();
+
+                $estudiantesConDeuda[] = [
+                    'estudiante_id' => $estudiante->id,
+                    'nombre' => $nombreCompleto,
+                    'apellido_paterno' => $persona->apellido_paterno,
+                    'apellido_materno' => $persona->apellido_materno ?? '',
+                    'nombres' => $persona->nombres,
+                    'celular' => $persona->celular,
+                    'cuotas' => $cuotas->map(function ($c) use ($hoy) {
+                        return [
+                            'id' => $c->id,
+                            'n_cuota' => $c->n_cuota,
+                            'nombre' => $c->nombre,
+                            'monto_bs' => (float) $c->pago_total_bs,
+                            'fecha_pago' => $c->fecha_pago,
+                            'estado' => $c->fecha_pago <= $hoy ? 'retrasada' : 'pendiente'
+                        ];
+                    }),
+                    'comprobantes' => $comprobantesPendientes->map(function ($comp) {
+                        return [
+                            'id' => $comp->id,
+                            'monto' => (float) $comp->monto,
+                            'fecha_pago' => $comp->fecha_pago,
+                            'imagen' => $comp->imagen,
+                            'created_at' => $comp->created_at
+                        ];
+                    }),
+                    'tiene_comprobantes' => $comprobantesPendientes->count() > 0,
+                    'pendientes' => $pendientes,
+                    'retrasadas' => $retrasadas,
+                    'monto_total' => $montoTotal
+                ];
+            }
+
+            if (!empty($estudiantesConDeuda)) {
+                usort($estudiantesConDeuda, function($a, $b) {
+                    $cmp = strcasecmp($a['apellido_paterno'], $b['apellido_paterno']);
+                    if ($cmp !== 0) return $cmp;
+                    $cmp = strcasecmp($a['apellido_materno'], $b['apellido_materno']);
+                    if ($cmp !== 0) return $cmp;
+                    return strcasecmp($a['nombres'], $b['nombres']);
+                });
+
+                $estudiantesConDeuda = array_map(function($est) {
+                    unset($est['apellido_paterno'], $est['apellido_materno'], $est['nombres']);
+                    return $est;
+                }, $estudiantesConDeuda);
+
+                $resultados[] = [
+                    'oferta_id' => $oferta->id,
+                    'oferta_nombre' => $oferta->programa?->nombre ?? 'Programa ' . $oferta->codigo,
+                    'estudiantes' => $estudiantesConDeuda,
+                    'total_estudiantes' => count($estudiantesConDeuda),
+                    'total_monto' => array_sum(array_column($estudiantesConDeuda, 'monto_total'))
+                ];
+            }
+        }
+
+        $todasOfertas = OfertasAcademica::whereHas('fase', function ($q) {
+                $q->whereIn('nombre', ['Inscripciones', 'En Desarrollo']);
+            })
+            ->with('programa')
+            ->orderBy('codigo')
+            ->get()
+            ->mapWithKeys(function ($oferta) {
+                return [$oferta->id => ($oferta->programa?->nombre ?? 'Programa') . ' - ' . $oferta->codigo];
+            });
+
+        return view('admin.contabilidad.deudas-pendientes', compact('resultados', 'todasOfertas'));
     }
 }

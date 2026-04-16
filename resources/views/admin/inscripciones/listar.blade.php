@@ -532,44 +532,84 @@
             </div>
         </div>
 
-        {{-- Filtros --}}
+        {{-- Botón Cambio Masivo de Fechas --}}
+        <div class="mb-4">
+            <button type="button" class="btn btn-lg" 
+                style="background: linear-gradient(135deg, #0f766e 0%, #0d6f68 100%); border: none; color: white; border-radius: 12px; padding: 12px 24px; font-weight: 600; box-shadow: 0 4px 15px rgba(15, 118, 110, 0.35);"
+                onclick="abrirModalCambioMasivo({{ $oferta->id }})">
+                <i class="ri-calendar-event-line me-2"></i> Cambio Masivo de Fechas
+            </button>
+        </div>
+
+        <style>
+            .toast-container {
+                z-index: 99999 !important;
+            }
+        </style>
+
+        {{-- Filtros de Cuotas por Concepto --}}
         <div class="inscr-card mb-4">
             <div class="inscr-card-header">
-                <h6><i class="ri-filter-3-line"></i>Filtros de Búsqueda</h6>
-                <button type="button" class="btn btn-sm btn-info" 
-                    onclick="abrirModalCambioMasivo({{ $oferta->id }})">
-                    <i class="ri-calendar-event-line me-1"></i> Cambio Masivo de Fechas
-                </button>
+                <h6><i class="ri-calendar-line"></i>Filtros de Cuotas por Concepto</h6>
             </div>
             <div class="card-body">
-                <div class="filtro-group">
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="ri-checkbox-multiple-line"></i>Estado
-                        </label>
-                        <select class="form-select" id="filter-estado">
-                            <option value="">Todos los estados</option>
-                            <option value="Inscrito">Inscrito</option>
-                            <option value="Pre-Inscrito">Pre-Inscrito</option>
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Plan de Pago:</label>
+                        <select class="form-select" id="filtro-plan-pago" onchange="cargarConceptos()">
+                            <option value="">Seleccione un plan</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">
-                            <i class="ri-search-line"></i>Buscar
-                        </label>
-                        <input type="text" class="form-control" id="filter-search"
-                            placeholder="Nombre, apellido o carnet...">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Concepto:</label>
+                        <select class="form-select" id="filtro-concepto" onchange="cargarCuotasFiltro()" disabled>
+                            <option value="">Seleccione un concepto</option>
+                        </select>
                     </div>
-                    <div class="form-group">
-                        <button class="btn btn-primary w-100" id="btn-filter">
-                            <i class="ri-search-line me-1"></i> Buscar
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Número de Cuota:</label>
+                        <select class="form-select" id="filtro-n-cuota" disabled>
+                            <option value="">Todas las cuotas</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-primary" onclick="verCuotasPorConcepto()" style="background: #0f766e; border-color: #0f766e;">
+                            <i class="ri-search-line"></i>
                         </button>
                     </div>
-                    <div class="form-group">
-                        <button class="btn btn-light w-100" id="btn-reset">
-                            <i class="ri-refresh-line me-1"></i> Limpiar
-                        </button>
-                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="resultado-cuotas" class="inscr-card mb-4" style="display: none;">
+            <div class="inscr-card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h6><i class="ri-file-list-line"></i>Resultados de Cuotas</h6>
+                    <span class="badge bg-primary" id="total-cuotas">0</span>
+                </div>
+                <button type="button" class="btn btn-success" onclick="enviarMensajesSeleccionados()" style="background: #25D366; border: none;">
+                    <i class="ri-whatsapp-line me-1"></i> Enviar Mensajes Seleccionados
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="inscr-table">
+                        <thead>
+                            <tr>
+<th class="text-center"><input type="checkbox" id="select-all-cuotas-result" onchange="toggleSelectAll(this)"></th>
+                                <th class="text-center">#</th>
+                                <th>Estudiante</th>
+                                <th>Concepto</th>
+                                <th class="text-center">N° Cuota</th>
+                                <th class="text-end">Monto</th>
+                                <th class="text-center">Fecha Pago</th>
+                                <th class="text-center">Estado</th>
+                                <th class="text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-resultado-cuotas">
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -648,13 +688,9 @@
                                                 </button>
                                             @endif
 
-                                            @if (Auth::guard('web')->user()->can('inscripciones.cuotas'))
-                                                <button type="button" class="btn btn-secondary btn-sm ver-cuotas-btn"
-                                                    data-inscripcion-id="{{ $inscripcion->id }}"
-                                                    data-estudiante-nombre="{{ $nombreCompleto }}" title="Ver Cuotas">
-                                                    <i class="ri-money-dollar-circle-line"></i>
-                                                </button>
-                                            @endif
+                                            <button type="button" class="btn btn-secondary btn-sm" onclick="verCuotas('{{ $inscripcion->id }}', '{{ $nombreCompleto }}')" title="Ver Cuotas">
+                                                <i class="ri-money-dollar-circle-line"></i>
+                                            </button>
 
                                             @if (Auth::guard('web')->user()->can('inscripciones.cuotas'))
                                                 <button type="button" class="btn btn-primary btn-sm editar-fechas-btn"
@@ -839,285 +875,657 @@
         </div>
     </div>
 
-    <!-- Modal: Cambio Masivo de Fechas de Cuotas -->
-    <div class="modal fade" id="modalCambioMasivoFechas" tabindex="-1">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
+    <!-- Modal: Cuotas Agrupadas por Concepto -->
+    <div class="modal fade" id="modalCuotasAgrupadas" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" style="border: none; border-radius: 20px; overflow: hidden;">
                 <div class="modal-header"
-                    style="background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); color: white;">
-                    <h5 class="modal-title"><i class="ri-calendar-event-line me-2"></i>Cambio Masivo de Fechas de Cuotas
+                    style="background: linear-gradient(135deg, #0f766e 0%, #115e59 100%); color: white; padding: 20px 25px; border: none;">
+                    <h5 class="modal-title" style="font-size: 1.2rem; font-weight: 600; color: white;">
+                        <i class="ri-calendar-line me-2"></i>Cuotas por Concepto
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="alert alert-info mb-3">
-                        <i class="ri-information-line me-2"></i>
-                        Esta opción permite cambiar las fechas de pago de las cuotas para todos los estudiantes Inscritos en
-                        esta oferta.
+                <div class="modal-body" style="padding: 25px;">
+                    <div class="d-flex align-items-center mb-4 p-3" style="background: #f0fdfa; border-radius: 12px;">
+                        <div class="flex-shrink-0">
+                            <div class="avatar-title bg-success-subtle text-success rounded-circle" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                                <i class="ri-user-line"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-1 fw-bold" id="estudiante-nombre-agrupadas" style="color: #134e4a;"></h6>
+                            <p class="mb-0 text-muted" style="font-size: 0.9rem;">Cuotas agrupadas por concepto</p>
+                        </div>
                     </div>
-                    <div class="row g-3 mb-4">
+
+                    <div id="cuotas-agrupadas-container">
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Cargando cuotas...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding: 15px 25px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
+                    <button type="button" class="btn" style="border-radius: 10px; padding: 10px 24px; font-weight: 500; color: #475569; border: 1px solid #e2e8f0; background: white;" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Cambio Masivo de Fechas de Cuotas -->
+    <div class="modal fade" id="modalCambioMasivoFechas" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content" style="border: none; border-radius: 20px; overflow: hidden;">
+                <div class="modal-header"
+                    style="background: linear-gradient(135deg, #0f766e 0%, #115e59 100%); color: white; padding: 25px 30px; border: none;">
+                    <h5 class="modal-title" style="font-size: 1.3rem; font-weight: 600; color: white;">
+                        <i class="ri-calendar-event-line me-2" style="font-size: 1.4rem;"></i>Cambio Masivo de Fechas de Cuotas
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" style="opacity: 0.8;"></button>
+                </div>
+                <div class="modal-body" style="padding: 30px;">
+                    <div class="alert alert-info mb-4" style="background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 12px; padding: 16px 20px;">
+                        <i class="ri-information-line me-2" style="color: #0f766e;"></i>
+                        <span style="color: #134e4a; font-weight: 500;">Esta opción permite cambiar las fechas de pago de las cuotas para todos los estudiantes Inscritos en esta oferta.</span>
+                    </div>
+                    <div class="row g-3 mb-4" style="background: #f8fafc; padding: 20px; border-radius: 16px;">
                         <div class="col-md-3">
-                            <label class="form-label fw-semibold">Plan de Pago:</label>
-                            <select class="form-select" id="masivo-plan-pago">
+                            <label class="form-label fw-semibold" style="color: #334155; font-size: 0.9rem;">Plan de Pago:</label>
+                            <select class="form-select" id="masivo-plan-pago" style="border-radius: 10px; padding: 12px 15px; border: 1px solid #e2e8f0;">
                                 <option value="">Todos los planes</option>
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label fw-semibold">Concepto:</label>
-                            <select class="form-select" id="masivo-concepto" disabled>
+                            <label class="form-label fw-semibold" style="color: #334155; font-size: 0.9rem;">Concepto:</label>
+                            <select class="form-select" id="masivo-concepto" disabled style="border-radius: 10px; padding: 12px 15px; border: 1px solid #e2e8f0;">
                                 <option value="">Seleccione un plan primero</option>
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label fw-semibold">Número de Cuota:</label>
-                            <select class="form-select" id="masivo-n-cuota" disabled>
+                            <label class="form-label fw-semibold" style="color: #334155; font-size: 0.9rem;">Número de Cuota:</label>
+                            <select class="form-select" id="masivo-n-cuota" disabled style="border-radius: 10px; padding: 12px 15px; border: 1px solid #e2e8f0;">
                                 <option value="">Seleccione un concepto</option>
                             </select>
                         </div>
                         <div class="col-md-2">
-                            <label class="form-label fw-semibold">Nueva Fecha:</label>
-                            <input type="date" class="form-control" id="masivo-nueva-fecha">
+                            <label class="form-label fw-semibold" style="color: #334155; font-size: 0.9rem;">Nueva Fecha:</label>
+                            <input type="date" class="form-control" id="masivo-nueva-fecha" style="border-radius: 10px; padding: 12px 15px; border: 1px solid #e2e8f0;">
                         </div>
                         <div class="col-md-2 d-flex align-items-end">
-                            <button type="button" class="btn btn-primary w-100" id="btn-aplicar-masivo">
+                            <button type="button" class="btn btn-primary w-100" id="btn-aplicar-masivo" style="background: #0f766e; border-color: #0f766e; border-radius: 10px; padding: 12px 20px; font-weight: 600;">
                                 <i class="ri-check-line me-1"></i> Aplicar
                             </button>
                         </div>
                     </div>
-                    <div class="table-responsive">
-                        <table class="table table-sm" id="tabla-masivo-fechas">
-                            <thead>
+                    <div class="table-responsive" style="border-radius: 16px; overflow: hidden; border: 1px solid #e2e8f0;">
+                        <table class="table table-sm" id="tabla-masivo-fechas" style="margin-bottom: 0;">
+                            <thead style="background: #f1f5f9;">
                                 <tr>
-                                    <th class="text-center">#</th>
-                                    <th>Estudiante</th>
-                                    <th>Plan de Pago</th>
-                                    <th>Concepto</th>
-                                    <th class="text-center">Cuota</th>
-                                    <th class="text-end">Monto</th>
-                                    <th class="text-center">Fecha Actual</th>
+                                    <th class="text-center" style="width: 40px;">
+                                        <input type="checkbox" id="select-all-cuotas" style="width: 18px; height: 18px; cursor: pointer;">
+                                    </th>
+                                    <th class="text-center" style="color: #475569; font-weight: 600; font-size: 0.85rem; width: 50px;">#</th>
+                                    <th style="color: #475569; font-weight: 600; font-size: 0.85rem;">Estudiante</th>
+                                    <th style="color: #475569; font-weight: 600; font-size: 0.85rem;">Plan de Pago</th>
+                                    <th style="color: #475569; font-weight: 600; font-size: 0.85rem;">Concepto</th>
+                                    <th class="text-center" style="color: #475569; font-weight: 600; font-size: 0.85rem;">Cuota</th>
+                                    <th class="text-end" style="color: #475569; font-weight: 600; font-size: 0.85rem;">Monto</th>
+                                    <th class="text-center" style="color: #475569; font-weight: 600; font-size: 0.85rem;">Fecha Actual</th>
                                 </tr>
                             </thead>
                             <tbody id="masivo-fechas-body">
                                 <tr>
-                                    <td colspan="7" class="text-center py-3">Seleccione un plan, concepto y cuota para
-                                        ver los estudiantes</td>
+                                    <td colspan="8" class="text-center py-4" style="color: #94a3b8;">Seleccione un plan, concepto y cuota para ver los estudiantes</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
+                <div class="modal-footer" style="padding: 20px 30px; background: #f8fafc; border-top: 1px solid #e2e8f0;">
+                    <button type="button" class="btn" style="border-radius: 10px; padding: 10px 24px; font-weight: 500; color: #475569; border: 1px solid #e2e8f0; background: white;" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-    function abrirModalCambioMasivo(ofertaId) {
-        console.log('=== abrirModalCambioMasivo llamado ===');
-        console.log('ofertaId:', ofertaId);
+        console.log('Script listar.blade.php cargado correctamente');
         
-        var $modal = document.getElementById('modalCambioMasivoFechas');
-        if (!$modal) {
-            console.error('Modal no encontrado');
-            return;
-        }
-        
-        $modal.setAttribute('data-oferta-id', ofertaId);
-
-        document.getElementById('masivo-plan-pago').innerHTML = '<option value="">Todos los planes</option>';
-        var conceploSelect = document.getElementById('masivo-concepto');
-        conceploSelect.innerHTML = '<option value="">Seleccione un plan primero</option>';
-        conceploSelect.disabled = true;
-        
-        var cuotaSelect = document.getElementById('masivo-n-cuota');
-        cuotaSelect.innerHTML = '<option value="">Seleccione un concepto</option>';
-        cuotaSelect.disabled = true;
-        
-        document.getElementById('masivo-fechas-body').innerHTML = '<tr><td colspan="7" class="text-center py-3">Seleccione un plan, concepto y cuota para ver los estudiantes</td></tr>';
-
-        fetch('/admin/ofertas/' + ofertaId + '/datos')
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                var planesMap = {};
-                if (data.plan_concepto) {
-                    data.plan_concepto.forEach(function(pc) {
-                        if (pc.plan_pago && pc.plan_pago.nombre) {
-                            planesMap[pc.planes_pago_id] = pc.plan_pago.nombre;
-                        }
-                    });
-                }
-                var selectPlan = document.getElementById('masivo-plan-pago');
-                Object.keys(planesMap).forEach(function(id) {
-                    var opt = document.createElement('option');
-                    opt.value = id;
-                    opt.textContent = planesMap[id];
-                    selectPlan.appendChild(opt);
+        // Ver cuotas
+        window.verCuotas = function(inscripcionId, estudianteNombre) {
+            document.getElementById('estudiante-nombre-cuotas').textContent = estudianteNombre;
+            document.getElementById('inscripcion_id_cuotas').value = inscripcionId;
+            document.getElementById('tabla-cuotas-body').innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
+            
+            fetch('/admin/inscripciones/' + inscripcionId + '/cuotas-pendientes')
+                .then(response => response.json())
+                .then(data => {
+                    const html = !data?.length 
+                        ? '<tr><td colspan="6" class="text-center py-4 text-muted">No hay cuotas pendientes</td></tr>'
+                        : data.map(c => `<tr><td class="fw-semibold">${c.nombre}</td><td class="text-center">${c.n_cuota}</td><td class="text-center">Bs. ${parseFloat(c.pago_total_bs).toFixed(2)}</td><td class="text-center">Bs. ${parseFloat(c.pago_pendiente_bs).toFixed(2)}</td><td class="text-center">${c.fecha_pago}</td><td class="text-center">${c.pago_terminado === 'si' ? '<span class="badge bg-success">Pagado</span>' : '<span class="badge bg-warning">Pendiente</span>'}</td></tr>`).join('');
+                    document.getElementById('tabla-cuotas-body').innerHTML = html;
+                })
+                .catch(() => {
+                    document.getElementById('tabla-cuotas-body').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger">Error al cargar</td></tr>';
                 });
-            })
-            .catch(function() {
-                alert('Error: No se pudieron cargar los planes de pago');
-            });
+            
+            new bootstrap.Modal(document.getElementById('modalVerCuotas')).show();
+        };
 
-        var bsModal = new bootstrap.Modal($modal);
-        bsModal.show();
-        console.log('Modal mostrado');
-    }
-
-    // Event listeners para los selects
-    document.getElementById('masivo-plan-pago').addEventListener('change', function() {
-        var planId = this.value;
-        var ofertaId = document.getElementById('modalCambioMasivoFechas').getAttribute('data-oferta-id');
-        console.log('Plan cambiado:', planId, 'Oferta:', ofertaId);
-        
-        var conceptoSelect = document.getElementById('masivo-concepto');
-        var cuotaSelect = document.getElementById('masivo-n-cuota');
-        
-        if (!planId) {
-            conceptoSelect.innerHTML = '<option value="">Seleccione un plan</option>';
-            conceptoSelect.disabled = true;
+        // Cargar conceptos al seleccionar plan
+        window.cargarConceptos = function() {
+            var planId = document.getElementById('filtro-plan-pago').value;
+            var conceptoSelect = document.getElementById('filtro-concepto');
+            var cuotaSelect = document.getElementById('filtro-n-cuota');
+            
+            if (!planId) {
+                conceptoSelect.innerHTML = '<option value="">Seleccione un concepto</option>';
+                conceptoSelect.disabled = true;
+                cuotaSelect.disabled = true;
+                return;
+            }
+            
+            var ofertaId = window.ofertaId;
+            
+            fetch('/admin/ofertas/' + ofertaId + '/datos')
+                .then(response => response.json())
+                .then(data => {
+                    var opts = '<option value="">Todos los conceptos</option>';
+                    if (data.plan_concepto) {
+                        data.plan_concepto.forEach(function(pc) {
+                            if (pc.planes_pago_id == planId && pc.concepto) {
+                                opts += '<option value="' + pc.concepto.id + '" data-n-cuotas="' + pc.n_cuotas + '">' + pc.concepto.nombre + ' (' + pc.n_cuotas + ' cuotas)</option>';
+                            }
+                        });
+                    }
+                    conceptoSelect.innerHTML = opts;
+                    conceptoSelect.disabled = false;
+                });
+            
+            cuotaSelect.innerHTML = '<option value="">Todas las cuotas</option>';
             cuotaSelect.disabled = true;
-            return;
-        }
-        
-        fetch('/admin/ofertas/' + ofertaId + '/datos')
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                var opts = '<option value="">Todos los conceptos</option>';
-                if (data.plan_concepto) {
-                    data.plan_concepto.forEach(function(pc) {
-                        if (pc.planes_pago_id == planId && pc.concepto) {
-                            opts += '<option value="' + pc.concepto.id + '" data-n-cuotas="' + pc.n_cuotas + '">' + pc.concepto.nombre + ' (' + pc.n_cuotas + ' cuotas)</option>';
-                        }
-                    });
-                }
-                conceptoSelect.innerHTML = opts;
-                conceptoSelect.disabled = false;
-            });
-        
-        cuotaSelect.innerHTML = '<option value="">Seleccione un concepto</option>';
-        cuotaSelect.disabled = true;
-    });
+        };
 
-    document.getElementById('masivo-concepto').addEventListener('change', function() {
-        var selectedOption = this.options[this.selectedIndex];
-        var nCuotas = parseInt(selectedOption.getAttribute('data-n-cuotas')) || 0;
-        console.log('Concepto cambiado, nCuotas:', nCuotas);
+        // Cargar cuotas al seleccionar concepto
+        window.cargarCuotasFiltro = function() {
+            var selectedOption = document.getElementById('filtro-concepto').options[document.getElementById('filtro-concepto').selectedIndex];
+            var nCuotas = parseInt(selectedOption.getAttribute('data-n-cuotas')) || 0;
+            var cuotaSelect = document.getElementById('filtro-n-cuota');
+            
+            if (!nCuotas) {
+                cuotaSelect.innerHTML = '<option value="">Todas las cuotas</option>';
+                cuotaSelect.disabled = true;
+                return;
+            }
+            
+            var opts = '<option value="">Todas las cuotas</option>';
+            for (var i = 1; i <= nCuotas; i++) {
+                opts += '<option value="' + i + '">Cuota ' + i + '</option>';
+            }
+            cuotaSelect.innerHTML = opts;
+            cuotaSelect.disabled = false;
+        };
+
+        // Enviar mensaje WhatsApp
+        window.enviarWhatsapp = function(estudianteNombre, programa, concepto, cuotaNum, fechaPago, monto, telefono) {
+            // Limpiar teléfono
+            telefono = telefono ? telefono.replace(/\D/g, '') : '';
+            
+            // Si no hay teléfono guardado, pedirlo
+            if (!telefono || telefono.length < 8) {
+                telefono = prompt('Ingrese el número de WhatsApp del estudiante (sin +591):');
+                if (!telefono) return;
+                telefono = telefono.replace(/\D/g, '').replace(/^591/, '');
+                if (telefono.length < 8) {
+                    alert('Número de teléfono inválido');
+                    return;
+                }
+            } else {
+                // Limpiar formato guardado
+                telefono = telefono.replace(/\D/g, '').replace(/^591/, '');
+            }
+            
+            // Formatear fecha
+            var fechaFormateada = '-';
+            if (fechaPago) {
+                var fecha = new Date(fechaPago + 'T00:00:00');
+                var meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+                fechaFormateada = fecha.getDate() + ' de ' + meses[fecha.getMonth()] + ' del ' + fecha.getFullYear();
+            }
+            
+            var mensaje = 'Hola *' + estudianteNombre + '*, esperamos que se encuentre muy bien.\n\n';
+            mensaje += 'Le recordamos que tiene un pago pendiente del programa *' + programa + '*.\n\n';
+            mensaje += '*Detalles del pago:*\n';
+            mensaje += '- Concepto: ' + concepto + '\n';
+            mensaje += '- Cuota #: ' + cuotaNum + '\n';
+            mensaje += '- Monto adeudado: Bs. ' + monto + '\n';
+            mensaje += '- Fecha de pago: ' + fechaFormateada + '\n\n';
+            mensaje += 'Por favor, regularice su pago lo antes posible para evitar cargos adicionales.\n\n';
+            mensaje += 'Si ya realizó el pago, por favor ignore este mensaje.\n\n';
+            mensaje += 'Saludos cordiales\n*UNIP - Área Contable*';
+            
+            var mensajeEncoded = encodeURIComponent(mensaje);
+            window.open('https://wa.me/591' + telefono + '?text=' + mensajeEncoded, '_blank');
+        };
+
+        // Ver cuotas por concepto
         
-        var cuotaSelect = document.getElementById('masivo-n-cuota');
+        // Toggle select all
+        window.toggleSelectAll = function(source) {
+            var checkboxes = document.querySelectorAll('.cuota-checkbox');
+            checkboxes.forEach(function(cb) {
+                cb.checked = source.checked;
+            });
+        };
         
-        if (!this.value) {
+        // Enviar mensajes a los seleccionados
+        window.enviarMensajesSeleccionados = function() {
+            var checkboxes = document.querySelectorAll('.cuota-checkbox:checked');
+            if (checkboxes.length === 0) {
+                alert('Seleccione al menos una cuota');
+                return;
+            }
+            
+            var confirmados = 0;
+            checkboxes.forEach(function(cb) {
+                var datos = JSON.parse(decodeURIComponent(cb.dataset.datos));
+                
+                // Solo enviar si tiene teléfono y no está pagado
+                if (datos.estudiante_telefono && datos.pago_terminado !== 'si') {
+                    window.enviarWhatsapp(
+                        datos.estudiante_nombre,
+                        datos.programa_nombre,
+                        datos.concepto_nombre,
+                        datos.n_cuota,
+                        datos.fecha_pago,
+                        (parseFloat(datos.pago_total_bs) || 0).toFixed(2),
+                        datos.estudiante_telefono
+                    );
+                    confirmados++;
+                }
+            });
+            
+            if (confirmados === 0) {
+                alert('No hay cuotas con teléfono válido para enviar mensaje');
+            } else {
+                alert('Se abrirá WhatsApp para ' + confirmados + ' estudiante(s)');
+            }
+        };
+
+        window.verCuotasPorConcepto = function() {
+            var planId = document.getElementById('filtro-plan-pago').value;
+            var conceptoId = document.getElementById('filtro-concepto').value;
+            var nCuota = document.getElementById('filtro-n-cuota').value;
+            
+            if (!planId || !conceptoId) {
+                alert('Seleccione un plan y concepto');
+                return;
+            }
+            
+            var ofertaId = window.ofertaId;
+            var url = '/admin/ofertas/' + ofertaId + '/cuotas-filtro?plan_id=' + planId + '&concepto_id=' + conceptoId;
+            if (nCuota) url += '&n_cuota=' + nCuota;
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    var container = document.getElementById('resultado-cuotas');
+                    var tbody = document.getElementById('tabla-resultado-cuotas');
+                    var mainTable = document.getElementById('inscritos-table').closest('.inscr-card');
+                    
+                    if (!data || data.length === 0) {
+                        mainTable.style.display = 'none';
+                        container.style.display = 'block';
+                        document.getElementById('total-cuotas').textContent = '0';
+                        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4">No hay resultados</td></tr>';
+                        return;
+                    }
+                    
+                    var html = '';
+                    data.forEach(function(c, index) {
+                        var badge = '';
+                        var btnWhatsapp = '';
+                        var montoBs = (parseFloat(c.pago_total_bs) || 0).toFixed(2);
+                        
+                        // Verificar si la cuota está retrasada
+                        var fechaPago = c.fecha_pago ? new Date(c.fecha_pago + 'T00:00:00') : null;
+                        var hoy = new Date();
+                        var hoySinHora = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+                        var estaRetrasada = (c.pago_terminado !== 'si') && fechaPago && (fechaPago < hoySinHora);
+                        var programa = c.programa_nombre || '';
+                        
+                        if (c.pago_terminado === 'si') {
+                            badge = '<span class="badge badge-success">Pagado</span>';
+                        } else if (estaRetrasada) {
+                            badge = '<span class="badge badge-danger">Cuota Retrasada</span>';
+                            btnWhatsapp = '<button type="button" class="btn btn-success btn-sm" onclick="enviarWhatsapp(\'' + (c.estudiante_nombre || '') + '\', \'' + programa + '\', \'' + (c.concepto_nombre || '') + '\', ' + c.n_cuota + ', \'' + (c.fecha_pago || '') + '\', \'' + montoBs + '\', \'' + (c.estudiante_telefono || '') + '\')" title="Enviar WhatsApp"><i class="ri-whatsapp-line"></i></button>';
+                        } else {
+                            badge = '<span class="badge badge-warning">Pendiente</span>';
+                            btnWhatsapp = '<button type="button" class="btn btn-success btn-sm" onclick="enviarWhatsapp(\'' + (c.estudiante_nombre || '') + '\', \'' + programa + '\', \'' + (c.concepto_nombre || '') + '\', ' + c.n_cuota + ', \'' + (c.fecha_pago || '') + '\', \'' + montoBs + '\', \'' + (c.estudiante_telefono || '') + '\')" title="Enviar WhatsApp"><i class="ri-whatsapp-line"></i></button>';
+                        }
+                        
+                        var datos = encodeURIComponent(JSON.stringify(c));
+                        html += '<tr>';
+                        html += '<td class="text-center"><input type="checkbox" class="cuota-checkbox" data-datos="' + datos + '"></td>';
+                        html += '<td class="text-center">' + (index + 1) + '</td>';
+                        html += '<td>' + (c.estudiante_nombre || 'N/A') + '</td>';
+                        html += '<td>' + (c.concepto_nombre || '') + '</td>';
+                        html += '<td class="text-center">' + (c.n_cuota || '') + '</td>';
+                        html += '<td class="text-end">Bs. ' + montoBs + '</td>';
+                        html += '<td class="text-center">' + (c.fecha_pago || '-') + '</td>';
+                        html += '<td class="text-center">' + badge + '</td>';
+                        html += '<td class="text-center">' + btnWhatsapp + '</td>';
+                        html += '</tr>';
+                    });
+                    
+                    mainTable.style.display = 'none';
+                    document.getElementById('total-cuotas').textContent = data.length;
+                    tbody.innerHTML = html;
+                    container.style.display = 'block';
+                })
+                .catch(function() {
+                    alert('Error al cargar');
+                });
+        };
+
+        // Inicializar filtros al cargar la página
+        (function() {
+            window.ofertaId = {{ $oferta->id }};
+            var ofertaId = window.ofertaId;
+            fetch('/admin/ofertas/' + ofertaId + '/datos')
+                .then(response => response.json())
+                .then(data => {
+                    var selectPlan = document.getElementById('filtro-plan-pago');
+                    var planes = {};
+                    if (data.plan_concepto) {
+                        data.plan_concepto.forEach(function(pc) {
+                            if (pc.plan_pago && pc.plan_pago.nombre && !planes[pc.planes_pago_id]) {
+                                planes[pc.planes_pago_id] = pc.plan_pago.nombre;
+                            }
+                        });
+                    }
+                    Object.keys(planes).forEach(function(id) {
+                        var opt = document.createElement('option');
+                        opt.value = id;
+                        opt.textContent = planes[id];
+                        selectPlan.appendChild(opt);
+                    });
+                });
+        })();
+
+        function abrirModalCambioMasivo(ofertaId) {
+            console.log('=== abrirModalCambioMasivo llamado ===');
+            console.log('ofertaId:', ofertaId);
+
+            var $modal = document.getElementById('modalCambioMasivoFechas');
+            if (!$modal) {
+                console.error('Modal no encontrado');
+                return;
+            }
+
+            $modal.setAttribute('data-oferta-id', ofertaId);
+
+            document.getElementById('masivo-plan-pago').innerHTML = '<option value="">Todos los planes</option>';
+            var conceploSelect = document.getElementById('masivo-concepto');
+            conceploSelect.innerHTML = '<option value="">Seleccione un plan primero</option>';
+            conceploSelect.disabled = true;
+
+            var cuotaSelect = document.getElementById('masivo-n-cuota');
             cuotaSelect.innerHTML = '<option value="">Seleccione un concepto</option>';
             cuotaSelect.disabled = true;
-            return;
-        }
-        
-        var opts = '<option value="">Todas las cuotas</option>';
-        for (var i = 1; i <= nCuotas; i++) {
-            opts += '<option value="' + i + '">Cuota ' + i + '</option>';
-        }
-        cuotaSelect.innerHTML = opts;
-        cuotaSelect.disabled = false;
-    });
 
-    document.getElementById('masivo-n-cuota').addEventListener('change', function() {
-        var ofertaId = document.getElementById('modalCambioMasivoFechas').getAttribute('data-oferta-id');
-        var planId = document.getElementById('masivo-plan-pago').value;
-        var conceptoId = document.getElementById('masivo-concepto').value;
-        var nCuota = this.value;
-        
-        console.log('Cuota seleccionada:', nCuota, 'Plan:', planId, 'Concepto:', conceptoId);
-        
-        if (!planId || !conceptoId) {
-            document.getElementById('masivo-fechas-body').innerHTML = '<tr><td colspan="7" class="text-center py-3">Seleccione un plan, concepto y cuota</td></tr>';
-            return;
-        }
-        
-        var url = '/admin/ofertas/' + ofertaId + '/cuotas-filtro?plan_id=' + planId + '&concepto_id=' + conceptoId;
-        if (nCuota) url += '&n_cuota=' + nCuota;
-        
-        fetch(url)
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
-                console.log('Respuesta cuotas:', data);
-                
-                var cuotas = data.cuotas || data || [];
-                if (data.success === false) {
-                    alert(data.msg || 'Error');
-                    return;
-                }
-                var tbody = document.getElementById('masivo-fechas-body');
-                if (!data || data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-3">No hay estudiantes con estos criterios</td></tr>';
-                    return;
-                }
-                var html = '';
-                cuotas.forEach(function(est) {
-                    html += '<tr>';
-                    html += '<td>' + (est.estudiante_nombre || 'N/A') + '</td>';
-                    html += '<td>' + (est.plan_nombre || '') + '</td>';
-                    html += '<td class="text-center">' + (est.n_cuota || '') + '</td>';
-                    html += '<td class="text-end">$' + (est.pago_total_bs || 0) + '</td>';
-                    html += '<td class="text-center">' + (est.fecha_pago || '') + '</td>';
-                    html += '<td class="text-center">Pendiente</td>';
-                    html += '<td class="text-center"><input type="checkbox" class="estudiante-cuota" value="' + est.id + '"></td>';
-                    html += '</tr>';
+            document.getElementById('masivo-fechas-body').innerHTML =
+                '<tr><td colspan="7" class="text-center py-3">Seleccione un plan, concepto y cuota para ver los estudiantes</td></tr>';
+
+            fetch('/admin/ofertas/' + ofertaId + '/datos')
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    var planesMap = {};
+                    if (data.plan_concepto) {
+                        data.plan_concepto.forEach(function(pc) {
+                            if (pc.plan_pago && pc.plan_pago.nombre) {
+                                planesMap[pc.planes_pago_id] = pc.plan_pago.nombre;
+                            }
+                        });
+                    }
+                    var selectPlan = document.getElementById('masivo-plan-pago');
+                    Object.keys(planesMap).forEach(function(id) {
+                        var opt = document.createElement('option');
+                        opt.value = id;
+                        opt.textContent = planesMap[id];
+                        selectPlan.appendChild(opt);
+                    });
+                })
+                .catch(function() {
+                    alert('Error: No se pudieron cargar los planes de pago');
                 });
-                tbody.innerHTML = html;
-            });
-    });
 
-    // Botón aplicar cambio masivo
-    document.getElementById('btn-aplicar-masivo').addEventListener('click', function() {
-        var ofertaId = document.getElementById('modalCambioMasivoFechas').getAttribute('data-oferta-id');
-        var nuevaFecha = document.getElementById('masivo-nueva-fecha').value;
-        
-        console.log('Aplicar clicked, ofertaId:', ofertaId, 'nuevaFecha:', nuevaFecha);
-        
-        if (!nuevaFecha) {
-            alert('Seleccione una nueva fecha');
-            return;
+            var bsModal = new bootstrap.Modal($modal);
+            bsModal.show();
+            console.log('Modal mostrado');
         }
-        
-        if (!confirm('¿Aplicar esta fecha a las cuotas seleccionadas?')) return;
-        
-        var btn = this;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Aplicando...';
-        
-        var formData = new FormData();
-        formData.append('_token', '{{ csrf_token() }}');
-        formData.append('nueva_fecha', nuevaFecha);
-        formData.append('n_cuota', document.getElementById('masivo-n-cuota').value);
-        formData.append('plan_id', document.getElementById('masivo-plan-pago').value);
-        formData.append('concepto_id', document.getElementById('masivo-concepto').value);
-        
-        fetch('/admin/ofertas/' + ofertaId + '/actualizar-fechas-cuotas', {
-            method: 'POST',
-            body: formData
-        })
-        .then(function(response) { return response.json(); })
-        .then(function(data) {
-            console.log('Respuesta:', data);
-            btn.disabled = false;
-            btn.innerHTML = '<i class="ri-check-line me-1"></i> Aplicar';
-            
-            if (data.success) {
-                alert(data.message || 'Fechas actualizadas correctamente');
-                $('#modalCambioMasivoFechas').modal('hide');
-                location.reload();
-            } else {
-                alert(data.message || 'Error al actualizar');
+
+        // Event listeners para los selects
+        document.getElementById('masivo-plan-pago').addEventListener('change', function() {
+            var planId = this.value;
+            var ofertaId = document.getElementById('modalCambioMasivoFechas').getAttribute('data-oferta-id');
+            console.log('Plan cambiado:', planId, 'Oferta:', ofertaId);
+
+            var conceptoSelect = document.getElementById('masivo-concepto');
+            var cuotaSelect = document.getElementById('masivo-n-cuota');
+
+            if (!planId) {
+                conceptoSelect.innerHTML = '<option value="">Seleccione un plan</option>';
+                conceptoSelect.disabled = true;
+                cuotaSelect.disabled = true;
+                return;
             }
-        })
-        .catch(function(error) {
-            console.error('Error:', error);
-            btn.disabled = false;
-            btn.innerHTML = '<i class="ri-check-line me-1"></i> Aplicar';
-            alert('Error al actualizar las fechas');
+
+            fetch('/admin/ofertas/' + ofertaId + '/datos')
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    var opts = '<option value="">Todos los conceptos</option>';
+                    if (data.plan_concepto) {
+                        data.plan_concepto.forEach(function(pc) {
+                            if (pc.planes_pago_id == planId && pc.concepto) {
+                                opts += '<option value="' + pc.concepto.id + '" data-n-cuotas="' + pc
+                                    .n_cuotas + '">' + pc.concepto.nombre + ' (' + pc.n_cuotas +
+                                    ' cuotas)</option>';
+                            }
+                        });
+                    }
+                    conceptoSelect.innerHTML = opts;
+                    conceptoSelect.disabled = false;
+                });
+
+            cuotaSelect.innerHTML = '<option value="">Seleccione un concepto</option>';
+            cuotaSelect.disabled = true;
         });
-    });
+
+        document.getElementById('masivo-concepto').addEventListener('change', function() {
+            var selectedOption = this.options[this.selectedIndex];
+            var nCuotas = parseInt(selectedOption.getAttribute('data-n-cuotas')) || 0;
+            console.log('Concepto cambiado, nCuotas:', nCuotas);
+
+            var cuotaSelect = document.getElementById('masivo-n-cuota');
+
+            if (!this.value) {
+                cuotaSelect.innerHTML = '<option value="">Seleccione un concepto</option>';
+                cuotaSelect.disabled = true;
+                return;
+            }
+
+            var opts = '<option value="">Todas las cuotas</option>';
+            for (var i = 1; i <= nCuotas; i++) {
+                opts += '<option value="' + i + '">Cuota ' + i + '</option>';
+            }
+            cuotaSelect.innerHTML = opts;
+            cuotaSelect.disabled = false;
+        });
+
+        document.getElementById('masivo-n-cuota').addEventListener('change', function() {
+            var ofertaId = document.getElementById('modalCambioMasivoFechas').getAttribute('data-oferta-id');
+            var planId = document.getElementById('masivo-plan-pago').value;
+            var conceptoId = document.getElementById('masivo-concepto').value;
+            var nCuota = this.value;
+
+            console.log('Cuota seleccionada:', nCuota, 'Plan:', planId, 'Concepto:', conceptoId);
+
+            if (!planId || !conceptoId) {
+                document.getElementById('masivo-fechas-body').innerHTML =
+                    '<tr><td colspan="7" class="text-center py-3">Seleccione un plan, concepto y cuota</td></tr>';
+                return;
+            }
+
+            var url = '/admin/ofertas/' + ofertaId + '/cuotas-filtro?plan_id=' + planId + '&concepto_id=' +
+                conceptoId;
+            if (nCuota) url += '&n_cuota=' + nCuota;
+
+            fetch(url)
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    console.log('Respuesta cuotas:', data);
+
+                    var cuotas = data.cuotas || data || [];
+                    if (data.success === false) {
+                        showToast(data.msg || 'Error', 'error');
+                        return;
+                    }
+                    var tbody = document.getElementById('masivo-fechas-body');
+                    if (!data || data.length === 0) {
+                        tbody.innerHTML =
+                            '<tr><td colspan="8" class="text-center py-3">No hay estudiantes con estos criterios</td></tr>';
+                        return;
+                    }
+                    var html = '';
+                    var index = 1;
+                    cuotas.forEach(function(est) {
+                        html += '<tr>';
+                        html += '<td class="text-center"><input type="checkbox" class="estudiante-cuota" value="' + est.id + '"></td>';
+                        html += '<td class="text-center">' + index + '</td>';
+                        html += '<td>' + (est.estudiante_nombre || 'N/A') + '</td>';
+                        html += '<td>' + (est.plan_nombre || '') + '</td>';
+                        html += '<td>' + (est.concepto_nombre || '') + '</td>';
+                        html += '<td class="text-center">' + (est.n_cuota || '') + '</td>';
+                        html += '<td class="text-end">Bs. ' + (est.pago_total_bs || 0) + '</td>';
+                        html += '<td class="text-center">' + (est.fecha_pago || '') + '</td>';
+                        html += '</tr>';
+                        index++;
+                    });
+                    tbody.innerHTML = html;
+                    
+                    // Event listener para seleccionar todos
+                    document.getElementById('select-all-cuotas').addEventListener('change', function(e) {
+                        var checkboxes = document.querySelectorAll('.estudiante-cuota');
+                        checkboxes.forEach(function(cb) {
+                            cb.checked = e.target.checked;
+                        });
+                    });
+                });
+        });
+
+        // Función para mostrar toast
+        function showToast(message, type) {
+            var toast = document.createElement('div');
+            toast.className = 'toast-container position-fixed top-0 end-0 p-3';
+            toast.style.zIndex = '9999';
+            
+            var bgColor = type === 'success' ? '#10b981' : '#ef4444';
+            var icon = type === 'success' ? 'ri-check-line' : 'ri-error-warning-line';
+            
+            toast.innerHTML = '<div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">' +
+                '<div class="toast-header" style="background: ' + bgColor + '; color: white; border-radius: 10px 10px 0 0;">' +
+                '<i class="' + icon + ' me-2" style="font-size: 1.2rem;"></i>' +
+                '<strong class="me-auto" style="font-size: 1rem;">' + (type === 'success' ? 'Éxito' : 'Error') + '</strong>' +
+                '<button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>' +
+                '</div>' +
+                '<div class="toast-body" style="background: #fff; color: #334155; border-radius: 0 0 10px 10px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">' +
+                message +
+                '</div>' +
+                '</div>';
+            
+            document.body.appendChild(toast);
+            
+            var bsToast = new bootstrap.Toast(toast.querySelector('.toast'));
+            bsToast.show();
+            
+            setTimeout(function() {
+                toast.remove();
+            }, 4000);
+        }
+
+        // Botón aplicar cambio masivo
+        document.getElementById('btn-aplicar-masivo').addEventListener('click', function() {
+            var ofertaId = document.getElementById('modalCambioMasivoFechas').getAttribute('data-oferta-id');
+            var nuevaFecha = document.getElementById('masivo-nueva-fecha').value;
+
+            console.log('Aplicar clicked, ofertaId:', ofertaId, 'nuevaFecha:', nuevaFecha);
+
+            if (!nuevaFecha) {
+                showToast('Seleccione una nueva fecha', 'error');
+                return;
+            }
+
+            var checkboxes = document.querySelectorAll('.estudiante-cuota:checked');
+            if (checkboxes.length === 0) {
+                showToast('Seleccione al menos una cuota', 'error');
+                return;
+            }
+
+            var btn = this;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Aplicando...';
+
+            var formData = new FormData();
+            formData.append('_token', '{{ csrf_token() }}');
+            formData.append('nueva_fecha', nuevaFecha);
+            formData.append('n_cuota', document.getElementById('masivo-n-cuota').value);
+            formData.append('plan_id', document.getElementById('masivo-plan-pago').value);
+            formData.append('concepto_id', document.getElementById('masivo-concepto').value);
+            
+            // Obtener IDs seleccionados
+            var selectedIds = [];
+            checkboxes.forEach(function(cb) {
+                selectedIds.push(cb.value);
+            });
+            formData.append('cuota_ids', selectedIds.join(','));
+
+            fetch('/admin/ofertas/' + ofertaId + '/actualizar-fechas-cuotas', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    console.log('Respuesta:', data);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="ri-check-line me-1"></i> Aplicar';
+
+                    if (data.success) {
+                        showToast(data.message || 'Fechas actualizadas correctamente', 'success');
+                        $('#modalCambioMasivoFechas').modal('hide');
+                        location.reload();
+                    } else {
+                        showToast(data.message || 'Error al actualizar', 'error');
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Error:', error);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="ri-check-line me-1"></i> Aplicar';
+                    showToast('Error al actualizar las fechas', 'error');
+                });
+        });
     </script>
 
     <!-- Modal: Registrar Pago -->
@@ -1341,14 +1749,16 @@
         function abrirModalCambioMasivo(ofertaId) {
             console.log('=== abrirModalCambioMasivo llamado ===');
             console.log('ofertaId:', ofertaId);
-            
+
             var $modal = $('#modalCambioMasivoFechas');
             $modal.attr('data-oferta-id', ofertaId);
 
             $('#masivo-plan-pago').html('<option value="">Todos los planes</option>');
             $('#masivo-concepto').html('<option value="">Seleccione un plan primero</option>').prop('disabled', true);
             $('#masivo-n-cuota').html('<option value="">Seleccione un concepto</option>').prop('disabled', true);
-            $('#masivo-fechas-body').html('<tr><td colspan="7" class="text-center py-3">Seleccione un plan, concepto y cuota para ver los estudiantes</td></tr>');
+            $('#masivo-fechas-body').html(
+                '<tr><td colspan="7" class="text-center py-3">Seleccione un plan, concepto y cuota para ver los estudiantes</td></tr>'
+                );
 
             $.ajax({
                 url: '/admin/ofertas/' + ofertaId + '/datos',
@@ -1606,10 +2016,215 @@
             });
 
             // ===== VER CUOTAS =====
-            $(document).on('click', '.ver-cuotas-btn', function() {
-                $('#estudiante-nombre-cuotas').text($(this).data('estudiante-nombre'));
-                $('#inscripcion_id_cuotas').val($(this).data('inscripcion-id'));
-                $('#tabla-cuotas-body').html(
+            // Botones de ver cuotas (vanilla JS para evitar problemas)
+            document.addEventListener('click', function(e) {
+                // Ver Cuotas botón
+                if (e.target.closest('.ver-cuotas-btn')) {
+                    var btn = e.target.closest('.ver-cuotas-btn');
+                    console.log('Ver cuotas clicked', btn.dataset);
+                    document.getElementById('estudiante-nombre-cuotas').textContent = btn.dataset.estudianteNombre;
+                    document.getElementById('inscripcion_id_cuotas').value = btn.dataset.inscripcionId;
+                    document.getElementById('tabla-cuotas-body').innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
+                    
+                    fetch('/admin/inscripciones/' + btn.dataset.inscripcionId + '/cuotas-pendientes')
+                        .then(function(response) { return response.json(); })
+                        .then(function(data) {
+                            var html = '';
+                            if (!data || data.length === 0) {
+                                html = '<tr><td colspan="6" class="text-center py-4 text-muted">No hay cuotas pendientes</td></tr>';
+                            } else {
+                                data.forEach(function(c) {
+                                    var badge = c.pago_terminado === 'si' ? '<span class="badge bg-success">Pagado</span>' : '<span class="badge bg-warning">Pendiente</span>';
+                                    html += '<tr><td class="fw-semibold">' + c.nombre + '</td><td class="text-center">' + c.n_cuota + '</td><td class="text-center">Bs. ' + parseFloat(c.pago_total_bs).toFixed(2) + '</td><td class="text-center">Bs. ' + parseFloat(c.pago_pendiente_bs).toFixed(2) + '</td><td class="text-center">' + c.fecha_pago + '</td><td class="text-center">' + badge + '</td></tr>';
+                                });
+                            }
+                            document.getElementById('tabla-cuotas-body').innerHTML = html;
+                        });
+                    
+                    new bootstrap.Modal(document.getElementById('modalVerCuotas')).show();
+                    return;
+                }
+                
+                // Ver Cuotas Agrupadas botón
+                if (e.target.closest('.ver-cuotas-agrupadas-btn')) {
+                    var btn = e.target.closest('.ver-cuotas-agrupadas-btn');
+                    console.log('Ver cuotas agrupadas clicked', btn.dataset);
+                    document.getElementById('estudiante-nombre-agrupadas').textContent = btn.dataset.estudianteNombre;
+                    
+                    document.getElementById('cuotas-agrupadas-container').innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+                    
+                    new bootstrap.Modal(document.getElementById('modalCuotasAgrupadas')).show();
+                    
+                    fetch('/admin/inscripciones/' + btn.dataset.inscripcionId + '/cuotas-agrupadas')
+                        .then(function(response) { return response.json(); })
+                        .then(function(data) {
+                            var container = document.getElementById('cuotas-agrupadas-container');
+                            if (!data || data.length === 0) {
+                                container.innerHTML = '<div class="text-center py-4 text-muted">No hay cuotas registradas</div>';
+                                return;
+                            }
+                            
+                            var html = '';
+                            data.forEach(function(concepto) {
+                                html += '<div class="mb-4" style="background: white; border-radius: 12px; padding: 15px; border: 1px solid #e2e8f0;">';
+                                html += '<h6 class="fw-bold mb-3" style="color: #0f766e;"><i class="ri-folder-line me-2"></i>' + concepto.concepto_nombre + '<span class="badge bg-light text-dark ms-2">' + concepto.cuotas.length + ' cuotas</span></h6>';
+                                html += '<table class="table table-sm"><thead style="background: #f8fafc;"><tr><th class="text-center">#</th><th>Monto</th><th>Fecha Pago</th><th class="text-center">Estado</th></tr></thead><tbody>';
+                                
+                                concepto.cuotas.forEach(function(cuota) {
+                                    var badge = cuota.pago_terminado === 'si' ? '<span class="badge bg-success">Pagado</span>' : '<span class="badge bg-warning text-dark">Pendiente</span>';
+                                    html += '<tr><td class="text-center">' + cuota.n_cuota + '</td><td>Bs. ' + parseFloat(cuota.pago_total_bs).toFixed(2) + '</td><td>' + (cuota.fecha_pago || '-') + '</td><td class="text-center">' + badge + '</td></tr>';
+                                });
+                                
+                                html += '</tbody></table></div>';
+                            });
+                            
+                            container.innerHTML = html;
+                        });
+                    
+                    return;
+                }
+            });
+            
+            /*<script>
+        console.log('Script cargado correctamente');
+        
+        // Función para mostrar toast
+        function showToast(message, type) {
+            var toast = document.createElement('div');
+            toast.className = 'toast-container position-fixed top-0 end-0 p-3';
+            toast.style.zIndex = '9999';
+            
+            var bgColor = type === 'success' ? '#10b981' : '#ef4444';
+            var icon = type === 'success' ? 'ri-check-line' : 'ri-error-warning-line';
+            
+            toast.innerHTML = '<div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">' +
+                '<div class="toast-header" style="background: ' + bgColor + '; color: white; border-radius: 10px 10px 0 0;">' +
+                '<i class="' + icon + ' me-2" style="font-size: 1.2rem;"></i>' +
+                '<strong class="me-auto" style="font-size: 1rem;">' + (type === 'success' ? 'Éxito' : 'Error') + '</strong>' +
+                '<button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>' +
+                '</div>' +
+                '<div class="toast-body" style="background: #fff; color: #334155; border-radius: 0 0 10px 10px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">' +
+                message +
+                '</div>' +
+                '</div>';
+            
+            document.body.appendChild(toast);
+            
+            var bsToast = new bootstrap.Toast(toast.querySelector('.toast'));
+            bsToast.show();
+            
+            setTimeout(function() {
+                toast.remove();
+            }, 4000);
+        }
+
+        // Verificar que Bootstrap está disponible
+        if (typeof bootstrap === 'undefined') {
+            console.error('Bootstrap no está definido');
+        } else {
+            console.log('Bootstrap cargado correctamente');
+        }
+
+        // Delegated event listener
+        document.addEventListener('click', function(e) {
+            // Ver Cuotas botón
+            var btnCuotas = e.target.closest('.ver-cuotas-btn');
+            if (btnCuotas) {
+                e.preventDefault();
+                var inscripcionId = btnCuotas.dataset.inscripcionId;
+                var estudianteNombre = btnCuotas.dataset.estudianteNombre;
+                
+                console.log('Btn clicked - ID:', inscripcionId, 'Nombre:', estudianteNombre);
+                
+                if (!inscripcionId) {
+                    console.error('No hay inscripcionId');
+                    return;
+                }
+                
+                document.getElementById('estudiante-nombre-cuotas').textContent = estudianteNombre;
+                document.getElementById('inscripcion_id_cuotas').value = inscripcionId;
+                document.getElementById('tabla-cuotas-body').innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>';
+                
+                fetch('/admin/inscripciones/' + inscripcionId + '/cuotas-pendientes')
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        var html = '';
+                        if (!data || data.length === 0) {
+                            html = '<tr><td colspan="6" class="text-center py-4 text-muted">No hay cuotas pendientes</td></tr>';
+                        } else {
+                            data.forEach(function(c) {
+                                var badge = c.pago_terminado === 'si' ? '<span class="badge bg-success">Pagado</span>' : '<span class="badge bg-warning">Pendiente</span>';
+                                html += '<tr><td class="fw-semibold">' + c.nombre + '</td><td class="text-center">' + c.n_cuota + '</td><td class="text-center">Bs. ' + parseFloat(c.pago_total_bs).toFixed(2) + '</td><td class="text-center">Bs. ' + parseFloat(c.pago_pendiente_bs).toFixed(2) + '</td><td class="text-center">' + c.fecha_pago + '</td><td class="text-center">' + badge + '</td></tr>';
+                            });
+                        }
+                        document.getElementById('tabla-cuotas-body').innerHTML = html;
+                    })
+                    .catch(function(err) {
+                        console.error('Error:', err);
+                        document.getElementById('tabla-cuotas-body').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger">Error al cargar</td></tr>';
+                    });
+                
+                new bootstrap.Modal(document.getElementById('modalVerCuotas')).show();
+                return;
+            }
+            
+            // Ver Cuotas Agrupadas botón
+            var btnAgrupadas = e.target.closest('.ver-cuotas-agrupadas-btn');
+            if (btnAgrupadas) {
+                e.preventDefault();
+                var inscripcionId = btnAgrupadas.dataset.inscripcionId;
+                var estudianteNombre = btnAgrupadas.dataset.estudianteNombre;
+                
+                console.log('Btn agrupadas clicked - ID:', inscripcionId, 'Nombre:', estudianteNombre);
+                
+                if (!inscripcionId) {
+                    console.error('No hay inscripcionId');
+                    return;
+                }
+                
+                document.getElementById('estudiante-nombre-agrupadas').textContent = estudianteNombre;
+                document.getElementById('cuotas-agrupadas-container').innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+                
+                var modal = new bootstrap.Modal(document.getElementById('modalCuotasAgrupadas'));
+                modal.show();
+                
+                fetch('/admin/inscripciones/' + inscripcionId + '/cuotas-agrupadas')
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        var container = document.getElementById('cuotas-agrupadas-container');
+                        if (!data || data.length === 0) {
+                            container.innerHTML = '<div class="text-center py-4 text-muted">No hay cuotas registradas</div>';
+                            return;
+                        }
+                        
+                        var html = '';
+                        data.forEach(function(concepto) {
+                            html += '<div class="mb-4" style="background: white; border-radius: 12px; padding: 15px; border: 1px solid #e2e8f0;">';
+                            html += '<h6 class="fw-bold mb-3" style="color: #0f766e;"><i class="ri-folder-line me-2"></i>' + concepto.concepto_nombre + '<span class="badge bg-light text-dark ms-2">' + concepto.cuotas.length + ' cuotas</span></h6>';
+                            html += '<table class="table table-sm"><thead style="background: #f8fafc;"><tr><th class="text-center">#</th><th>Monto</th><th>Fecha Pago</th><th class="text-center">Estado</th></tr></thead><tbody>';
+                            
+                            concepto.cuotas.forEach(function(cuota) {
+                                var badge = cuota.pago_terminado === 'si' ? '<span class="badge bg-success">Pagado</span>' : '<span class="badge bg-warning text-dark">Pendiente</span>';
+                                html += '<tr><td class="text-center">' + cuota.n_cuota + '</td><td>Bs. ' + parseFloat(cuota.pago_total_bs).toFixed(2) + '</td><td>' + (cuota.fecha_pago || '-') + '</td><td class="text-center">' + badge + '</td></tr>';
+                            });
+                            
+                            html += '</tbody></table></div>';
+                        });
+                        
+                        container.innerHTML = html;
+                    })
+                    .catch(function(err) {
+                        console.error('Error:', err);
+                        document.getElementById('cuotas-agrupadas-container').innerHTML = '<div class="text-center py-4 text-danger">Error al cargar</div>';
+                    });
+                
+                return;
+            }
+        });
+
+        // ===== FUNCTIONS AND EXISTING CODE =====
+        
+        function abrirModalCambioMasivo(ofertaId) {
                     '<tr><td colspan="6" class="text-center py-4"><div class="spinner-border text-primary"></div></td></tr>'
                 );
                 $.ajax({
@@ -1629,6 +2244,73 @@
                     }
                 });
                 new bootstrap.Modal(document.getElementById('modalVerCuotas')).show();
+            });
+
+            // ===== VER CUOTAS AGRUPADAS POR CONCEPTO =====
+            $(document).on('click', '.ver-cuotas-agrupadas-btn', function() {
+                console.log('Botón clicked', $(this).data());
+                $('#estudiante-nombre-agrupadas').text($(this).data('estudiante-nombre'));
+                const inscripcionId = $(this).data('inscripcion-id');
+                console.log('inscripcionId:', inscripcionId);
+                
+                $('#cuotas-agrupadas-container').html(
+                    '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>'
+                );
+                
+                // Mostrar modal primero
+                var modalEl = document.getElementById('modalCuotasAgrupadas');
+                var modal = new bootstrap.Modal(modalEl);
+                modal.show();
+                
+                $.ajax({
+                    url: `/admin/inscripciones/${inscripcionId}/cuotas-agrupadas`,
+                    success: function(data) {
+                        if (!data || data.length === 0) {
+                            $('#cuotas-agrupadas-container').html(
+                                '<div class="text-center py-4 text-muted">No hay cuotas registradas</div>'
+                            );
+                            return;
+                        }
+                        
+                        let html = '';
+                        data.forEach(concepto => {
+                            html += `<div class="mb-4" style="background: white; border-radius: 12px; padding: 15px; border: 1px solid #e2e8f0;">
+                                <h6 class="fw-bold mb-3" style="color: #0f766e; display: flex; align-items: center; gap: 8px;">
+                                    <i class="ri-folder-line"></i> ${concepto.concepto_nombre}
+                                    <span class="badge bg-light text-dark ms-auto">${concepto.cuotas.length} cuotas</span>
+                                </h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm" style="margin-bottom: 0;">
+                                        <thead style="background: #f8fafc;">
+                                            <tr>
+                                                <th class="text-center" style="font-size: 0.8rem;">#</th>
+                                                <th style="font-size: 0.8rem;">Monto</th>
+                                                <th style="font-size: 0.8rem;">Fecha Pago</th>
+                                                <th class="text-center" style="font-size: 0.8rem;">Estado</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>`;
+                            
+                            concepto.cuotas.forEach((cuota, index) => {
+                                const estadoBadge = cuota.pago_terminado === 'si' 
+                                    ? '<span class="badge bg-success">Pagado</span>' 
+                                    : '<span class="badge bg-warning text-dark">Pendiente</span>';
+                                html += `<tr>
+                                    <td class="text-center">${cuota.n_cuota}</td>
+                                    <td>Bs. ${parseFloat(cuota.pago_total_bs).toFixed(2)}</td>
+                                    <td>${cuota.fecha_pago || '-'}</td>
+                                    <td class="text-center">${estadoBadge}</td>
+                                </tr>`;
+                            });
+                            
+                            html += `</tbody></table></div></div>`;
+                        });
+                        
+                        $('#cuotas-agrupadas-container').html(html);
+                    }
+                });
+                
+                new bootstrap.Modal(document.getElementById('modalCuotasAgrupadas')).show();
             });
 
             // ===== EDITAR FECHAS =====
@@ -1708,14 +2390,14 @@
                 if ($btn.length) {
                     clearInterval(checkInterval);
                     console.log('Botón encontrado, attachando evento...');
-                    
+
                     $btn.on('click', function(e) {
                         e.preventDefault();
                         e.stopPropagation();
                         console.log('=== Click en cambio masivo detectado ===');
                         var ofertaId = $(this).data('oferta-id');
                         console.log('Oferta ID:', ofertaId);
-                        
+
                         if (!ofertaId) {
                             console.error('ERROR: No se encontró oferta-id en el botón');
                             alert('Error: No se pudo obtener el ID de la oferta');
@@ -1726,9 +2408,15 @@
                         $modal.attr('data-oferta-id', ofertaId);
 
                         $('#masivo-plan-pago').html('<option value="">Todos los planes</option>');
-                        $('#masivo-concepto').html('<option value="">Seleccione un plan primero</option>').prop('disabled', true);
-                        $('#masivo-n-cuota').html('<option value="">Seleccione un concepto</option>').prop('disabled', true);
-                        $('#masivo-fechas-body').html('<tr><td colspan="7" class="text-center py-3">Seleccione un plan, concepto y cuota para ver los estudiantes</td></tr>');
+                        $('#masivo-concepto').html(
+                            '<option value="">Seleccione un plan primero</option>').prop(
+                            'disabled', true);
+                        $('#masivo-n-cuota').html(
+                            '<option value="">Seleccione un concepto</option>').prop('disabled',
+                            true);
+                        $('#masivo-fechas-body').html(
+                            '<tr><td colspan="7" class="text-center py-3">Seleccione un plan, concepto y cuota para ver los estudiantes</td></tr>'
+                            );
 
                         $.ajax({
                             url: '/admin/ofertas/' + ofertaId + '/datos',
@@ -1736,18 +2424,22 @@
                                 var planesMap = {};
                                 if (data.plan_concepto) {
                                     data.plan_concepto.forEach(function(pc) {
-                                        if (pc.plan_pago && pc.plan_pago.nombre) {
-                                            planesMap[pc.planes_pago_id] = pc.plan_pago.nombre;
+                                        if (pc.plan_pago && pc.plan_pago
+                                            .nombre) {
+                                            planesMap[pc.planes_pago_id] = pc
+                                                .plan_pago.nombre;
                                         }
                                     });
                                 }
                                 var $selectPlan = $('#masivo-plan-pago');
                                 Object.keys(planesMap).forEach(function(id) {
-                                    $selectPlan.append('<option value="' + id + '">' + planesMap[id] + '</option>');
+                                    $selectPlan.append('<option value="' + id +
+                                        '">' + planesMap[id] + '</option>');
                                 });
                             },
                             error: function() {
-                                showToast('error', 'Error', 'No se pudieron cargar los planes de pago');
+                                showToast('error', 'Error',
+                                    'No se pudieron cargar los planes de pago');
                             }
                         });
 
