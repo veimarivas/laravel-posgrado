@@ -2517,7 +2517,19 @@ class OfertasAcademicasController extends Controller
 
         // Planes disponibles para agregar
         $planesEnUso = $oferta->plan_concepto->pluck('planes_pago_id')->unique()->toArray();
-        $planesDisponibles = PlanesPago::whereNotIn('id', $planesEnUso)->get();
+        
+        // Si no hay planes asignados, solo mostrar planes principales y habilitados
+        // Si ya hay planes, mostrar todos los habilitados
+        if (empty($planesEnUso)) {
+            $planesDisponibles = PlanesPago::whereNotIn('id', $planesEnUso)
+                ->where('habilitado', 1)
+                ->where('principal', 1)
+                ->get();
+        } else {
+            $planesDisponibles = PlanesPago::whereNotIn('id', $planesEnUso)
+                ->where('habilitado', 1)
+                ->get();
+        }
 
         // Obtener información de promoción para cada plan
         $planesAgrupados = [];

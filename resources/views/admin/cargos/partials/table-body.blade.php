@@ -12,7 +12,6 @@
                 </div>
                 <div class="flex-grow-1">
                     <h6 class="mb-0">{{ $cargo->nombre }}</h6>
-                    <p class="text-muted mb-0 small">ID: {{ $cargo->id }}</p>
                 </div>
             </div>
         </td>

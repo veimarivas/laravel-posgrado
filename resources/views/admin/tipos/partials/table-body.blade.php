@@ -8,7 +8,6 @@
                 </div>
                 <div class="tipo-name-text">
                     <h6>{{ $tipo->nombre }}</h6>
-                    <p class="text-muted mb-0 small">ID: {{ $tipo->id }}</p>
                 </div>
             </div>
         </td>

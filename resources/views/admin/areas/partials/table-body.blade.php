@@ -8,7 +8,6 @@
                 </div>
                 <div class="area-name-text">
                     <h6>{{ $area->nombre }}</h6>
-                    <p class="text-muted mb-0 small">ID: {{ $area->id }}</p>
                 </div>
             </div>
         </td>

@@ -519,6 +519,7 @@ Route::middleware(['auth', IsAdmin::class])->group(function () {
         Route::get('/admin/contabilidad/estudiante/{id}', 'detalleContable')->name('admin.contabilidad.estudiante');
         Route::get('/admin/contabilidad/cobradores', 'cobradoresReporte')->name('admin.contabilidad.cobradores');
         Route::get('/admin/contabilidad/cobradores/{tcId}/detalle', 'cobradoresDetalle')->name('admin.contabilidad.cobradores.detalle');
+        Route::get('/admin/contabilidad/deudas-retrasadas', 'deudasRetrasadas')->name('admin.contabilidad.deudas-retrasadas');
         Route::get('/admin/contabilidad/deudas-pendientes', 'deudasPendientes')->name('admin.contabilidad.deudas-pendientes');
     });
 

@@ -189,8 +189,8 @@
         }
 
         .tab-badge {
-            background: rgba(245, 158, 11, 0.2);
-            color: #b45309;
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--cont-danger);
             padding: 3px 10px;
             border-radius: 20px;
             font-size: 0.75rem;
@@ -322,7 +322,7 @@
             left: 0;
             width: 4px;
             height: 100%;
-            background: linear-gradient(180deg, #f59e0b 0%, transparent 100%);
+            background: linear-gradient(180deg, var(--cont-danger) 0%, transparent 100%);
             opacity: 0;
             transition: opacity 0.3s;
         }
@@ -330,7 +330,7 @@
         .estudiante-card:hover {
             box-shadow: var(--shadow-lg);
             transform: translateY(-3px);
-            border-color: rgba(245, 158, 11, 0.3);
+            border-color: var(--cont-accent-light);
         }
 
         .estudiante-card:hover::before {
@@ -401,7 +401,7 @@
             font-family: 'Outfit', sans-serif;
             font-size: 1.35rem;
             font-weight: 700;
-            color: #b45309;
+            color: var(--cont-danger);
         }
 
         .estudiante-actions {
@@ -763,8 +763,7 @@
             letter-spacing: 0.03em;
         }
 
-        .form-control-sm,
-        .form-select-sm {
+        .form-control-sm, .form-select-sm {
             border-radius: var(--radius-sm);
             border: 1px solid var(--cont-border);
             padding: 8px 12px;
@@ -773,8 +772,7 @@
             transition: all 0.2s;
         }
 
-        .form-control-sm:focus,
-        .form-select-sm:focus {
+        .form-control-sm:focus, .form-select-sm:focus {
             outline: none;
             border-color: var(--cont-accent);
             box-shadow: 0 0 0 3px rgba(94, 201, 177, 0.15);
@@ -818,7 +816,7 @@
             background: var(--cont-surface);
         }
 
-        .cuota-item+.cuota-item {
+        .cuota-item + .cuota-item {
             border-top: 1px solid var(--cont-border);
         }
 
@@ -976,8 +974,8 @@
     <div class="container-fluid deudas-page">
         <div class="deudas-header">
             <div class="deudas-header-content">
-                <h1><i class="ri-time-line"></i>Cuotas Próximas a Vencer</h1>
-                <p>Participantes con cuotas próximas a vencer en los proximos dias</p>
+                <h1><i class="ri-alert-line"></i>Cuotas Retrasadas</h1>
+                <p>Participantes con cuotas retrasadas por oferta académica</p>
             </div>
             <div class="deudas-header-meta">
                 <div class="date"><i class="ri-calendar-line"></i> {{ now()->format('d/m/Y') }}</div>
@@ -989,8 +987,8 @@
                 <div class="empty-state-icon">
                     <i class="ri-checkbox-circle-line"></i>
                 </div>
-                <h3>No hay cuotas proximas a vencer</h3>
-                <p>No hay participantes con cuotas programadas para los proximos dias</p>
+                <h3>No hay cuotas retrasadas</h3>
+                <p>Todos los participantes están al día con sus pagos</p>
             </div>
         @else
             <div class="nav-tabs-custom">
@@ -1023,8 +1021,8 @@
                                         Total: Bs {{ number_format($oferta['total_monto'], 2) }}
                                     </div>
                                     <button class="btn-whatsapp-all"
-                                        onclick="enviarWhatsAppOfertaProximas({{ $oferta['oferta_id'] }})">
-                                        <i class="ri-whatsapp-line"></i> Enviar recordatorio a todos
+                                        onclick="enviarWhatsAppOferta({{ $oferta['oferta_id'] }})">
+                                        <i class="ri-whatsapp-line"></i> Enviar a todos
                                     </button>
                                 </div>
                             </div>
@@ -1051,21 +1049,28 @@
                                         <div class="estudiante-actions">
                                             @if ($estudiante['celular'])
                                                 <button class="btn-action btn-whatsapp-single"
-                                                    onclick="enviarWhatsAppRecordatorio({{ $oferta['oferta_id'] }}, {{ $estudiante['estudiante_id'] }})"
-                                                    title="Enviar recordatorio WhatsApp">
+                                                    onclick="enviarWhatsApp({{ $oferta['oferta_id'] }}, {{ $estudiante['estudiante_id'] }})"
+                                                    title="Enviar mensaje WhatsApp">
                                                     <i class="ri-whatsapp-line"></i>
+                                                </button>
+                                            @endif
+                                            @if ($estudiante['tiene_comprobantes'])
+                                                <button class="btn-action btn-comprobante"
+                                                    onclick="verComprobantes({{ $oferta['oferta_id'] }}, {{ $estudiante['estudiante_id'] }})"
+                                                    title="Ver comprobantes">
+                                                    <i class="ri-file-check-line"></i>
+                                                    ({{ count($estudiante['comprobantes']) }})
                                                 </button>
                                             @endif
                                             <button class="btn-action btn-ver-cuotas"
                                                 onclick="abrirModalCuotas({{ $oferta['oferta_id'] }}, {{ $estudiante['estudiante_id'] }})">
-                                                <i class="ri-eye-line"></i> Ver ({{ $estudiante['proximas'] }})
+                                                <i class="ri-eye-line"></i> Ver ({{ $estudiante['retrasadas'] }})
                                             </button>
                                         </div>
                                     </div>
                                     <div class="estudiante-cuotas-resumen">
-                                        <span class="cuota-badge proxima"
-                                            style="background: rgba(245, 158, 11, 0.1); color: #b45309; border: 1px solid rgba(245, 158, 11, 0.2);">
-                                            <i class="ri-time-line"></i> {{ $estudiante['proximas'] }} proxima(s) a vencer
+                                        <span class="cuota-badge retrasada">
+                                            <i class="ri-alert-line"></i> {{ $estudiante['retrasadas'] }} retrasada(s)
                                         </span>
                                     </div>
                                 </div>
@@ -1217,26 +1222,10 @@
 
             function showToast(type, message) {
                 var config = {
-                    success: {
-                        icon: 'ri-checkbox-circle-fill',
-                        bgClass: 'bg-success',
-                        title: 'Exito'
-                    },
-                    error: {
-                        icon: 'ri-close-circle-fill',
-                        bgClass: 'bg-danger',
-                        title: 'Error'
-                    },
-                    warning: {
-                        icon: 'ri-alert-fill',
-                        bgClass: 'bg-warning',
-                        title: 'Advertencia'
-                    },
-                    info: {
-                        icon: 'ri-information-fill',
-                        bgClass: 'bg-info',
-                        title: 'Informacion'
-                    }
+                    success: { icon: 'ri-checkbox-circle-fill', bgClass: 'bg-success', title: 'Exito' },
+                    error: { icon: 'ri-close-circle-fill', bgClass: 'bg-danger', title: 'Error' },
+                    warning: { icon: 'ri-alert-fill', bgClass: 'bg-warning', title: 'Advertencia' },
+                    info: { icon: 'ri-information-fill', bgClass: 'bg-info', title: 'Informacion' }
                 };
                 var toastConfig = config[type] || config.info;
                 var toastId = 'toast-' + Date.now();
@@ -1261,14 +1250,9 @@
                 }
                 container.insertAdjacentHTML('afterbegin', toastHtml);
                 var toastElement = document.getElementById(toastId);
-                var toast = new bootstrap.Toast(toastElement, {
-                    autohide: true,
-                    delay: 3000
-                });
+                var toast = new bootstrap.Toast(toastElement, { autohide: true, delay: 3000 });
                 toast.show();
-                toastElement.addEventListener('hidden.bs.toast', function() {
-                    this.remove();
-                });
+                toastElement.addEventListener('hidden.bs.toast', function() { this.remove(); });
             }
 
             // ======================== FUNCIÓN PARA ABRIR MODAL DE CUOTAS ========================
@@ -1300,17 +1284,9 @@
                         month: 'long',
                         day: 'numeric'
                     });
-                    const diasRestantes = cuota.dias_restantes;
-                    let estadoClass = 'cuota-fecha-pendiente';
-                    let estadoTexto = '';
-
-                    if (diasRestantes <= 3) {
-                        estadoClass = 'cuota-fecha-retrasada';
-                        estadoTexto = `URGENTE - ${diasRestantes} dia(s)`;
-                    } else {
-                        estadoTexto = `${diasRestantes} dia(s) para vencer`;
-                    }
-
+                    const estadoClass = cuota.estado === 'retrasada' ? 'cuota-fecha-retrasada' :
+                        'cuota-fecha-pendiente';
+                    const estadoTexto = cuota.estado === 'retrasada' ? 'RETRASADA' : 'PENDIENTE';
                     html += `
                     <div class="modal-cuota-item">
                         <div class="d-flex align-items-center">
@@ -1320,22 +1296,22 @@
                                 <small class="cuota-fecha ${estadoClass}">${estadoTexto} - Vence: ${fechaFormateada}</small>
                             </div>
                         </div>
-                        <div class="cuota-monto" style="color: #b45309;">Bs ${cuota.monto_bs.toFixed(2)}</div>
+                        <div class="cuota-monto">Bs ${cuota.monto_bs.toFixed(2)}</div>
                     </div>
                 `;
                 });
 
-                const totalProximas = cuotas.length;
+                const totalRetrasadas = cuotas.filter(c => c.estado === 'retrasada').length;
                 const totalMonto = cuotas.reduce((sum, c) => sum + c.monto_bs, 0);
                 html += `
-                    <div class="modal-resumen" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(180, 83, 9, 0.05) 100%);">
+                    <div class="modal-resumen">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <strong style="color: var(--cont-text);">${totalProximas} cuota(s) proxima(s) a vencer</strong>
+                                <strong style="color: var(--cont-text);">${totalRetrasadas} cuota(s) retrasada(s)</strong>
                             </div>
                             <div class="d-flex align-items-center gap-2">
-                                <span style="color: var(--cont-text-muted); font-size: 0.9rem;">Total:</span>
-                                <span style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700; color: #b45309;">Bs ${totalMonto.toFixed(2)}</span>
+                                <span style="color: var(--cont-text-muted); font-size: 0.9rem;">Total adeudado:</span>
+                                <span style="font-family: 'Outfit', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--cont-danger);">Bs ${totalMonto.toFixed(2)}</span>
                             </div>
                         </div>
                     </div>`;
@@ -1389,8 +1365,7 @@
                     <img src="${archivoUrl}" class="img-fluid rounded border" style="max-height:260px;width:100%;object-fit:contain;cursor:pointer;" title="Clic para ampliar">
                 </a>`;
                 } else if (ext === 'pdf') {
-                    previewHtml =
-                        `<embed src="${archivoUrl}" type="application/pdf" width="100%" height="260px" class="rounded border">
+                    previewHtml = `<embed src="${archivoUrl}" type="application/pdf" width="100%" height="260px" class="rounded border">
                     <div class="mt-1 text-end"><a href="${archivoUrl}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="ri-external-link-line me-1"></i>Abrir PDF</a></div>`;
                 } else {
                     previewHtml = `<div class="d-flex align-items-center justify-content-center border rounded bg-light" style="height:80px;">
@@ -1428,12 +1403,11 @@
                         const ordenB = idxB === -1 ? 999 : idxB;
                         return ordenA - ordenB;
                     });
-
+                    
                     tiposExistentes.forEach(tipo => {
                         if (!grupos[tipo] || grupos[tipo].length === 0) return;
                         const icono = iconosPorDefecto[tipo] || 'ri-file-list-line';
-                        const total = grupos[tipo].reduce((s, c) => s + Number(c.pago_pendiente_bs || c.pendiente_bs ||
-                            0), 0);
+                        const total = grupos[tipo].reduce((s, c) => s + Number(c.pago_pendiente_bs || c.pendiente_bs || 0), 0);
                         html += `<div class="mb-2">
                         <div class="cuota-group-header">
                             <div class="group-title"><i class="${icono}" style="color:var(--cont-accent);"></i> <span>${tipo}</span></div>
@@ -1471,15 +1445,15 @@
                     </div>`;
                 }
 
-                const cobradorHtml = cobradorData ?
-                    `<div class="cobrador-alert" style="background:var(--cont-success-light);color:#059669;">
+                const cobradorHtml = cobradorData
+                    ? `<div class="cobrador-alert" style="background:var(--cont-success-light);color:#059669;">
                         <i class="ri-user-star-line"></i>
                         <div>
                             <div class="cobrador-name">${cobradorData.nombres} ${cobradorData.apellido_paterno}</div>
                             <div class="cobrador-cargo">Cobrador - ${cobradorData.cargo}</div>
                         </div>
-                      </div>` :
-                    `<div class="cobrador-alert" style="background:var(--cont-warning-light);color:#b45309;">
+                      </div>`
+                    : `<div class="cobrador-alert" style="background:var(--cont-warning-light);color:#b45309;">
                         <i class="ri-alert-line"></i>
                         <div>No se pudo identificar al cobrador. Verifique su cargo vigente.</div>
                        </div>`;
@@ -1585,14 +1559,12 @@
                 const selectAllAsoc = document.getElementById('selectAllAsociadas');
                 if (selectAllPend) {
                     selectAllPend.addEventListener('change', function(e) {
-                        document.querySelectorAll('input[name="cuota_ids[]"]').forEach(chk => chk.checked = e.target
-                            .checked);
+                        document.querySelectorAll('input[name="cuota_ids[]"]').forEach(chk => chk.checked = e.target.checked);
                     });
                 }
                 if (selectAllAsoc) {
                     selectAllAsoc.addEventListener('change', function(e) {
-                        document.querySelectorAll('input[name="cuota_ids[]"]').forEach(chk => chk.checked = e.target
-                            .checked);
+                        document.querySelectorAll('input[name="cuota_ids[]"]').forEach(chk => chk.checked = e.target.checked);
                     });
                 }
 
@@ -1660,8 +1632,7 @@
                 const montoOriginal = parseFloat(document.getElementById('monto_pago').value);
                 const montoRedondeado = Math.round(montoOriginal * 100) / 100;
                 formData.append('monto_pago', montoRedondeado.toFixed(2));
-                formData.append('descuento_bs', Math.round(parseFloat(document.getElementById('descuento_bs').value || 0) *
-                    100) / 100);
+                formData.append('descuento_bs', Math.round(parseFloat(document.getElementById('descuento_bs').value || 0) * 100) / 100);
                 formData.append('tipo_pago', tipoPago);
                 formData.append('fecha_pago', document.getElementById('fecha_pago').value);
                 formData.append('observaciones', document.getElementById('observaciones').value);
@@ -1764,114 +1735,6 @@
                 const celularLimpio = estudiante.celular.replace(/\D/g, '');
                 const urlWhatsApp = `https://wa.me/591${celularLimpio}?text=${encodeURIComponent(mensaje)}`;
                 window.open(urlWhatsApp, '_blank');
-            }
-
-            // ======================== FUNCIONES WHATSAPP PARA CUOTAS PROXIMAS ========================
-            function enviarWhatsAppRecordatorio(ofertaId, estudianteId) {
-                let oferta = deudasData.find(o => o.oferta_id === ofertaId);
-                if (!oferta) return;
-                let estudiante = oferta.estudiantes.find(e => e.estudiante_id === estudianteId);
-                if (!estudiante || !estudiante.celular) return;
-
-                const conceptosOrden = ['Matricula', 'Colegiatura', 'Certificacion', 'Certificación'];
-                const grupos = {};
-
-                estudiante.cuotas.forEach(cuota => {
-                    let concepto = cuota.nombre || 'Otro';
-                    for (let c of conceptosOrden) {
-                        if (concepto.toLowerCase().includes(c.toLowerCase())) {
-                            concepto = c;
-                            break;
-                        }
-                    }
-                    if (!grupos[concepto]) grupos[concepto] = [];
-                    grupos[concepto].push(cuota);
-                });
-
-                if (Object.keys(grupos).length === 0) {
-                    alert('No tiene cuotas proximas a vencer');
-                    return;
-                }
-
-                let mensaje =
-                    `Hola *${estudiante.nombre}*, le informamos que tiene las siguientes cuotas *PROXIMAS A VENCER* en *${oferta.oferta_nombre}*:\n\n`;
-                for (const [concepto, cuotas] of Object.entries(grupos)) {
-                    mensaje += `*${concepto}:*\n`;
-                    cuotas.forEach(cuota => {
-                        mensaje +=
-                            `• Cuota ${cuota.n_cuota}: Bs ${cuota.monto_bs.toFixed(2)} - ${formatFechaLarga(cuota.fecha_pago)} (${cuota.dias_restantes} dia(s) restante(s))\n`;
-                    });
-                    const subtotal = cuotas.reduce((sum, c) => sum + c.monto_bs, 0);
-                    mensaje += `  Subtotal: Bs ${subtotal.toFixed(2)}\n\n`;
-                }
-                const totalProximas = estudiante.cuotas.reduce((sum, c) => sum + c.monto_bs, 0);
-                mensaje += `*TOTAL PROXIMO: Bs ${totalProximas.toFixed(2)}*\n\n`;
-                mensaje +=
-                    `Favor realizar el pago con anticipacion para evitar atrasos.\n\nSaludos cordiales\n*UNIP - Area Contable*`;
-
-                const celularLimpio = estudiante.celular.replace(/\D/g, '');
-                const urlWhatsApp = `https://wa.me/591${celularLimpio}?text=${encodeURIComponent(mensaje)}`;
-                window.open(urlWhatsApp, '_blank');
-            }
-
-            function enviarWhatsAppOfertaProximas(ofertaId) {
-                let oferta = deudasData.find(o => o.oferta_id === ofertaId);
-                if (!oferta) return;
-
-                let enviados = 0,
-                    sinCelular = 0;
-                oferta.estudiantes.forEach(estudiante => {
-                    if (!estudiante.celular || estudiante.celular.trim() === '') {
-                        sinCelular++;
-                        return;
-                    }
-
-                    const conceptosOrden = ['Matricula', 'Colegiatura', 'Certificacion', 'Certificación'];
-                    const grupos = {};
-                    estudiante.cuotas.forEach(cuota => {
-                        let concepto = cuota.nombre || 'Otro';
-                        for (let c of conceptosOrden) {
-                            if (concepto.toLowerCase().includes(c.toLowerCase())) {
-                                concepto = c;
-                                break;
-                            }
-                        }
-                        if (!grupos[concepto]) grupos[concepto] = [];
-                        grupos[concepto].push(cuota);
-                    });
-                    if (Object.keys(grupos).length === 0) return;
-
-                    let mensaje =
-                        `Hola *${estudiante.nombre}*, le informamos que tiene las siguientes cuotas *PROXIMAS A VENCER* en *${oferta.oferta_nombre}*:\n\n`;
-                    for (const [concepto, cuotas] of Object.entries(grupos)) {
-                        mensaje += `*${concepto}:*\n`;
-                        cuotas.forEach(cuota => {
-                            mensaje +=
-                                `• Cuota ${cuota.n_cuota}: Bs ${cuota.monto_bs.toFixed(2)} - ${formatFechaLarga(cuota.fecha_pago)} (${cuota.dias_restantes} dia(s) restante(s))\n`;
-                        });
-                        const subtotal = cuotas.reduce((sum, c) => sum + c.monto_bs, 0);
-                        mensaje += `  Subtotal: Bs ${subtotal.toFixed(2)}\n\n`;
-                    }
-                    const totalProximas = estudiante.cuotas.reduce((sum, c) => sum + c.monto_bs, 0);
-                    mensaje += `*TOTAL PROXIMO: Bs ${totalProximas.toFixed(2)}*\n\n`;
-                    mensaje +=
-                        `Favor realizar el pago con anticipacion para evitar atrasos.\n\nSaludos cordiales\n*UNIP - Area Contable*`;
-
-                    const celularLimpio = estudiante.celular.replace(/\D/g, '');
-                    const urlWhatsApp = `https://wa.me/591${celularLimpio}?text=${encodeURIComponent(mensaje)}`;
-                    window.open(urlWhatsApp, '_blank');
-                    enviados++;
-                });
-
-                if (enviados === 0 && sinCelular > 0) {
-                    alert('No se encontraron participantes con numero de celular en esta oferta');
-                } else if (enviados > 0) {
-                    alert(
-                        `Se abrio ${enviados} mensaje(s) de WhatsApp para ${oferta.oferta_nombre}${sinCelular > 0 ? ', ' + sinCelular + ' sin celular' : ''}`
-                    );
-                } else {
-                    alert('No hay participantes con cuotas proximas a vencer en esta oferta');
-                }
             }
 
             function enviarWhatsAppOferta(ofertaId) {
