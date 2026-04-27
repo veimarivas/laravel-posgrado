@@ -102,7 +102,7 @@ private function getRankingPorMesYGestion($mes, $gestion, $limit = null, $sucurs
         $tipoSelects = [];
         foreach ($tipos as $tipoId => $tipoNombre) {
             $alias = 'tipo_' . $tipoId;
-            $tipoSelects[] = "SUM(CASE WHEN posgradoS.tipo_id = {$tipoId} THEN 1 ELSE 0 END) as {$alias}";
+            $tipoSelects[] = "SUM(CASE WHEN posgrados.tipo_id = {$tipoId} THEN 1 ELSE 0 END) as {$alias}";
         }
         $tipoSelectString = implode(', ', $tipoSelects);
 
@@ -127,8 +127,8 @@ private function getRankingPorMesYGestion($mes, $gestion, $limit = null, $sucurs
             ->join('trabajadores', 'trabajadores_cargos.trabajadore_id', '=', 'trabajadores.id')
             ->join('personas', 'trabajadores.persona_id', '=', 'personas.id')
             ->join('ofertas_academicas', 'inscripciones.ofertas_academica_id', '=', 'ofertas_academicas.id')
-            ->join('posgrados', 'ofertas_academicas.posgrado_id', '=', 'posgradoS.id')
-            ->join('convenios', 'posgradoS.convenio_id', '=', 'convenios.id')
+            ->join('posgrados', 'ofertas_academicas.posgrado_id', '=', 'posgrados.id')
+            ->join('convenios', 'posgrados.convenio_id', '=', 'convenios.id')
             ->whereYear('inscripciones.fecha_registro', $gestion)
             ->whereMonth('inscripciones.fecha_registro', $mes)
             ->where('inscripciones.estado', 'Inscrito')
@@ -198,7 +198,7 @@ private function getRankingPorSucursal($mes, $gestion, $sucursalId = null, $conv
         $tipoSelects = [];
         foreach ($tipos as $tipoId => $tipoNombre) {
             $alias = 'tipo_' . $tipoId;
-            $tipoSelects[] = "SUM(CASE WHEN posgradoS.tipo_id = {$tipoId} THEN 1 ELSE 0 END) as {$alias}";
+            $tipoSelects[] = "SUM(CASE WHEN posgrados.tipo_id = {$tipoId} THEN 1 ELSE 0 END) as {$alias}";
         }
         $tipoSelectString = implode(', ', $tipoSelects);
 
@@ -225,8 +225,8 @@ private function getRankingPorSucursal($mes, $gestion, $sucursalId = null, $conv
             ->join('trabajadores_cargos', 'inscripciones.trabajadores_cargo_id', '=', 'trabajadores_cargos.id')
             ->join('trabajadores', 'trabajadores_cargos.trabajadore_id', '=', 'trabajadores.id')
             ->join('personas', 'trabajadores.persona_id', '=', 'personas.id')
-            ->join('posgradoS', 'ofertas_academicas.posgrado_id', '=', 'posgradoS.id')
-            ->join('convenios', 'posgradoS.convenio_id', '=', 'convenios.id')
+            ->join('posgrados', 'ofertas_academicas.posgrado_id', '=', 'posgrados.id')
+            ->join('convenios', 'posgrados.convenio_id', '=', 'convenios.id')
             ->whereYear('inscripciones.fecha_registro', $gestion)
             ->whereMonth('inscripciones.fecha_registro', $mes)
             ->where('inscripciones.estado', 'Inscrito')
@@ -394,8 +394,8 @@ private function getRankingPorSucursal($mes, $gestion, $sucursalId = null, $conv
             COUNT(*) as total
         ')
             ->join('ofertas_academicas', 'inscripciones.ofertas_academica_id', '=', 'ofertas_academicas.id')
-            ->join('posgradoS', 'ofertas_academicas.posgrado_id', '=', 'posgradoS.id')
-            ->join('convenios', 'posgradoS.convenio_id', '=', 'convenios.id')
+            ->join('posgrados', 'ofertas_academicas.posgrado_id', '=', 'posgrados.id')
+            ->join('convenios', 'posgrados.convenio_id', '=', 'convenios.id')
             ->whereYear('inscripciones.fecha_registro', $gestion)
             ->whereMonth('inscripciones.fecha_registro', $mes)
             ->where('inscripciones.estado', 'Inscrito');
