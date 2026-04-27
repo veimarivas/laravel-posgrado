@@ -26,8 +26,15 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
-        $request->session()->regenerate();
         $user = $request->user();
+        if ($user->estado === 'Inactivo') {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            return back()->withErrors(['email' => 'Usuario inactivo. No tiene acceso al sistema.']);
+        }
+
+        $request->session()->regenerate();
         if ($user->role === 'admin') {
             return redirect()->intended('admin/dashboard');
         }

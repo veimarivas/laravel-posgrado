@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Backend;
 
 use App\Http\Controllers\Controller;
+use App\Models\Convenio;
 use App\Models\Inscripcione;
 use App\Models\Persona;
 use App\Models\Sucursale;
@@ -30,25 +31,32 @@ class AdminController extends Controller
         $mes = $request->input('mes', Carbon::now()->month);
         $gestion = $request->input('gestion', Carbon::now()->year);
         $sucursalId = $request->input('sucursal');
+        $convenioId = $request->input('convenio');
 
         $nombreMes = Carbon::createFromDate($gestion, $mes, 1)->translatedFormat('F');
+        
+        // Determinar si mostrar columna de convenio (cuando no se filtra por convenio específico)
+        $mostrarConvenio = empty($convenioId);
 
-        // Obtener ranking con desglose
-        $rankingGeneralTop3Result = $this->getRankingPorMesYGestion($mes, $gestion, 3, $sucursalId);
-        $rankingGeneralResult = $this->getRankingPorMesYGestion($mes, $gestion, null, $sucursalId);
-        $rankingPorSucursal = $this->getRankingPorSucursal($mes, $gestion, $sucursalId);
-        $graficoPorTipo = $this->getTotalPorTipo($mes, $gestion, $sucursalId); // ✅
+// Obtener ranking con desglose
+        $rankingGeneralTop3Result = $this->getRankingPorMesYGestion($mes, $gestion, 3, $sucursalId, $convenioId, $mostrarConvenio);
+        $rankingGeneralResult = $this->getRankingPorMesYGestion($mes, $gestion, null, $sucursalId, $convenioId, $mostrarConvenio);
+        $rankingPorSucursal = $this->getRankingPorSucursal($mes, $gestion, $sucursalId, $convenioId, $mostrarConvenio);
+        $graficoPorTipo = $this->getTotalPorTipo($mes, $gestion, $sucursalId);
         $graficoBarrasData = $this->getDatosGraficoBarrasPorSucursal($mes, $gestion, $sucursalId);
+        $graficoPorConvenio = $this->getDatosGraficoPorConvenio($mes, $gestion, $sucursalId);
 
         $sucursales = Sucursale::all();
+        $convenios = Convenio::all();
 
-        return view('admin.index', compact('mes', 'gestion', 'nombreMes', 'sucursales', 'sucursalId'))
+        return view('admin.index', compact('mes', 'gestion', 'nombreMes', 'sucursales', 'sucursalId', 'convenios', 'convenioId', 'mostrarConvenio'))
             ->with('rankingGeneralTop3', $rankingGeneralTop3Result['data'])
             ->with('rankingGeneralCompleto', $rankingGeneralResult['data'])
             ->with('rankingPorSucursal', $rankingPorSucursal)
             ->with('tipos', $rankingGeneralResult['tipos'])
             ->with('graficoPorTipo', $graficoPorTipo)
-            ->with('graficoBarrasData', $graficoBarrasData);
+            ->with('graficoBarrasData', $graficoBarrasData)
+            ->with('graficoPorConvenio', $graficoPorConvenio);
     }
 
 
@@ -56,14 +64,19 @@ class AdminController extends Controller
     {
         $mes = $request->get('mes', now()->month);
         $gestion = $request->get('gestion', now()->year);
-        $sucursalId = $request->get('sucursal');
+        $sucursalId = $request->get('sucursal') ?: null;
+        $convenioId = $request->get('convenio') ?: null;
+
+        // Determinar si mostrar columna de convenio
+        $mostrarConvenio = empty($convenioId);
 
         // Reutilizamos exactamente los mismos métodos que en dashboard()
-        $rankingGeneralTop3Result = $this->getRankingPorMesYGestion($mes, $gestion, 3, $sucursalId);
-        $rankingGeneralResult = $this->getRankingPorMesYGestion($mes, $gestion, null, $sucursalId);
-        $rankingPorSucursal = $this->getRankingPorSucursal($mes, $gestion, $sucursalId);
+        $rankingGeneralTop3Result = $this->getRankingPorMesYGestion($mes, $gestion, 3, $sucursalId, $convenioId, $mostrarConvenio);
+        $rankingGeneralResult = $this->getRankingPorMesYGestion($mes, $gestion, null, $sucursalId, $convenioId, $mostrarConvenio);
+        $rankingPorSucursal = $this->getRankingPorSucursal($mes, $gestion, $sucursalId, $convenioId, $mostrarConvenio);
         $graficoPorTipo = $this->getTotalPorTipo($mes, $gestion, $sucursalId);
         $graficoBarrasData = $this->getDatosGraficoBarrasPorSucursal($mes, $gestion, $sucursalId);
+        $graficoPorConvenio = $this->getDatosGraficoPorConvenio($mes, $gestion, $sucursalId);
 
         return response()->json([
             'rankingGeneralTop3' => $rankingGeneralTop3Result['data'],
@@ -71,24 +84,33 @@ class AdminController extends Controller
             'rankingPorSucursal' => $rankingPorSucursal,
             'graficoPorTipo' => $graficoPorTipo,
             'graficoBarrasData' => $graficoBarrasData,
-            'tipos' => $rankingGeneralResult['tipos'], // ✅ Correcto: array asociativo [id => nombre]
+            'graficoPorConvenio' => $graficoPorConvenio,
+            'mostrarConvenio' => $mostrarConvenio,
+            'tipos' => $rankingGeneralResult['tipos'],
             'nombreMes' => Carbon::createFromDate($gestion, $mes, 1)->translatedFormat('F'),
             'gestion' => $gestion,
             'mes' => $mes,
             'sucursalId' => $sucursalId,
+            'convenioId' => $convenioId,
         ]);
     }
 
-    private function getRankingPorMesYGestion($mes, $gestion, $limit = null, $sucursalId = null)
+private function getRankingPorMesYGestion($mes, $gestion, $limit = null, $sucursalId = null, $convenioId = null, $mostrarConvenio = false)
     {
         $tipos = Tipo::pluck('nombre', 'id')->toArray();
 
         $tipoSelects = [];
         foreach ($tipos as $tipoId => $tipoNombre) {
             $alias = 'tipo_' . $tipoId;
-            $tipoSelects[] = "SUM(CASE WHEN posgrados.tipo_id = {$tipoId} THEN 1 ELSE 0 END) as {$alias}";
+            $tipoSelects[] = "SUM(CASE WHEN posgradoS.tipo_id = {$tipoId} THEN 1 ELSE 0 END) as {$alias}";
         }
         $tipoSelectString = implode(', ', $tipoSelects);
+
+        // Cuando $mostrarConvenio es true, SUMAMOS todas las inscripciones agrupando solo por persona
+        // Cuando es false (filtro por convenio específico), mantenemos el GROUP BY para mostrar el detalle
+        $groupByFields = $mostrarConvenio 
+            ? 'personas.id, personas.nombres, personas.apellido_paterno, personas.apellido_materno, personas.sexo, personas.fotografia'
+            : 'personas.id, personas.nombres, personas.apellido_paterno, personas.apellido_materno, personas.sexo, personas.fotografia, convenios.nombre';
 
         $query = Inscripcione::selectRaw("
             personas.id,
@@ -98,21 +120,27 @@ class AdminController extends Controller
             personas.sexo,
             personas.fotografia, 
             COUNT(inscripciones.id) as total_inscripciones,
+            GROUP_CONCAT(convenios.nombre) as convenios_lista,
             {$tipoSelectString}
         ")
             ->join('trabajadores_cargos', 'inscripciones.trabajadores_cargo_id', '=', 'trabajadores_cargos.id')
             ->join('trabajadores', 'trabajadores_cargos.trabajadore_id', '=', 'trabajadores.id')
             ->join('personas', 'trabajadores.persona_id', '=', 'personas.id')
             ->join('ofertas_academicas', 'inscripciones.ofertas_academica_id', '=', 'ofertas_academicas.id')
-            ->join('posgrados', 'ofertas_academicas.posgrado_id', '=', 'posgrados.id')
+            ->join('posgrados', 'ofertas_academicas.posgrado_id', '=', 'posgradoS.id')
+            ->join('convenios', 'posgradoS.convenio_id', '=', 'convenios.id')
             ->whereYear('inscripciones.fecha_registro', $gestion)
             ->whereMonth('inscripciones.fecha_registro', $mes)
             ->where('inscripciones.estado', 'Inscrito')
-            ->groupBy('personas.id', 'personas.nombres', 'personas.apellido_paterno', 'personas.apellido_materno', 'personas.sexo', 'personas.fotografia');
+            ->groupByRaw($groupByFields);
 
         // ✅ Corrección: filtrar por sucursal de la oferta, no del vendedor
         if ($sucursalId) {
             $query->where('ofertas_academicas.sucursale_id', $sucursalId);
+        }
+
+        if ($convenioId) {
+            $query->where('convenios.id', $convenioId);
         }
 
         $collection = $query
@@ -129,6 +157,15 @@ class AdminController extends Controller
                 $persona->fotografia = $item->fotografia;
                 $persona->total_inscripciones = $item->total_inscripciones;
                 $persona->nombre_completo = trim("{$item->nombres} {$item->apellido_paterno} {$item->apellido_materno}");
+                
+                // Parsear convenios_lista para obtener detalle por cada uno
+                if (!empty($item->convenios_lista)) {
+                    $conveniosArray = array_count_values(explode(',', $item->convenios_lista));
+                    $persona->convenios_detalle = [];
+                    foreach ($conveniosArray as $nombre => $cantidad) {
+                        $persona->convenios_detalle[trim($nombre)] = $cantidad;
+                    }
+                }
 
                 if ($item->fotografia && file_exists(public_path($item->fotografia))) {
                     $persona->avatar = asset($item->fotografia);
@@ -154,16 +191,21 @@ class AdminController extends Controller
     /**
      * Obtiene el ranking por sucursal con desglose por tipo de posgrado
      */
-    private function getRankingPorSucursal($mes, $gestion, $sucursalId = null)
+private function getRankingPorSucursal($mes, $gestion, $sucursalId = null, $convenioId = null, $mostrarConvenio = false)
     {
         $tipos = Tipo::pluck('nombre', 'id')->toArray();
 
         $tipoSelects = [];
         foreach ($tipos as $tipoId => $tipoNombre) {
             $alias = 'tipo_' . $tipoId;
-            $tipoSelects[] = "SUM(CASE WHEN posgrados.tipo_id = {$tipoId} THEN 1 ELSE 0 END) as {$alias}";
+            $tipoSelects[] = "SUM(CASE WHEN posgradoS.tipo_id = {$tipoId} THEN 1 ELSE 0 END) as {$alias}";
         }
         $tipoSelectString = implode(', ', $tipoSelects);
+
+        // Same logic for grouping
+        $groupByFields = $mostrarConvenio
+            ? 'sucursales_oa.id, sucursales_oa.nombre, personas.id, personas.nombres, personas.apellido_paterno, personas.apellido_materno, personas.sexo, personas.fotografia'
+            : 'sucursales_oa.id, sucursales_oa.nombre, personas.id, personas.nombres, personas.apellido_paterno, personas.apellido_materno, personas.sexo, personas.fotografia, convenios.nombre';
 
         $query = Inscripcione::selectRaw("
             sucursales_oa.id as sucursal_id,
@@ -175,30 +217,27 @@ class AdminController extends Controller
             personas.sexo,
             personas.fotografia,
             COUNT(inscripciones.id) as total_inscripciones,
+            GROUP_CONCAT(convenios.nombre) as convenios_lista,
             {$tipoSelectString}
         ")
             ->join('ofertas_academicas', 'inscripciones.ofertas_academica_id', '=', 'ofertas_academicas.id')
-            ->join('sucursales as sucursales_oa', 'ofertas_academicas.sucursale_id', '=', 'sucursales_oa.id') // ✅ Sucursal de la oferta
+            ->join('sucursales as sucursales_oa', 'ofertas_academicas.sucursale_id', '=', 'sucursales_oa.id')
             ->join('trabajadores_cargos', 'inscripciones.trabajadores_cargo_id', '=', 'trabajadores_cargos.id')
             ->join('trabajadores', 'trabajadores_cargos.trabajadore_id', '=', 'trabajadores.id')
             ->join('personas', 'trabajadores.persona_id', '=', 'personas.id')
-            ->join('posgrados', 'ofertas_academicas.posgrado_id', '=', 'posgrados.id')
+            ->join('posgradoS', 'ofertas_academicas.posgrado_id', '=', 'posgradoS.id')
+            ->join('convenios', 'posgradoS.convenio_id', '=', 'convenios.id')
             ->whereYear('inscripciones.fecha_registro', $gestion)
             ->whereMonth('inscripciones.fecha_registro', $mes)
             ->where('inscripciones.estado', 'Inscrito')
-            ->groupBy(
-                'sucursales_oa.id',
-                'sucursales_oa.nombre',
-                'personas.id',
-                'personas.nombres',
-                'personas.apellido_paterno',
-                'personas.apellido_materno',
-                'personas.sexo',
-                'personas.fotografia'
-            );
+            ->groupByRaw($groupByFields);
 
         if ($sucursalId) {
             $query->where('sucursales_oa.id', $sucursalId);
+        }
+
+        if ($convenioId) {
+            $query->where('convenios.id', $convenioId);
         }
 
         return $query
@@ -215,6 +254,15 @@ class AdminController extends Controller
                 $persona->apellido_materno = $item->apellido_materno;
                 $persona->sexo = $item->sexo;
                 $persona->fotografia = $item->fotografia;
+
+                // Parsear convenios_lista para obtener detalle por cada uno
+                if (!empty($item->convenios_lista)) {
+                    $conveniosArray = array_count_values(explode(',', $item->convenios_lista));
+                    $persona->convenios_detalle = [];
+                    foreach ($conveniosArray as $nombre => $cantidad) {
+                        $persona->convenios_detalle[trim($nombre)] = $cantidad;
+                    }
+                }
 
                 if ($item->fotografia && file_exists(public_path($item->fotografia))) {
                     $persona->avatar = asset($item->fotografia);
@@ -335,6 +383,35 @@ class AdminController extends Controller
             'tipos' => $tiposNombres,
             'valores' => $data
         ];
+    }
+
+    private function getDatosGraficoPorConvenio($mes, $gestion, $sucursalId = null)
+    {
+        $convenios = Convenio::orderBy('nombre')->get();
+        
+        $query = Inscripcione::selectRaw('
+            convenios.nombre as convenio_nombre,
+            COUNT(*) as total
+        ')
+            ->join('ofertas_academicas', 'inscripciones.ofertas_academica_id', '=', 'ofertas_academicas.id')
+            ->join('posgradoS', 'ofertas_academicas.posgrado_id', '=', 'posgradoS.id')
+            ->join('convenios', 'posgradoS.convenio_id', '=', 'convenios.id')
+            ->whereYear('inscripciones.fecha_registro', $gestion)
+            ->whereMonth('inscripciones.fecha_registro', $mes)
+            ->where('inscripciones.estado', 'Inscrito');
+
+        if ($sucursalId) {
+            $query->where('ofertas_academicas.sucursale_id', $sucursalId);
+        }
+
+        $result = $query->groupBy('convenios.nombre')->pluck('total', 'convenio_nombre')->toArray();
+
+        $data = [];
+        foreach ($convenios as $convenio) {
+            $data[$convenio->nombre] = $result[$convenio->nombre] ?? 0;
+        }
+
+        return $data;
     }
 
     public function verInscripcionesVendedor($personaId)

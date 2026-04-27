@@ -83,6 +83,9 @@ class BienvenidosController extends Controller
                     ->where('estado', 'Vigente')
                     ->whereIn('cargo_id', [2, 3, 6]); // Solo cargos 2, 3 y 6
             })
+            ->whereHas('persona.usuario', function ($q) {
+                $q->where('estado', '!=', 'Inactivo');
+            })
             // Ordenar por área/cargo para mejor organización
             ->orderBy('id')
             ->get()

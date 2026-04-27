@@ -16,9 +16,9 @@
             --radius-sm: 8px;
             --radius-md: 12px;
             --radius-lg: 16px;
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
-            --shadow-lg: 0 10px 25px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
         }
 
         .dashboard-page {
@@ -28,8 +28,15 @@
         }
 
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(16px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* ===== PAGE HEADER ===== */
@@ -55,7 +62,7 @@
             right: -10%;
             width: 300px;
             height: 300px;
-            background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
             border-radius: 50%;
         }
 
@@ -66,7 +73,7 @@
             left: 20%;
             width: 200px;
             height: 200px;
-            background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
             border-radius: 50%;
         }
 
@@ -92,7 +99,7 @@
         }
 
         .dashboard-header .breadcrumb-custom a {
-            color: rgba(255,255,255,0.8);
+            color: rgba(255, 255, 255, 0.8);
             text-decoration: none;
             transition: color 0.2s;
         }
@@ -247,12 +254,12 @@
         }
 
         .table-card-header {
-            padding: 18px 24px;
+            padding: 16px 24px;
             border-bottom: 1px solid var(--dash-border);
             display: flex;
             align-items: center;
             gap: 8px;
-            background: var(--dash-surface);
+            background: linear-gradient(135deg, var(--dash-primary) 0%, var(--dash-primary-dark) 100%);
         }
 
         .table-card-header h5 {
@@ -260,11 +267,11 @@
             font-weight: 600;
             margin: 0;
             font-size: 1.05rem;
-            color: var(--dash-text);
+            color: white;
         }
 
         .table-card-header h5 i {
-            color: var(--dash-primary);
+            color: rgba(255, 255, 255, 0.85);
         }
 
         .dash-table {
@@ -275,31 +282,42 @@
 
         .dash-table thead th {
             background: var(--dash-surface);
-            padding: 12px 16px;
-            font-size: 0.75rem;
-            font-weight: 600;
+            padding: 11px 14px;
+            font-size: 0.7rem;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.08em;
             color: var(--dash-text-muted);
-            border-bottom: 1px solid var(--dash-border);
+            border-bottom: 2px solid var(--dash-border);
             text-align: center;
             white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .dash-table thead th:nth-child(2) {
+            text-align: left;
         }
 
         .dash-table tbody tr {
             transition: background 0.15s ease;
         }
 
+        .dash-table tbody tr:nth-child(even):not(.top-1):not(.top-2):not(.top-3) {
+            background: rgba(248, 250, 252, 0.8);
+        }
+
         .dash-table tbody tr:hover {
-            background: var(--dash-primary-light);
+            background: var(--dash-primary-light) !important;
         }
 
         .dash-table tbody td {
-            padding: 14px 16px;
+            padding: 11px 14px;
             border-bottom: 1px solid var(--dash-border);
             vertical-align: middle;
             text-align: center;
-            font-size: 0.88rem;
+            font-size: 0.875rem;
             color: var(--dash-text);
         }
 
@@ -309,24 +327,100 @@
 
         .dash-table tbody td:nth-child(2) {
             text-align: left;
-            font-weight: 500;
-        }
-
-        .dash-table tbody td:nth-child(3) {
-            font-weight: 700;
-            color: var(--dash-primary);
         }
 
         .dash-table tbody tr.top-1 {
-            background-color: rgba(255, 215, 0, 0.06);
+            background: linear-gradient(90deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 215, 0, 0.03) 100%);
         }
 
         .dash-table tbody tr.top-2 {
-            background-color: rgba(192, 192, 192, 0.06);
+            background: linear-gradient(90deg, rgba(192, 192, 192, 0.12) 0%, rgba(192, 192, 192, 0.03) 100%);
         }
 
         .dash-table tbody tr.top-3 {
-            background-color: rgba(205, 127, 50, 0.06);
+            background: linear-gradient(90deg, rgba(205, 127, 50, 0.09) 0%, rgba(205, 127, 50, 0.02) 100%);
+        }
+
+        .rank-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            background: var(--dash-surface);
+            border: 1px solid var(--dash-border);
+            border-radius: 50%;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--dash-text-muted);
+        }
+
+        .person-name {
+            font-weight: 600;
+            color: var(--dash-text);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .person-name:hover {
+            color: var(--dash-primary);
+        }
+
+        .total-pill {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 38px;
+            padding: 4px 12px;
+            background: linear-gradient(135deg, var(--dash-primary), var(--dash-primary-dark));
+            color: white;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+
+        .tipo-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 30px;
+            padding: 3px 10px;
+            border-radius: var(--radius-sm);
+            font-size: 0.82rem;
+            font-weight: 600;
+            background: var(--dash-surface);
+            color: var(--dash-text-muted);
+            border: 1px solid var(--dash-border);
+        }
+
+        .tipo-chip.has-data {
+            background: rgba(15, 118, 110, 0.08);
+            color: var(--dash-primary);
+            border-color: rgba(15, 118, 110, 0.25);
+        }
+
+        .convenio-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 9px;
+            background: rgba(245, 158, 11, 0.09);
+            border: 1px solid rgba(245, 158, 11, 0.28);
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: #92400e;
+            white-space: nowrap;
+        }
+
+        .convenio-badge .conv-count {
+            font-weight: 700;
+            color: #b45309;
+        }
+
+        .convenio-cell {
+            line-height: 1.9;
+            text-align: left !important;
         }
 
         .medal-cell {
@@ -467,8 +561,15 @@
         }
 
         @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-5px);
+            }
         }
 
         .position-place-label {
@@ -499,10 +600,23 @@
         }
 
         @keyframes bounceIn {
-            0% { transform: scale(0.3); opacity: 0; }
-            50% { transform: scale(1.1); }
-            70% { transform: scale(0.9); }
-            100% { transform: scale(1); opacity: 1; }
+            0% {
+                transform: scale(0.3);
+                opacity: 0;
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            70% {
+                transform: scale(0.9);
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
         }
 
         .animate-on-load {
@@ -520,7 +634,10 @@
         .table-loading::after {
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             background: rgba(255, 255, 255, 0.85);
             z-index: 10;
         }
@@ -528,7 +645,8 @@
         .table-loading::before {
             content: 'Cargando datos...';
             position: absolute;
-            top: 50%; left: 50%;
+            top: 50%;
+            left: 50%;
             transform: translate(-50%, -50%);
             z-index: 11;
             color: var(--dash-primary);
@@ -746,6 +864,17 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="filter-group">
+                        <label for="convenio">Convenio (opcional)</label>
+                        <select name="convenio" id="convenio" class="filter-select">
+                            <option value="">Todos los convenios</option>
+                            @foreach ($convenios as $conv)
+                                <option value="{{ $conv->id }}" {{ $conv->id == $convenioId ? 'selected' : '' }}>
+                                    {{ $conv->nombre }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                     <div>
                         <button type="button" id="applyFilters" class="btn-apply-filters">
                             <i class="ri-filter-line"></i> Filtrar
@@ -757,7 +886,8 @@
 
         <!-- Ranking Title -->
         <div class="mb-4">
-            <h5 id="rankingTitle" style="font-family: 'Outfit', sans-serif; font-weight: 600; color: var(--dash-text); margin-bottom: 4px;">
+            <h5 id="rankingTitle"
+                style="font-family: 'Outfit', sans-serif; font-weight: 600; color: var(--dash-text); margin-bottom: 4px;">
                 Inscripciones mes de {{ $nombreMes }} {{ $gestion }}
             </h5>
             <a href="{{ route('admin.dashboard') }}?mes={{ $mes }}&gestion={{ $gestion }}&view=complete"
@@ -788,10 +918,13 @@
                                             <a href="{{ route('admin.vendedor.inscripciones', ['personaId' => $rankingGeneralTop3[1]->id ?? 0]) }}"
                                                 class="ranking-card d-block text-decoration-none text-dark podium-hover overflow-hidden"
                                                 style="background: linear-gradient(135deg, #f5f5f5, #e0e0e0); border: 2px solid #C0C0C0; box-shadow: 0 6px 15px rgba(192, 192, 192, 0.3); transition: all 0.4s ease; height: 240px;">
-                                                <div class="card-body text-center py-3 px-3 d-flex flex-column justify-content-between h-100">
+                                                <div
+                                                    class="card-body text-center py-3 px-3 d-flex flex-column justify-content-between h-100">
                                                     <div>
                                                         <div class="position-relative d-inline-block mb-2">
-                                                            @if (isset($rankingGeneralTop3[1]) && $rankingGeneralTop3[1]->fotografia && file_exists(public_path($rankingGeneralTop3[1]->fotografia)))
+                                                            @if (isset($rankingGeneralTop3[1]) &&
+                                                                    $rankingGeneralTop3[1]->fotografia &&
+                                                                    file_exists(public_path($rankingGeneralTop3[1]->fotografia)))
                                                                 <img src="{{ asset($rankingGeneralTop3[1]->fotografia) }}"
                                                                     alt="{{ $rankingGeneralTop3[1]->nombre_completo ?? '' }}"
                                                                     class="rounded-circle border shadow"
@@ -804,17 +937,20 @@
                                                             @endif
                                                         </div>
                                                         @if (isset($rankingGeneralTop3[1]))
-                                                            <h6 class="mb-1 fw-bold">{{ $rankingGeneralTop3[1]->nombre_completo ?? '' }}</h6>
+                                                            <h6 class="mb-1 fw-bold">
+                                                                {{ $rankingGeneralTop3[1]->nombre_completo ?? '' }}</h6>
                                                         @endif
                                                     </div>
                                                     <div>
                                                         <div class="position-relative mt-2">
-                                                            <div class="position-place-label bg-silver text-white rounded-pill py-1 px-3 d-inline-block">
+                                                            <div
+                                                                class="position-place-label bg-silver text-white rounded-pill py-1 px-3 d-inline-block">
                                                                 <strong>2° LUGAR</strong>
                                                             </div>
                                                         </div>
                                                         <p class="text-muted small mb-0 mt-2">
-                                                            {{ $rankingGeneralTop3[1]->total_inscripciones ?? 0 }} inscripciones</p>
+                                                            {{ $rankingGeneralTop3[1]->total_inscripciones ?? 0 }}
+                                                            inscripciones</p>
                                                     </div>
                                                 </div>
                                             </a>
@@ -835,7 +971,8 @@
                                             <a href="{{ route('admin.vendedor.inscripciones', ['personaId' => $rankingGeneralTop3[0]->id]) }}"
                                                 class="ranking-card d-block text-decoration-none text-dark podium-hover overflow-hidden"
                                                 style="background: linear-gradient(135deg, #fff9c4, #ffecb3); border: 2px solid #FFD700; box-shadow: 0 10px 25px rgba(255, 215, 0, 0.4); transform: translateY(-20px); transition: all 0.4s ease; height: 270px;">
-                                                <div class="card-body text-center py-3 px-3 d-flex flex-column justify-content-between h-100">
+                                                <div
+                                                    class="card-body text-center py-3 px-3 d-flex flex-column justify-content-between h-100">
                                                     <div>
                                                         <div class="position-relative d-inline-block mb-2">
                                                             @if ($rankingGeneralTop3[0]->fotografia && file_exists(public_path($rankingGeneralTop3[0]->fotografia)))
@@ -850,16 +987,19 @@
                                                                     style="width: 100px; height: 100px; object-fit: cover; border: 4px solid #FFD700 !important;">
                                                             @endif
                                                         </div>
-                                                        <h5 class="mb-1 fw-bold">{{ $rankingGeneralTop3[0]->nombre_completo }}</h5>
+                                                        <h5 class="mb-1 fw-bold">
+                                                            {{ $rankingGeneralTop3[0]->nombre_completo }}</h5>
                                                     </div>
                                                     <div>
                                                         <div class="position-relative mt-2">
-                                                            <div class="position-place-label bg-gold text-white rounded-pill py-2 px-4 d-inline-block">
+                                                            <div
+                                                                class="position-place-label bg-gold text-white rounded-pill py-2 px-4 d-inline-block">
                                                                 <strong>1° LUGAR</strong>
                                                             </div>
                                                         </div>
                                                         <p class="text-muted mb-0 mt-2">
-                                                            {{ $rankingGeneralTop3[0]->total_inscripciones }} inscripciones</p>
+                                                            {{ $rankingGeneralTop3[0]->total_inscripciones }} inscripciones
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </a>
@@ -880,10 +1020,13 @@
                                             <a href="{{ route('admin.vendedor.inscripciones', ['personaId' => $rankingGeneralTop3[2]->id ?? 0]) }}"
                                                 class="ranking-card d-block text-decoration-none text-dark podium-hover overflow-hidden"
                                                 style="background: linear-gradient(135deg, #ffe0b2, #d7ccc8); border: 2px solid #CD7F32; box-shadow: 0 6px 15px rgba(205, 127, 50, 0.3); transition: all 0.4s ease; height: 220px;">
-                                                <div class="card-body text-center py-3 px-3 d-flex flex-column justify-content-between h-100">
+                                                <div
+                                                    class="card-body text-center py-3 px-3 d-flex flex-column justify-content-between h-100">
                                                     <div>
                                                         <div class="position-relative d-inline-block mb-2">
-                                                            @if (isset($rankingGeneralTop3[2]) && $rankingGeneralTop3[2]->fotografia && file_exists(public_path($rankingGeneralTop3[2]->fotografia)))
+                                                            @if (isset($rankingGeneralTop3[2]) &&
+                                                                    $rankingGeneralTop3[2]->fotografia &&
+                                                                    file_exists(public_path($rankingGeneralTop3[2]->fotografia)))
                                                                 <img src="{{ asset($rankingGeneralTop3[2]->fotografia) }}"
                                                                     alt="{{ $rankingGeneralTop3[2]->nombre_completo ?? '' }}"
                                                                     class="rounded-circle border shadow"
@@ -896,17 +1039,20 @@
                                                             @endif
                                                         </div>
                                                         @if (isset($rankingGeneralTop3[2]))
-                                                            <h6 class="mb-1 fw-bold">{{ $rankingGeneralTop3[2]->nombre_completo ?? '' }}</h6>
+                                                            <h6 class="mb-1 fw-bold">
+                                                                {{ $rankingGeneralTop3[2]->nombre_completo ?? '' }}</h6>
                                                         @endif
                                                     </div>
                                                     <div>
                                                         <div class="position-relative mt-2">
-                                                            <div class="position-place-label bg-bronze text-white rounded-pill py-1 px-3 d-inline-block">
+                                                            <div
+                                                                class="position-place-label bg-bronze text-white rounded-pill py-1 px-3 d-inline-block">
                                                                 <strong>3° LUGAR</strong>
                                                             </div>
                                                         </div>
                                                         <p class="text-muted small mb-0 mt-2">
-                                                            {{ $rankingGeneralTop3[2]->total_inscripciones ?? 0 }} inscripciones</p>
+                                                            {{ $rankingGeneralTop3[2]->total_inscripciones ?? 0 }}
+                                                            inscripciones</p>
                                                     </div>
                                                 </div>
                                             </a>
@@ -928,7 +1074,8 @@
                     <div class="col-md-4">
                         <div class="chart-card h-100 d-flex flex-column">
                             <div class="chart-card-header">
-                                <h6><i class="ri-pie-chart-2-line me-1" style="color: var(--dash-primary);"></i> Distribución por Tipo</h6>
+                                <h6><i class="ri-pie-chart-2-line me-1" style="color: var(--dash-primary);"></i>
+                                    Distribución por Tipo</h6>
                                 <small>{{ $nombreMes }} {{ $gestion }}</small>
                             </div>
                             <div class="chart-card-body d-flex align-items-center justify-content-center flex-grow-1">
@@ -947,7 +1094,8 @@
             @if (!empty($graficoBarrasData['sucursales']))
                 <div class="chart-card mb-4">
                     <div class="chart-card-header">
-                        <h6><i class="ri-bar-chart-horizontal-line me-1" style="color: var(--dash-primary);"></i> Inscripciones por Sucursal y Tipo</h6>
+                        <h6><i class="ri-bar-chart-horizontal-line me-1" style="color: var(--dash-primary);"></i>
+                            Inscripciones por Sucursal y Tipo</h6>
                         <small>{{ $nombreMes }} {{ $gestion }}</small>
                     </div>
                     <div class="chart-card-body">
@@ -966,6 +1114,24 @@
             @endif
         </div>
 
+        <!-- Chart por Convenio (solo cuando mostrarConvenio = true) -->
+        @if ($mostrarConvenio && !empty($graficoPorConvenio['convenios']))
+            <div id="convenio-chart-section">
+                <div class="chart-card mb-4">
+                    <div class="chart-card-header">
+                        <h6><i class="ri-hand-heart-line me-1" style="color: var(--dash-primary);"></i> Inscripciones por
+                            Convenio</h6>
+                        <small>{{ $nombreMes }} {{ $gestion }}</small>
+                    </div>
+                    <div class="chart-card-body">
+                        <div style="height: 300px; width: 100%;">
+                            <canvas id="graficoConvenios"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <!-- Full Ranking Table -->
         <div id="full-ranking-section" class="table-card">
             <div class="table-card-header">
@@ -976,7 +1142,10 @@
                     <thead>
                         <tr>
                             <th style="width: 5%;">#</th>
-                            <th style="width: 30%;">Persona</th>
+                            <th style="width: 25%;">Persona</th>
+                            @if ($mostrarConvenio)
+                                <th style="width: 20%;">Convenio</th>
+                            @endif
                             <th style="width: 10%;">Total</th>
                             @foreach ($tipos as $tipoNombre)
                                 <th>{{ $tipoNombre }}</th>
@@ -999,13 +1168,29 @@
                                     @if ($medalEmoji)
                                         <div class="medal-cell"><span class="medal-emoji">{{ $medalEmoji }}</span></div>
                                     @else
-                                        {{ $index + 1 }}
+                                        <span class="rank-num">{{ $index + 1 }}</span>
                                     @endif
                                 </td>
-                                <td class="align-middle">{{ $persona->nombre_completo }}</td>
-                                <td class="align-middle"><strong>{{ $persona->total_inscripciones }}</strong></td>
+                                <td class="align-middle">
+                                    <a href="{{ route('admin.vendedor.inscripciones', ['personaId' => $persona->id]) }}" class="person-name">
+                                        {{ $persona->nombre_completo }}
+                                    </a>
+                                </td>
+                                @if ($mostrarConvenio)
+                                    <td class="align-middle convenio-cell">
+                                        @if($persona->convenios_detalle)
+                                            @foreach($persona->convenios_detalle as $convNombre => $convCantidad)
+                                                <span class="convenio-badge">{{ $convNombre }}: <span class="conv-count">{{ $convCantidad }}</span></span>@if(!$loop->last)<br>@endif
+                                            @endforeach
+                                        @else
+                                            <span class="text-muted">—</span>
+                                        @endif
+                                    </td>
+                                @endif
+                                <td class="align-middle"><span class="total-pill">{{ $persona->total_inscripciones }}</span></td>
                                 @foreach ($tipos as $tipoNombre)
-                                    <td class="align-middle">{{ $persona->desglose[$tipoNombre] ?? 0 }}</td>
+                                    @php $tipVal = $persona->desglose[$tipoNombre] ?? 0; @endphp
+                                    <td class="align-middle"><span class="tipo-chip {{ $tipVal > 0 ? 'has-data' : '' }}">{{ $tipVal }}</span></td>
                                 @endforeach
                             </tr>
                         @endforeach
@@ -1037,8 +1222,11 @@
                                         <thead>
                                             <tr>
                                                 <th style="width: 5%;">#</th>
-                                                <th style="width: 30%;">Persona</th>
-                                                <th style="width: 10%;">Total</th>
+                                                <th style="width: 25%;">Persona</th>
+                                                @if ($mostrarConvenio)
+                                                    <th style="width: 18%;">Convenio</th>
+                                                @endif
+                                                <th style="width: 8%;">Total</th>
                                                 @foreach ($tipos as $tipoNombre)
                                                     <th>{{ $tipoNombre }}</th>
                                                 @endforeach
@@ -1060,13 +1248,29 @@
                                                         @if ($medalEmoji)
                                                             <div class="medal-cell"><span class="medal-emoji">{{ $medalEmoji }}</span></div>
                                                         @else
-                                                            {{ $index + 1 }}
+                                                            <span class="rank-num">{{ $index + 1 }}</span>
                                                         @endif
                                                     </td>
-                                                    <td class="align-middle">{{ $persona->nombre_completo }}</td>
-                                                    <td class="align-middle"><strong>{{ $persona->total_inscripciones }}</strong></td>
+                                                    <td class="align-middle">
+                                                        <a href="{{ route('admin.vendedor.inscripciones', ['personaId' => $persona->id]) }}" class="person-name">
+                                                            {{ $persona->nombre_completo }}
+                                                        </a>
+                                                    </td>
+                                                    @if ($mostrarConvenio)
+                                                        <td class="align-middle convenio-cell">
+                                                            @if($persona->convenios_detalle)
+                                                                @foreach($persona->convenios_detalle as $convNombre => $convCantidad)
+                                                                    <span class="convenio-badge">{{ $convNombre }}: <span class="conv-count">{{ $convCantidad }}</span></span>@if(!$loop->last)<br>@endif
+                                                                @endforeach
+                                                            @else
+                                                                <span class="text-muted">—</span>
+                                                            @endif
+                                                        </td>
+                                                    @endif
+                                                    <td class="align-middle"><span class="total-pill">{{ $persona->total_inscripciones }}</span></td>
                                                     @foreach ($tipos as $tipoNombre)
-                                                        <td class="align-middle">{{ $persona->desglose[$tipoNombre] ?? 0 }}</td>
+                                                        @php $tipVal = $persona->desglose[$tipoNombre] ?? 0; @endphp
+                                                        <td class="align-middle"><span class="tipo-chip {{ $tipVal > 0 ? 'has-data' : '' }}">{{ $tipVal }}</span></td>
                                                     @endforeach
                                                 </tr>
                                             @endforeach
@@ -1095,6 +1299,7 @@
 
             let pieChart = null;
             let barChart = null;
+            let convenioChart = null;
 
             function updateURL(filters) {
                 const url = new URL(window.location);
@@ -1113,7 +1318,8 @@
                 return {
                     mes: urlParams.get('mes') || {{ Carbon\Carbon::now()->month }},
                     gestion: urlParams.get('gestion') || {{ Carbon\Carbon::now()->year }},
-                    sucursal: urlParams.get('sucursal') || ''
+                    sucursal: urlParams.get('sucursal') || '',
+                    convenio: urlParams.get('convenio') || ''
                 };
             }
 
@@ -1122,11 +1328,20 @@
                 document.getElementById('mes').value = filters.mes;
                 document.getElementById('gestion').value = filters.gestion;
                 document.getElementById('sucursal').value = filters.sucursal || '';
+                document.getElementById('convenio').value = filters.convenio || '';
                 updateDashboard(filters);
             }
 
             function updateDashboard(filters) {
                 updateURL(filters);
+
+                // Destruir gráficos ANTES de remover sus canvas del DOM
+                if (pieChart) { pieChart.destroy(); pieChart = null; }
+                if (barChart) { barChart.destroy(); barChart = null; }
+                if (convenioChart) { convenioChart.destroy(); convenioChart = null; }
+                const convenioSectionBefore = document.getElementById('convenio-chart-section');
+                if (convenioSectionBefore) convenioSectionBefore.remove();
+
                 document.getElementById('top3-and-chart-section').innerHTML = loadingIndicator;
                 document.getElementById('bar-chart-section').innerHTML = loadingIndicator;
                 document.getElementById('full-ranking-section').innerHTML = loadingIndicator;
@@ -1175,10 +1390,37 @@
                 `;
                         }
 
+// Actualizar título del período
+                        const titleEl = document.getElementById('rankingTitle');
+                        if (titleEl) titleEl.textContent = `Inscripciones mes de ${data.nombreMes} ${data.gestion}`;
+
                         updatePieChart(data.graficoPorTipo);
                         updateBarChart(data.graficoBarrasData, data.nombreMes, data.gestion);
 
+                        // Gráfico por Convenio: solo cuando todos los convenios están seleccionados
+                        if (data.mostrarConvenio && data.graficoPorConvenio && Object.values(data.graficoPorConvenio).some(v => v > 0)) {
+                            const barSection = document.getElementById('bar-chart-section');
+                            barSection.insertAdjacentHTML('afterend', `
+                    <div id="convenio-chart-section">
+                        <div class="chart-card mb-4">
+                            <div class="chart-card-header">
+                                <h6><i class="ri-hand-heart-line me-1" style="color: var(--dash-primary);"></i> Inscripciones por Convenio</h6>
+                                <small>${data.nombreMes} ${data.gestion}</small>
+                            </div>
+                            <div class="chart-card-body">
+                                <div style="height: 300px; width: 100%;">
+                                    <canvas id="graficoConvenios"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`);
+                            updateConvenioChart(data.graficoPorConvenio);
+                        }
+
+const mostrarConvenio = data.mostrarConvenio;
+
                         if (data.rankingGeneralCompleto && data.rankingGeneralCompleto.length > 0) {
+                            const convenioHeader = mostrarConvenio ? `<th style="width: 18%;">Convenio</th>` : '';
                             document.getElementById('full-ranking-section').innerHTML = `
             <div class="table-card">
                 <div class="table-card-header">
@@ -1189,13 +1431,14 @@
                         <thead>
                             <tr>
                                 <th style="width: 5%;">#</th>
-                                <th style="width: 30%;">Persona</th>
+                                <th style="width: 25%;">Persona</th>
+                                ${convenioHeader}
                                 <th style="width: 10%;">Total</th>
                                 ${tipoNombres.map(t => `<th>${t}</th>`).join('')}
                             </tr>
                         </thead>
                         <tbody>
-                            ${renderFullRanking(data.rankingGeneralCompleto, tipoNombres)}
+                            ${renderFullRanking(data.rankingGeneralCompleto, tipoNombres, mostrarConvenio)}
                         </tbody>
                     </table>
                 </div>
@@ -1223,7 +1466,7 @@
                             <h5><i class="ri-building-line me-2"></i>Ranking por Sucursal</h5>
                         </div>
                         <div style="padding: 20px;">
-                            ${renderBranchRanking(data.rankingPorSucursal, tipoNombres)}
+                            ${renderBranchRanking(data.rankingPorSucursal, tipoNombres, mostrarConvenio)}
                         </div>
                     </div>
                 </div>
@@ -1375,49 +1618,80 @@
                 };
             }
 
-            function renderFullRanking(ranking, tipoNombres) {
+function renderFullRanking(ranking, tipoNombres, mostrarConvenio = false) {
                 return ranking.map((persona, idx) => {
-                    let medalHtml = '';
-                    if (idx === 0) medalHtml = '<span class="medal-emoji">🥇</span>';
-                    else if (idx === 1) medalHtml = '<span class="medal-emoji">🥈</span>';
-                    else if (idx === 2) medalHtml = '<span class="medal-emoji">🥉</span>';
+                    const medals = ['🥇', '🥈', '🥉'];
+                    const rankHtml = idx < 3
+                        ? `<div class="medal-cell"><span class="medal-emoji">${medals[idx]}</span></div>`
+                        : `<span class="rank-num">${idx + 1}</span>`;
+                    const rowClass = idx < 3 ? `top-${idx + 1}` : '';
+
+                    let conveniosHtml = '';
+                    if (mostrarConvenio && persona.convenios_detalle) {
+                        const badges = Object.entries(persona.convenios_detalle)
+                            .map(([nombre, cantidad]) =>
+                                `<span class="convenio-badge">${nombre}: <span class="conv-count">${cantidad}</span></span>`)
+                            .join('<br>');
+                        conveniosHtml = `<td class="align-middle convenio-cell">${badges || '<span class="text-muted">—</span>'}</td>`;
+                    } else if (mostrarConvenio) {
+                        conveniosHtml = '<td class="align-middle"><span class="text-muted">—</span></td>';
+                    }
 
                     return `
-            <tr>
-                <td class="align-middle">${medalHtml || (idx + 1)}</td>
-                <td class="align-middle">${persona.nombre_completo}</td>
-                <td class="align-middle"><strong>${persona.total_inscripciones}</strong></td>
-                ${tipoNombres.map(tipo => 
-                    `<td class="align-middle">${persona.desglose[tipo] ?? 0}</td>`
-                ).join('')}
-            </tr>
-        `;
+                <tr class="${rowClass}">
+                    <td class="align-middle">${rankHtml}</td>
+                    <td class="align-middle"><a href="/admin/vendedor/inscripciones/${persona.id}" class="person-name">${persona.nombre_completo}</a></td>
+                    ${conveniosHtml}
+                    <td class="align-middle"><span class="total-pill">${persona.total_inscripciones}</span></td>
+                    ${tipoNombres.map(tipo => {
+                        const val = persona.desglose[tipo] ?? 0;
+                        return `<td class="align-middle"><span class="tipo-chip ${val > 0 ? 'has-data' : ''}">${val}</span></td>`;
+                    }).join('')}
+                </tr>
+            `;
                 }).join('');
             }
 
-            function renderBranchRanking(data, tipoNombres) {
+            function renderBranchRanking(data, tipoNombres, mostrarConvenio = false) {
                 if (Object.keys(data).length === 0) {
                     return '<p class="text-center text-muted">No hay datos disponibles.</p>';
                 }
 
+                const medals = ['🥇', '🥈', '🥉'];
+
                 return Object.entries(data).map(([sucursal, personas]) => {
                     const tableRows = personas.map((persona, idx) => {
-                        let medalHtml = '';
-                        if (idx === 0) medalHtml = '<span class="medal-emoji">🥇</span>';
-                        else if (idx === 1) medalHtml = '<span class="medal-emoji">🥈</span>';
-                        else if (idx === 2) medalHtml = '<span class="medal-emoji">🥉</span>';
+                        const rankHtml = idx < 3
+                            ? `<div class="medal-cell"><span class="medal-emoji">${medals[idx]}</span></div>`
+                            : `<span class="rank-num">${idx + 1}</span>`;
+                        const rowClass = idx < 3 ? `top-${idx + 1}` : '';
+
+                        let conveniosHtml = '';
+                        if (mostrarConvenio && persona.convenios_detalle) {
+                            const badges = Object.entries(persona.convenios_detalle)
+                                .map(([nombre, cantidad]) =>
+                                    `<span class="convenio-badge">${nombre}: <span class="conv-count">${cantidad}</span></span>`)
+                                .join('<br>');
+                            conveniosHtml = `<td class="align-middle convenio-cell">${badges || '<span class="text-muted">—</span>'}</td>`;
+                        } else if (mostrarConvenio) {
+                            conveniosHtml = '<td class="align-middle"><span class="text-muted">—</span></td>';
+                        }
 
                         return `
-                <tr>
-                    <td class="align-middle">${medalHtml || (idx + 1)}</td>
-                    <td class="align-middle">${persona.nombre_completo}</td>
-                    <td class="align-middle"><strong>${persona.total_inscripciones}</strong></td>
-                    ${tipoNombres.map(tipo => 
-                        `<td class="align-middle">${persona.desglose[tipo] ?? 0}</td>`
-                    ).join('')}
-                </tr>
-            `;
+                    <tr class="${rowClass}">
+                        <td class="align-middle">${rankHtml}</td>
+                        <td class="align-middle"><a href="/admin/vendedor/inscripciones/${persona.id}" class="person-name">${persona.nombre_completo}</a></td>
+                        ${conveniosHtml}
+                        <td class="align-middle"><span class="total-pill">${persona.total_inscripciones}</span></td>
+                        ${tipoNombres.map(tipo => {
+                            const val = persona.desglose[tipo] ?? 0;
+                            return `<td class="align-middle"><span class="tipo-chip ${val > 0 ? 'has-data' : ''}">${val}</span></td>`;
+                        }).join('')}
+                    </tr>
+                `;
                     }).join('');
+
+                    const convenioHeader = mostrarConvenio ? `<th style="width: 18%;">Convenio</th>` : '';
 
                     return `
             <div class="branch-table-container">
@@ -1429,8 +1703,9 @@
                         <thead>
                             <tr>
                                 <th style="width: 5%;">#</th>
-                                <th style="width: 30%;">Persona</th>
-                                <th style="width: 10%;">Total</th>
+                                <th style="width: 25%;">Persona</th>
+                                ${convenioHeader}
+                                <th style="width: 8%;">Total</th>
                                 ${tipoNombres.map(t => `<th>${t}</th>`).join('')}
                             </tr>
                         </thead>
@@ -1445,8 +1720,9 @@
             }
 
             function updatePieChart(data) {
-                const ctx = document.getElementById('graficoTipos').getContext('2d');
-                if (pieChart) pieChart.destroy();
+                const canvas = document.getElementById('graficoTipos');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
                 const labels = Object.keys(data);
                 const values = Object.values(data);
                 const backgroundColors = ['#0f766e', '#0d5f59', '#14b8a6', '#2dd4bf', '#f59e0b', '#d97706',
@@ -1514,7 +1790,6 @@
     `;
 
                 const ctx = document.getElementById('graficoBarrasSucursales').getContext('2d');
-                if (barChart) barChart.destroy();
 
                 const sucursales = data.sucursales;
                 const tipos = data.tipos;
@@ -1597,6 +1872,59 @@
                         interaction: {
                             intersect: false,
                             mode: 'index'
+                        }
+                    }
+                });
+            }
+
+            function updateConvenioChart(data) {
+                const canvas = document.getElementById('graficoConvenios');
+                if (!canvas) return;
+
+                const ctx = canvas.getContext('2d');
+                const convenios = Object.keys(data);
+                const valores = Object.values(data);
+
+                const coloresBase = ['#0f766e', '#0d5f59', '#14b8a6', '#2dd4bf', '#f59e0b', '#d97706', '#ef4444',
+                    '#f97316', '#8b5cf6', '#6366f1'
+                ];
+
+                convenioChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: convenios,
+                        datasets: [{
+                            label: 'Inscripciones',
+                            data: valores,
+                            backgroundColor: convenios.map((_, idx) => coloresBase[idx % coloresBase
+                                .length]),
+                            borderRadius: 6,
+                            borderSkipped: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                ticks: {
+                                    autoSkip: false,
+                                    font: {
+                                        size: 11
+                                    }
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0
+                                }
+                            }
                         }
                     }
                 });
