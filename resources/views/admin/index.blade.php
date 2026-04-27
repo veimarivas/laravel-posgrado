@@ -1155,12 +1155,8 @@
                     <tbody>
                         @foreach ($rankingGeneralCompleto as $index => $persona)
                             @php
-                                $medalEmoji = match ($index) {
-                                    0 => '🥇',
-                                    1 => '🥈',
-                                    2 => '🥉',
-                                    default => null,
-                                };
+                                $medals = ['🥇', '🥈', '🥉'];
+                                $medalEmoji = $medals[$index] ?? null;
                                 $rowClass = $index < 3 ? 'top-' . ($index + 1) : '';
                             @endphp
                             <tr class="{{ $rowClass }}">
@@ -1235,12 +1231,8 @@
                                         <tbody>
                                             @foreach ($personas as $index => $persona)
                                                 @php
-                                                    $medalEmoji = match ($index) {
-                                                        0 => '🥇',
-                                                        1 => '🥈',
-                                                        2 => '🥉',
-                                                        default => null,
-                                                    };
+                                                    $medals = ['🥇', '🥈', '🥉'];
+                                                    $medalEmoji = $medals[$index] ?? null;
                                                     $rowClass = $index < 3 ? 'top-' . ($index + 1) : '';
                                                 @endphp
                                                 <tr class="{{ $rowClass }}">
